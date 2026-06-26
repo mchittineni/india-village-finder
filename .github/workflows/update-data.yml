@@ -1,0 +1,128 @@
+name: Update village data
+
+# Keeps the Andhra Pradesh + Telangana datasets fresh from the Local Government
+# Directory (LGD). Village data is refreshed WEEKLY; map boundaries (rarely
+# changing) MONTHLY. Changes are NOT pushed to main directly — they are proposed
+# as a pull request with a data-change summary, validated by the test suite, and
+# require review (CODEOWNERS / Copilot) before merge.
+
+on:
+  schedule:
+    - cron: "0 2 * * 1"   # weekly  — Mondays 02:00 UTC: refresh village data
+    - cron: "0 3 1 * *"   # monthly — 1st 03:00 UTC: data + boundaries
+  workflow_dispatch:
+    inputs:
+      refresh_boundaries:
+        description: "Also rebuild map boundary polygons"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write          # push the data branch
+  pull-requests: write     # open the PR + request reviewers
+  statuses: write          # report the validation status check on the PR
+
+concurrency:
+  group: update-village-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Node is only needed for mapshaper (boundary simplification).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: pip install -r scraper/requirements-dev.txt
+
+      - name: Refresh village data (Andhra Pradesh + Telangana)
+        run: python scraper/pipeline.py
+
+      - name: Decide whether to refresh boundaries
+        id: bounds
+        run: |
+          if [ "${{ github.event.schedule }}" = "0 3 1 * *" ] || \
+             [ "${{ github.event.inputs.refresh_boundaries }}" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Refresh map boundaries (monthly / on request)
+        if: steps.bounds.outputs.run == 'true'
+        run: python scraper/build_boundaries.py
+
+      - name: Validate new data (pytest)
+        id: tests
+        continue-on-error: true
+        run: |
+          python -m pytest scraper/tests -v | tee /tmp/pytest.txt
+          echo "outcome=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Build PR summary
+        run: |
+          python scraper/changelog.py --out /tmp/pr_body.md
+          {
+            echo ""
+            echo "### ✅ Validation"
+            if [ "${{ steps.tests.outcome }}" = "success" ]; then
+              echo "All data-validity tests **passed**.";
+            else
+              echo "⚠️ Data-validity tests **failed** — do not merge until fixed.";
+              echo '```'; tail -n 25 /tmp/pytest.txt; echo '```'
+            fi
+          } >> /tmp/pr_body.md
+          cat /tmp/pr_body.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create / update pull request
+        id: cpr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.DATA_PAT || secrets.GITHUB_TOKEN }}
+          branch: data/auto-refresh
+          delete-branch: true
+          add-paths: |
+            andhra_pradesh
+            telangana
+          commit-message: "chore(data): refresh LGD village data"
+          title: "chore(data): LGD village data refresh"
+          body-path: /tmp/pr_body.md
+          labels: |
+            data-update
+            automated
+          reviewers: mchittineni
+
+      - name: Report validation status check on the PR
+        if: steps.cpr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          STATE=$([ "${{ steps.tests.outcome }}" = "success" ] && echo success || echo failure)
+          gh api -X POST "repos/${{ github.repository }}/statuses/${{ steps.cpr.outputs.pull-request-head-sha }}" \
+            -f state="$STATE" \
+            -f context="data-validation" \
+            -f description="Automated data-validity tests" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Request Copilot review (best-effort)
+        if: steps.cpr.outputs.pull-request-number
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.DATA_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X POST \
+            "repos/${{ github.repository }}/pulls/${{ steps.cpr.outputs.pull-request-number }}/requested_reviewers" \
+            -f "reviewers[]=copilot-pull-request-reviewer[bot]"
+
+      - name: Summary
+        run: |
+          echo "PR: ${{ steps.cpr.outputs.pull-request-url || 'no changes — none opened' }}"
