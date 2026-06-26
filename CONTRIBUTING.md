@@ -37,10 +37,13 @@ python3 -m venv .venv
 ### Pull requests
 
 1. Branch off `main` (`feat/…`, `fix/…`, `docs/…`).
-2. Keep changes focused; update docs/tests as needed.
-3. Make sure the **`data-validation`** check passes.
-4. Open a PR using the template. A maintainer (and/or GitHub Copilot) reviews before merge —
-   `main` is protected, so everything lands via a reviewed PR.
+2. Use clear, imperative commit messages with a type prefix — `feat:`, `fix:`,
+   `docs:`, `ci:`, `chore:`.
+3. Keep changes focused; update docs/tests as needed.
+4. Make sure the **`data-validation`** check passes.
+5. Open a PR using the template. PRs are **auto-labelled** by the paths they touch.
+   A maintainer (and/or GitHub Copilot) reviews before merge — `main` is protected,
+   so everything lands via a reviewed PR.
 
 ### Good places to start
 

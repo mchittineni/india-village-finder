@@ -1,9 +1,9 @@
 # Data Licence — Government Open Data License – India (GODL-India)
 
 All **data files** in this repository — the CSV, JSON and GeoJSON under
-`andhra_pradesh/`, `telangana/`, and any data published in GitHub Releases — are
-derived from Government of India open data and are made available under the
-**Government Open Data License – India (GODL-India)**.
+`andhra_pradesh/`, `telangana/`, `karnataka/`, and any data published in GitHub
+Releases — are derived from Government of India open data and are made available
+under the **Government Open Data License – India (GODL-India)**.
 
 - Canonical licence text: https://data.gov.in/government-open-data-license-india
 - Gazette notification: https://www.data.gov.in/sites/default/files/Gazette_Notification_OGDL.pdf
