@@ -58,7 +58,8 @@ RAW = HERE / ".cache" / "raw"
 TEMPLATE = HERE / "web_template"
 
 RELEASES_API = "https://api.github.com/repos/ramSeraph/opendata/releases?per_page=100"
-ASSET_RE = re.compile(r"^(villages|subdistricts|districts)\.(\d{2}[A-Za-z]{3}\d{4})\.csv\.7z$")
+ASSET_RE = re.compile(r"^(pincode_villages|villages|subdistricts|districts)\.(\d{2}[A-Za-z]{3}\d{4})\.csv\.7z$")
+REQUIRED_KINDS = {"villages", "subdistricts", "districts"}  # pincode_villages is optional
 
 # One config block per state. `slug` is the folder name.
 STATES = {
@@ -89,9 +90,9 @@ def find_latest_assets() -> tuple[dict[str, str], str]:
             d = dt.datetime.strptime(datestr, "%d%b%Y").date()
             if kind not in best or d > best[kind][0]:
                 best[kind] = (d, a["browser_download_url"])
-    if set(best) < {"villages", "subdistricts", "districts"}:
+    if set(best) < REQUIRED_KINDS:
         raise RuntimeError(f"Could not find all LGD assets; found {set(best)}")
-    date = max(v[0] for v in best.values()).strftime("%d%b%Y")
+    date = max(best[k][0] for k in REQUIRED_KINDS).strftime("%d%b%Y")
     return {k: v[1] for k, v in best.items()}, date
 
 
@@ -99,11 +100,12 @@ def download_and_extract(offline: bool) -> dict[str, Path]:
     RAW.mkdir(parents=True, exist_ok=True)
     paths: dict[str, Path] = {}
     if offline:
-        for kind in ("districts", "subdistricts", "villages"):
+        for kind in ("districts", "subdistricts", "villages", "pincode_villages"):
             found = sorted(RAW.glob(f"{kind}.*.csv"))
-            if not found:
+            if found:
+                paths[kind] = found[-1]
+            elif kind in REQUIRED_KINDS:
                 raise RuntimeError(f"--offline but no extracted {kind} CSV in {RAW}")
-            paths[kind] = found[-1]
         print(f"[offline] using {', '.join(p.name for p in paths.values())}")
         return paths
 
@@ -113,7 +115,7 @@ def download_and_extract(offline: bool) -> dict[str, Path]:
     assets, date = find_latest_assets()
     print(f"[download] latest LGD dump: {date}")
     for kind, url in assets.items():
-        archive = RAW / f"{kind}.{date}.csv.7z"
+        archive = RAW / url.split("/")[-1]
         if not archive.exists():
             print(f"  fetching {kind} ...")
             with requests.get(url, stream=True, timeout=300) as resp:
@@ -176,6 +178,22 @@ def load_state(paths: dict[str, Path], state_code: int):
                 villages.append({"code": int(row[c_vcode]), "name": row[c_vname].strip(),
                                  "mandal_code": int(row[c_scode]),
                                  "category": row[c_cat].strip(), "status": row[c_status].strip()})
+
+    # village -> pincode (optional LGD mapping; joins by village code)
+    pincodes = {}
+    if paths.get("pincode_villages"):
+        with open(paths["pincode_villages"], newline="", encoding="utf-8") as fh:
+            rd = csv.DictReader(fh)
+            c_state = _col(rd.fieldnames, "state code")
+            c_vcode = _col(rd.fieldnames, "village code")
+            c_pin = _col(rd.fieldnames, "pincode")
+            for row in rd:
+                if int(row[c_state]) == state_code:
+                    pin = (row[c_pin] or "").strip()
+                    if pin.isdigit():
+                        pincodes[int(row[c_vcode])] = pin
+    for v in villages:
+        v["pincode"] = pincodes.get(v["code"], "")
     return districts, mandals, villages
 
 
@@ -238,8 +256,9 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         d_counts[di] += 1
         m_counts[mi] += 1
         cat = 0 if v["category"].lower().startswith("rural") else 1
-        rows.append([v["name"], mi, v["code"], cat])
+        rows.append([v["name"], mi, v["code"], cat, v.get("pincode", "")])
     rows.sort(key=lambda r: norm(r[0]))
+    with_pincode = sum(1 for r in rows if r[4])
 
     regions = {
         "state": cfg["name"], "state_code": state_code,
@@ -249,14 +268,15 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
                      "d": d_index[m["district_code"]], "vc": m_counts[i]}
                     for i, m in enumerate(m_sorted)],
     }
-    villages_doc = {"columns": ["name", "mandal", "code", "cat"], "rows": rows}
+    villages_doc = {"columns": ["name", "mandal", "code", "cat", "pin"], "rows": rows}
     meta = {
         "state": cfg["name"], "state_code": state_code,
         "generated_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
         "source_mirror": "github.com/ramSeraph/opendata (LGD daily dump)",
         "source_date": source_date,
-        "counts": {"districts": len(d_sorted), "mandals": len(m_sorted), "villages": len(rows)},
+        "counts": {"districts": len(d_sorted), "mandals": len(m_sorted), "villages": len(rows),
+                   "with_pincode": with_pincode},
         "dropped_villages_without_mandal": dropped,
         "verification": verify,
     }
@@ -269,7 +289,7 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     with open(state_dir / "data" / f"{cfg['slug']}_villages.csv", "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["State", "District", "District Code", "Mandal", "Mandal Code",
-                    "Village", "Village Code", "Category", "Status"])
+                    "Village", "Village Code", "Pincode", "Category", "Status"])
         for v in sorted(villages, key=lambda x: x["name"]):
             mi = m_index.get(v["mandal_code"])
             if mi is None:
@@ -277,7 +297,7 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
             m = m_sorted[mi]
             d = districts[m["district_code"]]
             w.writerow([cfg["name"], d["name"], d["code"], m["name"], m["code"],
-                        v["name"], v["code"], v["category"], v["status"]])
+                        v["name"], v["code"], v.get("pincode", ""), v["category"], v["status"]])
 
     _build_web(state_code, cfg, web, meta)
     return meta
