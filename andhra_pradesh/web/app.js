@@ -2,11 +2,29 @@
    AP & Telangana Village Finder — map application
    Single-state app: config.js (window.VF_CONFIG) selects the state.
    Data: data/{regions,villages,meta}.json + data/{districts,mandals}.geojson
+   UI text + place-name transliteration: i18n.js (window.VF_I18N)
    ===================================================================== */
 (function () {
   "use strict";
   var CFG = window.VF_CONFIG || {};
   var DATA = "data/";
+
+  // ---- i18n ------------------------------------------------------------
+  var I18N = window.VF_I18N || {
+    LANGS: [{ code: "en", name: "English", dir: "ltr" }],
+    t: function (l, k) { return k; },
+    translit: function (l, n) { return n; },
+    dirOf: function () { return "ltr"; }
+  };
+  var LANG = (function () {
+    try {
+      var saved = localStorage.getItem("vf_lang");
+      if (saved && I18N.LANGS.some(function (L) { return L.code === saved; })) return saved;
+    } catch (e) {}
+    return "en";
+  })();
+  function t(key, params) { return I18N.t(LANG, key, params); }   // UI string
+  function nm(name) { return I18N.translit(LANG, name); }          // place name
 
   // ---- tiny DOM helpers ------------------------------------------------
   function $(s, r) { return (r || document).querySelector(s); }
@@ -36,8 +54,8 @@
   }
   var ACCENT = CFG.accent || "#1f6feb";
   var ACC_RGB = hexToRgb(ACCENT);
-  function tint(t) { // t=0 -> white, t=1 -> accent
-    var r = ACC_RGB.map(function (c) { return Math.round(255 + (c - 255) * t); });
+  function tint(t2) { // t2=0 -> white, t2=1 -> accent
+    var r = ACC_RGB.map(function (c) { return Math.round(255 + (c - 255) * t2); });
     return "rgb(" + r[0] + "," + r[1] + "," + r[2] + ")";
   }
   var RAMP = [0.1, 0.26, 0.44, 0.62, 0.8, 1.0].map(tint);
@@ -73,8 +91,9 @@
 
   async function init() {
     applyTheme();
+    buildLangSwitch();
     buildSwitch();
-    setBranding();
+    applyI18n();
     try {
       var res = await Promise.all([
         fetchJSON("regions.json"), fetchJSON("villages.json"),
@@ -102,29 +121,84 @@
     s.setProperty("--brand", CFG.accent || "#1f6feb");
     s.setProperty("--brand-soft", CFG.accentSoft || "#eaf2ff");
   }
-  function setBranding() {
-    document.title = CFG.state + " Village Finder";
-    var sub = $(".brand-sub"); if (sub) sub.textContent = CFG.state;
-    var src = $("#src-link"); if (src && CFG.source) src.href = CFG.source.url;
+
+  // Apply all language-dependent chrome (text direction, static labels, brand).
+  function applyI18n() {
+    document.documentElement.setAttribute("lang", LANG);
+    var dir = I18N.dirOf(LANG);
+    var sb = $("#sidebar"); if (sb) sb.setAttribute("dir", dir);
+
+    var h1 = $(".brand h1"); if (h1) h1.textContent = t("village_finder");
+    var sub = $(".brand-sub"); if (sub) sub.textContent = nm(CFG.state || "");
+    document.title = nm(CFG.state || "") + " " + t("village_finder");
+    var srcHref = $("#src-link"); if (srcHref && CFG.source) srcHref.href = CFG.source.url;
+
+    var s = $("#search"); if (s) s.placeholder = t("search_ph");
+    var cb = $("#collapse-btn"); if (cb) cb.title = t("hide_panel");
+    var ss = $("#show-sidebar"); if (ss) ss.title = t("show_panel");
+    var cs = $("#clear-search"); if (cs) cs.title = t("clear");
+    var srcL = $("#src-link"); if (srcL) srcL.textContent = t("data_lgd");
+    var issL = $("#issue-link"); if (issL) issL.textContent = t("report_issue");
+    var srcLink = $("#source-link"); if (srcLink) srcLink.textContent = t("source");
+    var lw = $("#lang-wrap"); if (lw) lw.title = t("language");
+    var ml = $("#map-loading");
+    if (ml && !ml.classList.contains("hidden")) ml.textContent = t("loading_map");
   }
+
+  function buildLangSwitch() {
+    var sel = $("#lang-select");
+    if (!sel) return;
+    sel.innerHTML = "";
+    I18N.LANGS.forEach(function (L) {
+      var o = document.createElement("option");
+      o.value = L.code; o.textContent = L.name;
+      if (L.code === LANG) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.onchange = function () { setLang(sel.value); };
+  }
+
+  function setLang(code) {
+    if (code === LANG) return;
+    LANG = code;
+    try { localStorage.setItem("vf_lang", code); } catch (e) {}
+    applyI18n();
+    buildSwitch();
+    setFreshness();
+    refreshView();   // re-render panel, breadcrumb, legend and map tooltips
+  }
+
+  // Re-render whatever drill level we're on so all text/tooltips pick up LANG.
+  function refreshView() {
+    if (!regions) return;
+    var inSearch = $("#search") && $("#search").value.trim().length >= 2;
+    if (inSearch) { runSearch($("#search").value); }
+    if (view.level === "mandal" && view.m) selectMandal(view.m);
+    else if (view.level === "district" && view.d) selectDistrict(view.d);
+    else showDistrictView(false);
+    if (inSearch) runSearch($("#search").value);
+  }
+
+  function setBranding() { applyI18n(); }
+
   function buildSwitch() {
     var box = $("#state-switch");
     if (!box) return;
     box.innerHTML = "";
-    var cur = el("button", "active", esc(CFG.state));
-    cur.title = "Currently viewing " + CFG.state;
+    var cur = el("button", "active", esc(nm(CFG.state)));
+    cur.title = t("currently_viewing", { state: CFG.state });
     box.appendChild(cur);
     (CFG.siblings || []).forEach(function (sib) {
       var a = document.createElement("a");
-      a.href = sib.url; a.textContent = sib.name; a.className = "seg-link";
+      a.href = sib.url; a.textContent = nm(sib.name); a.title = sib.name; a.className = "seg-link";
       box.appendChild(a);
     });
   }
   function setFreshness() {
     var c = (CFG.counts) || (meta && meta.counts) || {};
     var date = CFG.sourceDate || (meta && meta.source_date) || "";
-    $("#freshness").innerHTML = "Updated <b>" + esc(date) + "</b> · " +
-      fmt(c.villages) + " villages";
+    $("#freshness").innerHTML = esc(t("updated")) + " <b>" + esc(date) + "</b> · " +
+      esc(t("n_villages", { n: fmt(c.villages) }));
   }
   function wireChrome() {
     var app = $("#app");
@@ -139,13 +213,15 @@
     regions.mandals.forEach(function (m) { mByCode[m.c] = m; });
     villagesByMandal = regions.mandals.map(function () { return []; });
     villages.rows.forEach(function (row) {
-      // row: [name, mandalIdx, code, cat]
+      // row: [name, mandalIdx, code, cat, pin]
       var mi = row[1];
       if (villagesByMandal[mi]) villagesByMandal[mi].push(row);
     });
     dBreaks = quantileBreaks(regions.districts.map(function (d) { return d.vc; }), RAMP.length);
   }
 
+  // Search always indexes the canonical English names + PIN (most reliable),
+  // regardless of the chosen display language.
   function buildFuse() {
     var items = [];
     regions.districts.forEach(function (d) { items.push({ t: "d", name: d.n, ref: d }); });
@@ -160,7 +236,9 @@
 
   // ---- map -------------------------------------------------------------
   function initMap() {
-    map = L.map("map", { zoomControl: true, attributionControl: true, minZoom: 5, maxZoom: 13 });
+    // Zoom buttons live on the right so they don't collide with the sidebar toggle.
+    map = L.map("map", { zoomControl: false, attributionControl: true, minZoom: 5, maxZoom: 13 });
+    L.control.zoom({ position: "topright" }).addTo(map);
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       subdomains: "abcd", maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -195,7 +273,7 @@
       onEachFeature: function (f, layer) {
         var d = dByCode[f.properties.c];
         dLayerByCode[f.properties.c] = layer;
-        layer.bindTooltip(tip(f.properties.n, (d ? fmt(d.vc) + " villages" : "")), { sticky: true, className: "region-tip", direction: "top" });
+        layer.bindTooltip(tip(nm(f.properties.n), (d ? t("n_villages", { n: fmt(d.vc) }) : "")), { sticky: true, className: "region-tip", direction: "top" });
         layer.on({
           mouseover: function () { layer.setStyle({ weight: 2.4, color: "#334155" }); layer.bringToFront(); },
           mouseout: function () { dLayer.resetStyle(layer); },
@@ -204,7 +282,7 @@
       }
     }).addTo(map);
     if (fit) map.fitBounds(dLayer.getBounds(), { padding: [20, 20] });
-    renderBreadcrumb(); renderStatePanel(); renderLegend(dBreaks, "Villages per district");
+    renderBreadcrumb(); renderStatePanel(); renderLegend(dBreaks, t("villages_per_district"));
     $("#map-loading").classList.add("hidden");
   }
 
@@ -223,7 +301,7 @@
       onEachFeature: function (f, layer) {
         var m = mByCode[f.properties.c];
         mLayerByCode[f.properties.c] = layer;
-        layer.bindTooltip(tip(f.properties.n, (m ? fmt(m.vc) + " villages" : "")), { sticky: true, className: "region-tip", direction: "top" });
+        layer.bindTooltip(tip(nm(f.properties.n), (m ? t("n_villages", { n: fmt(m.vc) }) : "")), { sticky: true, className: "region-tip", direction: "top" });
         layer.on({
           mouseover: function () { layer.setStyle({ weight: 2.4, color: "#334155" }); layer.bringToFront(); },
           mouseout: function () { mLayer.resetStyle(layer); },
@@ -235,10 +313,10 @@
     if (feats.length) {
       map.fitBounds(mLayer.getBounds(), { padding: [30, 30] });
     } else {
-      toast("Map boundary not yet published for " + d.n + " (a new district).");
+      toast(t("boundary_missing", { name: nm(d.n) }));
     }
     renderBreadcrumb(); renderDistrictPanel(d);
-    renderLegend(breaks, "Villages per mandal");
+    renderLegend(breaks, t("villages_per_mandal"));
     if (opts.then) opts.then();
   }
 
@@ -279,9 +357,9 @@
       bc.appendChild(b);
     }
     function sep() { bc.appendChild(el("span", "crumb-sep", "›")); }
-    crumb("All districts", view.level === "state", function () { clearSearchUI(); showDistrictView(true); });
-    if (view.d) { sep(); crumb(view.d.n, view.level === "district", function () { selectDistrict(view.d); }); }
-    if (view.m) { sep(); crumb(view.m.n, true); }
+    crumb(t("all_districts"), view.level === "state", function () { clearSearchUI(); showDistrictView(true); });
+    if (view.d) { sep(); crumb(nm(view.d.n), view.level === "district", function () { selectDistrict(view.d); }); }
+    if (view.m) { sep(); crumb(nm(view.m.n), true); }
   }
 
   // ---- panels ----------------------------------------------------------
@@ -290,14 +368,14 @@
     var p = $("#panel"); p.innerHTML = "";
     var totV = c.districts.reduce(function (a, d) { return a + d.vc; }, 0);
     var grid = el("div", "stat-grid");
-    grid.appendChild(stat(fmt(c.districts.length), "Districts"));
-    grid.appendChild(stat(fmt(c.mandals.length), "Mandals"));
-    var sv = stat(fmt(totV), "Villages"); sv.style.gridColumn = "1 / -1"; grid.appendChild(sv);
+    grid.appendChild(stat(fmt(c.districts.length), t("districts")));
+    grid.appendChild(stat(fmt(c.mandals.length), t("mandals")));
+    var sv = stat(fmt(totV), t("villages")); sv.style.gridColumn = "1 / -1"; grid.appendChild(sv);
     p.appendChild(grid);
 
-    p.appendChild(sectionLabel("Districts", "by villages"));
+    p.appendChild(sectionLabel(t("districts"), t("az")));
     var list = el("div", "list");
-    c.districts.slice().sort(function (a, b) { return b.vc - a.vc; }).forEach(function (d) {
+    c.districts.slice().sort(function (a, b) { return norm(a.n) < norm(b.n) ? -1 : 1; }).forEach(function (d) {
       list.appendChild(districtRow(d));
     });
     p.appendChild(list);
@@ -305,15 +383,16 @@
 
   function renderDistrictPanel(d) {
     var p = $("#panel"); p.innerHTML = "";
-    p.appendChild(backRow("All districts", function () { showDistrictView(true); }));
+    p.appendChild(backRow(t("all_districts"), function () { showDistrictView(true); }));
     var mandals = regions.mandals.filter(function (m) { return m.d === d.i; });
     var head = el("div", "detail-head");
-    head.appendChild(el("div", "title", esc(d.n)));
-    head.appendChild(el("div", "sub", mandals.length + " mandals · " + fmt(d.vc) + " villages · LGD " + d.c));
+    var title = el("div", "title", esc(nm(d.n))); title.title = d.n; head.appendChild(title);
+    head.appendChild(el("div", "sub", esc(t("n_mandals", { n: mandals.length }) + " · " +
+      t("n_villages", { n: fmt(d.vc) }) + " · " + t("lgd_label") + " " + d.c)));
     p.appendChild(head);
-    p.appendChild(sectionLabel("Mandals", "by villages"));
+    p.appendChild(sectionLabel(t("mandals"), t("az")));
     var list = el("div", "list");
-    mandals.sort(function (a, b) { return b.vc - a.vc; }).forEach(function (m) {
+    mandals.sort(function (a, b) { return norm(a.n) < norm(b.n) ? -1 : 1; }).forEach(function (m) {
       list.appendChild(mandalRow(m));
     });
     p.appendChild(list);
@@ -322,22 +401,24 @@
   function renderMandalPanel(m, highlightCode) {
     var d = regions.districts[m.d];
     var p = $("#panel"); p.innerHTML = "";
-    p.appendChild(backRow(d.n, function () { selectDistrict(d); }));
+    p.appendChild(backRow(nm(d.n), function () { selectDistrict(d); }));
     var head = el("div", "detail-head");
-    head.appendChild(el("div", "title", esc(m.n)));
-    head.appendChild(el("div", "sub", esc(d.n) + " district · " + fmt(m.vc) + " villages · LGD " + m.c));
+    var title = el("div", "title", esc(nm(m.n))); title.title = m.n; head.appendChild(title);
+    head.appendChild(el("div", "sub", esc(nm(d.n) + " " + t("district_word") + " · " +
+      t("n_villages", { n: fmt(m.vc) }) + " · " + t("lgd_label") + " " + m.c)));
     p.appendChild(head);
-    p.appendChild(sectionLabel("Villages", "A → Z"));
+    p.appendChild(sectionLabel(t("villages"), t("az")));
     var rows = (villagesByMandal[m.i] || []).slice().sort(function (a, b) { return norm(a[0]) < norm(b[0]) ? -1 : 1; });
     var list = el("div", "list");
-    if (!rows.length) { list.appendChild(el("div", "empty", "No villages listed for this mandal.")); }
+    if (!rows.length) { list.appendChild(el("div", "empty", esc(t("no_villages")))); }
     rows.forEach(function (row) {
       var r = el("button", "row clickable");
+      r.title = row[0];
       if (highlightCode && row[2] === highlightCode) r.dataset.hl = "1";
       var main = el("div", "main");
-      main.appendChild(el("div", "name", esc(row[0])));
-      main.appendChild(el("div", "meta", (row[3] === 0 ? "Rural" : "Urban") +
-        (row[4] ? " · PIN " + row[4] : "") + (coords[row[2]] ? " · 📍" : "")));
+      main.appendChild(el("div", "name", esc(nm(row[0]))));
+      main.appendChild(el("div", "meta", (row[3] === 0 ? t("rural") : t("urban")) +
+        (row[4] ? " · " + t("pin_label") + " " + row[4] : "") + (coords[row[2]] ? " · 📍" : "")));
       r.appendChild(main);
       r.appendChild(el("span", "dot"));
       r.lastChild.style.background = row[3] === 0 ? "#94a3b8" : "#c2570f";
@@ -363,34 +444,31 @@
     showVillage(row, m);
   }
 
-  // Villages have no published point coordinates, so we pin the selected village
-  // at the centre of its mandal and show its details in a popup.
+  // Pin the selected village at its precise GeoNames point when we have a
+  // confident one, otherwise at the centre of its mandal, and show a popup.
   function showVillage(row, m) {
     if (!row) return;
     var d = regions.districts[m.d];
     var lyr = mLayerByCode[m.c];
     if (marker) { map.removeLayer(marker); marker = null; }
-    // precise GeoNames coordinate if we have a confident one, else mandal centroid
     var precise = coords[row[2]];
     var center = precise ? L.latLng(precise[0], precise[1])
                          : (lyr ? lyr.getBounds().getCenter() : null);
-    if (!center) { toast("Location of " + row[0] + " isn't on the map yet."); return; }
+    if (!center) { toast(t("loc_missing", { name: nm(row[0]) })); return; }
     marker = L.marker(center, {
       icon: L.divIcon({ className: "vpin-wrap", html: '<span class="village-pin"></span>',
                         iconSize: [22, 22], iconAnchor: [11, 20], popupAnchor: [0, -18] })
     }).addTo(map);
-    var pin = row[4] ? '<span class="vpop-code">PIN ' + esc(row[4]) + '</span>' : '';
-    var note = precise
-      ? 'Approximate location (matched via GeoNames).'
-      : 'Shown at mandal level — exact village coordinates aren’t in the open data.';
+    var pin = row[4] ? '<span class="vpop-code">' + esc(t("pin_label")) + ' ' + esc(row[4]) + '</span>' : '';
+    var note = precise ? t("approx_note") : t("mandal_note");
     var html =
-      '<div class="vpop">' +
-        '<div class="vpop-name">' + esc(row[0]) + '</div>' +
-        '<div class="vpop-meta">' + esc(m.n) + ' mandal · ' + esc(d.n) + ' district</div>' +
+      '<div class="vpop" dir="' + I18N.dirOf(LANG) + '">' +
+        '<div class="vpop-name" title="' + esc(row[0]) + '">' + esc(nm(row[0])) + '</div>' +
+        '<div class="vpop-meta">' + esc(nm(m.n)) + ' ' + esc(t("mandal_word")) + ' · ' + esc(nm(d.n)) + ' ' + esc(t("district_word")) + '</div>' +
         '<div class="vpop-tags"><span class="badge ' + (row[3] === 0 ? "rural" : "urban") + '">' +
-          (row[3] === 0 ? "Rural" : "Urban") + '</span>' + pin +
-          '<span class="vpop-code">LGD ' + row[2] + '</span></div>' +
-        '<div class="vpop-note">' + note + '</div>' +
+          esc(row[3] === 0 ? t("rural") : t("urban")) + '</span>' + pin +
+          '<span class="vpop-code">' + esc(t("lgd_label")) + ' ' + row[2] + '</span></div>' +
+        '<div class="vpop-note">' + esc(note) + '</div>' +
       '</div>';
     marker.bindPopup(html, { className: "village-popup", maxWidth: 260 }).openPopup();
     if (!map.getBounds().contains(center)) map.panTo(center, { animate: true });
@@ -399,10 +477,10 @@
   // ---- search ----------------------------------------------------------
   function wireSearch() {
     var inp = $("#search"), clr = $("#clear-search");
-    var t;
+    var t2;
     inp.addEventListener("input", function () {
       clr.classList.toggle("hidden", !inp.value);
-      clearTimeout(t); t = setTimeout(function () { runSearch(inp.value); }, 120);
+      clearTimeout(t2); t2 = setTimeout(function () { runSearch(inp.value); }, 120);
     });
     clr.onclick = function () { inp.value = ""; clr.classList.add("hidden"); clearSearchUI(); restorePanel(); inp.focus(); };
   }
@@ -417,9 +495,9 @@
     if (q.length < 2) { restorePanel(); return; }
     var res = fuse.search(q, { limit: 60 });
     var p = $("#panel"); p.innerHTML = "";
-    p.appendChild(sectionLabel("Results", res.length + (res.length === 60 ? "+" : "") + " matches"));
+    p.appendChild(sectionLabel(t("results"), t("matches", { n: res.length + (res.length === 60 ? "+" : "") })));
     if (!res.length) {
-      p.appendChild(el("div", "empty", "No village, mandal or district matches “" + esc(q) + "”."));
+      p.appendChild(el("div", "empty", esc(t("no_match", { q: q }))));
       return;
     }
     var list = el("div", "list");
@@ -448,8 +526,9 @@
     var b = el("button", "back-row", "‹ " + esc(label));
     b.onclick = fn; return b;
   }
-  function rowEl(name, meta, count, kind) {
+  function rowEl(name, meta, count, kind, titleEn) {
     var r = el("button", "row clickable");
+    r.title = titleEn || name;
     if (kind) { var dot = el("span", "dot"); dot.style.background = ACCENT; r.appendChild(dot); }
     var main = el("div", "main");
     main.appendChild(el("div", "name", esc(name)));
@@ -460,13 +539,16 @@
     return r;
   }
   function districtRow(d, showKind) {
-    var r = rowEl(d.n, showKind ? "District" : (regions.mandals.filter(function (m) { return m.d === d.i; }).length + " mandals"), d.vc, showKind);
+    var meta = showKind ? t("district")
+      : t("n_mandals", { n: regions.mandals.filter(function (m) { return m.d === d.i; }).length });
+    var r = rowEl(nm(d.n), meta, d.vc, showKind, d.n);
     r.onclick = function () { selectDistrict(d); };
     return r;
   }
   function mandalRow(m, showKind) {
     var d = regions.districts[m.d];
-    var r = rowEl(m.n, showKind ? "Mandal · " + d.n : d.n, m.vc, showKind);
+    var meta = showKind ? t("mandal") + " · " + nm(d.n) : nm(d.n);
+    var r = rowEl(nm(m.n), meta, m.vc, showKind, m.n);
     r.onclick = function () { selectMandal(m); };
     return r;
   }
@@ -474,12 +556,13 @@
     var m = regions.mandals[row[1]];
     var d = regions.districts[m.d];
     var r = el("button", "row clickable");
+    r.title = row[0];
     var dot = el("span", "dot"); dot.style.background = (row[3] === 0 ? "#94a3b8" : "#c2570f"); r.appendChild(dot);
     var main = el("div", "main");
-    main.appendChild(el("div", "name", esc(row[0])));
-    main.appendChild(el("div", "meta", esc(m.n) + " · " + esc(d.n) + (row[4] ? " · PIN " + row[4] : "")));
+    main.appendChild(el("div", "name", esc(nm(row[0]))));
+    main.appendChild(el("div", "meta", esc(nm(m.n)) + " · " + esc(nm(d.n)) + (row[4] ? " · " + t("pin_label") + " " + row[4] : "")));
     r.appendChild(main);
-    r.appendChild(el("span", "badge " + (row[3] === 0 ? "rural" : "urban"), row[3] === 0 ? "Rural" : "Urban"));
+    r.appendChild(el("span", "badge " + (row[3] === 0 ? "rural" : "urban"), esc(row[3] === 0 ? t("rural") : t("urban"))));
     r.onclick = function () { clearSearchUI(); selectMandal(m, row[2]); };
     return r;
   }
@@ -505,7 +588,7 @@
   // ---- toast -----------------------------------------------------------
   var toastT;
   function toast(msg) {
-    var t = $("#toast"); t.textContent = msg; t.classList.remove("hidden");
-    clearTimeout(toastT); toastT = setTimeout(function () { t.classList.add("hidden"); }, 3500);
+    var t2 = $("#toast"); t2.textContent = msg; t2.classList.remove("hidden");
+    clearTimeout(toastT); toastT = setTimeout(function () { t2.classList.add("hidden"); }, 3500);
   }
 })();

@@ -305,7 +305,7 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
 
 def _build_web(state_code, cfg, web: Path, meta):
     # copy the single-source template files
-    for fname in ("index.html", "styles.css", "app.js"):
+    for fname in ("index.html", "styles.css", "app.js", "i18n.js"):
         src = TEMPLATE / fname
         if src.exists():
             shutil.copyfile(src, web / fname)
