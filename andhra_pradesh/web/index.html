@@ -14,6 +14,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+  <script src="i18n.js"></script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -28,7 +29,17 @@
             <p class="brand-sub">Andhra Pradesh &amp; Telangana</p>
           </div>
         </div>
-        <button id="collapse-btn" class="icon-btn" title="Hide panel" aria-label="Hide panel">‹</button>
+        <div class="head-tools">
+          <label id="lang-wrap" class="lang-wrap" title="Language">
+            <svg class="lang-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/>
+              <path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"
+                    stroke="currentColor" stroke-width="1.7"/>
+            </svg>
+            <select id="lang-select" aria-label="Language"></select>
+          </label>
+          <button id="collapse-btn" class="icon-btn" title="Hide panel" aria-label="Hide panel">‹</button>
+        </div>
       </header>
 
       <div class="search-wrap">
@@ -56,7 +67,7 @@
         <div class="foot-links">
           <a id="src-link" href="https://lgdirectory.gov.in" target="_blank" rel="noopener">Data: LGD</a>
           <a id="issue-link" href="https://github.com/mchittineni/india-village-finder/issues/new/choose" target="_blank" rel="noopener">Report an issue</a>
-          <a href="https://github.com/mchittineni/india-village-finder" target="_blank" rel="noopener">Source</a>
+          <a id="source-link" href="https://github.com/mchittineni/india-village-finder" target="_blank" rel="noopener">Source</a>
         </div>
       </footer>
     </aside>

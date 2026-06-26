@@ -49,6 +49,11 @@ modern web interface or API.
   contain (a *choropleth*). Click a district to zoom into its mandals; click a
   mandal to list its villages; click a village to pin it.
 - **Instant search** across every village, mandal and district — or by **pincode**.
+- **Multilingual UI** — switch the interface between **English, Telugu, Hindi and
+  Urdu** (Urdu right-to-left). Place names are also rendered in the chosen script via
+  best-effort transliteration (approximate; the canonical English name is always kept
+  on hover and used for search).
+- **Districts, mandals and villages listed A → Z** for predictable scanning.
 - **Pincodes** for ~99.9% of villages (from LGD), shown in lists, search and pins.
 - **Village locations** where we can confidently place them (~13%, matched via
   GeoNames and validated against the mandal); the rest pin at mandal level.
