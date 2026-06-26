@@ -26,6 +26,14 @@ release attaches downloadable datasets — see [Releases][releases].
   (Overpass) lookup of nearby hospitals, government offices and police/post/fire.
 - **Home navigation** — the brand/◴ icon now links back to the landing page.
 
+### Changed
+- **Morpheme-aware transliteration** — the engine now renders common place-name
+  suffixes (`-pur`, `-palli`, `-puram`, `-gaon`, `-pettai`, …) from their canonical
+  spelling and nasalises stem-final `n`/`m` before them, instead of going letter-by-
+  letter. Measured against LGD's official names, exact-match roughly doubles and
+  character accuracy rises a few points per state. A new `scraper/translit_eval.mjs`
+  reports the metric and guards it in CI.
+
 ## [1.1.0] — 2026-06-26
 
 ### Added
