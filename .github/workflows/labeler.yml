@@ -63,7 +63,7 @@ jobs:
 
       - name: Apply path-based labels to those PRs
         if: steps.find.outputs.count != '0'
-        uses: actions/labeler@v5
+        uses: actions/labeler@v6
         with:
           pr-number: ${{ steps.find.outputs.numbers }}
           configuration-path: .github/labeler.yml
