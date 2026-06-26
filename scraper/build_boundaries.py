@@ -45,8 +45,8 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 RAW = HERE / ".cache" / "raw"
 
-STATES = {28: "andhra_pradesh", 36: "telangana"}
-ALIAS = {"ap": 28, "tg": 36, "ts": 36}
+STATES = {28: "andhra_pradesh", 36: "telangana", 29: "karnataka"}
+ALIAS = {"ap": 28, "tg": 36, "ts": 36, "ka": 29, "kar": 29}
 
 BASE = "https://github.com/ramSeraph/indian_admin_boundaries/releases/download"
 LEVELS = {
@@ -167,7 +167,7 @@ def build(state_code: int, offline: bool):
 
 def main():
     ap = argparse.ArgumentParser(description="Build per-state district/mandal map polygons")
-    ap.add_argument("--state", choices=["ap", "tg", "both"], default="both")
+    ap.add_argument("--state", choices=["ap", "tg", "ka", "both"], default="both")
     ap.add_argument("--offline", action="store_true")
     args = ap.parse_args()
     targets = list(STATES) if args.state == "both" else [ALIAS[args.state]]

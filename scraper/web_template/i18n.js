@@ -1,11 +1,14 @@
 /* =====================================================================
-   AP & Telangana Village Finder — internationalisation (i18n)
+   AP, Telangana & Karnataka Village Finder — internationalisation (i18n)
    Exposes window.VF_I18N:
      LANGS              [{code, name, dir}, ...]
      t(lang, key, p)    translate a UI string ({n}-style placeholders)
      translit(lang, s)  best-effort transliteration of a Roman place name
-                        into Telugu / Devanagari / Urdu script
+                        into Telugu / Devanagari / Kannada / Urdu script
      dirOf(lang)        "ltr" | "rtl"
+
+   Sub-district tier: AP/Telangana call it a "Mandal", Karnataka a "Taluk".
+   Both term families are provided; the app picks one via config.division.
 
    NOTE ON TRANSLITERATION
    The official LGD open data only carries *English* place names, so the
@@ -25,11 +28,14 @@ window.VF_I18N = (function () {
       districts: "Districts", mandals: "Mandals", villages: "Villages",
       district: "District", mandal: "Mandal", village: "Village",
       district_word: "district", mandal_word: "mandal",
+      taluks: "Taluks", taluk: "Taluk", taluk_word: "taluk",
+      n_taluks: "{n} taluks", villages_per_taluk: "Villages per taluk",
+      taluk_note: "Shown at taluk level — exact village coordinates aren’t in the open data.",
       az: "A → Z",
       rural: "Rural", urban: "Urban",
       results: "Results", matches: "{n} matches",
       no_match: "No village, mandal or district matches “{q}”.",
-      no_villages: "No villages listed for this mandal.",
+      no_villages: "No villages listed for this area.",
       villages_per_district: "Villages per district",
       villages_per_mandal: "Villages per mandal",
       villages_per_area: "Villages per area",
@@ -53,11 +59,14 @@ window.VF_I18N = (function () {
       districts: "జిల్లాలు", mandals: "మండలాలు", villages: "గ్రామాలు",
       district: "జిల్లా", mandal: "మండలం", village: "గ్రామం",
       district_word: "జిల్లా", mandal_word: "మండలం",
+      taluks: "తాలూకాలు", taluk: "తాలూకా", taluk_word: "తాలూకా",
+      n_taluks: "{n} తాలూకాలు", villages_per_taluk: "తాలూకాకి గ్రామాలు",
+      taluk_note: "తాలూకా స్థాయిలో చూపబడింది — ఖచ్చితమైన గ్రామ నిర్దేశాంకాలు ఓపెన్ డేటాలో లేవు.",
       az: "A → Z",
       rural: "గ్రామీణ", urban: "పట్టణ",
       results: "ఫలితాలు", matches: "{n} ఫలితాలు",
       no_match: "“{q}”కి సరిపోలే గ్రామం, మండలం లేదా జిల్లా లేదు.",
-      no_villages: "ఈ మండలానికి గ్రామాలు జాబితా చేయబడలేదు.",
+      no_villages: "ఈ ప్రాంతానికి గ్రామాలు జాబితా చేయబడలేదు.",
       villages_per_district: "జిల్లాకి గ్రామాలు",
       villages_per_mandal: "మండలానికి గ్రామాలు",
       villages_per_area: "ప్రాంతానికి గ్రామాలు",
@@ -81,11 +90,14 @@ window.VF_I18N = (function () {
       districts: "ज़िले", mandals: "मंडल", villages: "गाँव",
       district: "ज़िला", mandal: "मंडल", village: "गाँव",
       district_word: "ज़िला", mandal_word: "मंडल",
+      taluks: "तालुक", taluk: "तालुक", taluk_word: "तालुक",
+      n_taluks: "{n} तालुक", villages_per_taluk: "प्रति तालुक गाँव",
+      taluk_note: "तालुक स्तर पर दिखाया गया — सटीक गाँव निर्देशांक खुले डेटा में नहीं हैं।",
       az: "A → Z",
       rural: "ग्रामीण", urban: "शहरी",
       results: "परिणाम", matches: "{n} मिलान",
       no_match: "“{q}” से मेल खाता कोई गाँव, मंडल या ज़िला नहीं।",
-      no_villages: "इस मंडल के लिए कोई गाँव सूचीबद्ध नहीं है।",
+      no_villages: "इस क्षेत्र के लिए कोई गाँव सूचीबद्ध नहीं है।",
       villages_per_district: "प्रति ज़िला गाँव",
       villages_per_mandal: "प्रति मंडल गाँव",
       villages_per_area: "प्रति क्षेत्र गाँव",
@@ -102,6 +114,37 @@ window.VF_I18N = (function () {
       loc_missing: "{name} का स्थान अभी मानचित्र पर नहीं है।",
       pin_label: "पिन", lgd_label: "LGD"
     },
+    kn: {
+      village_finder: "ಗ್ರಾಮ ಹುಡುಕಾಟ",
+      search_ph: "ಯಾವುದೇ ಗ್ರಾಮ, ತಾಲೂಕು ಅಥವಾ ಜಿಲ್ಲೆ ಹುಡುಕಿ…",
+      all_districts: "ಎಲ್ಲಾ ಜಿಲ್ಲೆಗಳು",
+      districts: "ಜಿಲ್ಲೆಗಳು", mandals: "ಮಂಡಲಗಳು", villages: "ಗ್ರಾಮಗಳು",
+      district: "ಜಿಲ್ಲೆ", mandal: "ಮಂಡಲ", village: "ಗ್ರಾಮ",
+      district_word: "ಜಿಲ್ಲೆ", mandal_word: "ಮಂಡಲ",
+      taluks: "ತಾಲೂಕುಗಳು", taluk: "ತಾಲೂಕು", taluk_word: "ತಾಲೂಕು",
+      n_taluks: "{n} ತಾಲೂಕುಗಳು", villages_per_taluk: "ತಾಲೂಕಿಗೆ ಗ್ರಾಮಗಳು",
+      taluk_note: "ತಾಲೂಕು ಮಟ್ಟದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ — ನಿಖರ ಗ್ರಾಮ ನಿರ್ದೇಶಾಂಕಗಳು ಮುಕ್ತ ಡೇಟಾದಲ್ಲಿ ಇಲ್ಲ.",
+      az: "A → Z",
+      rural: "ಗ್ರಾಮೀಣ", urban: "ನಗರ",
+      results: "ಫಲಿತಾಂಶಗಳು", matches: "{n} ಫಲಿತಾಂಶಗಳು",
+      no_match: "“{q}” ಗೆ ಹೊಂದುವ ಗ್ರಾಮ, ತಾಲೂಕು ಅಥವಾ ಜಿಲ್ಲೆ ಇಲ್ಲ.",
+      no_villages: "ಈ ಪ್ರದೇಶಕ್ಕೆ ಯಾವುದೇ ಗ್ರಾಮಗಳು ಪಟ್ಟಿ ಮಾಡಿಲ್ಲ.",
+      villages_per_district: "ಜಿಲ್ಲೆಗೆ ಗ್ರಾಮಗಳು",
+      villages_per_mandal: "ಮಂಡಲಕ್ಕೆ ಗ್ರಾಮಗಳು",
+      villages_per_area: "ಪ್ರದೇಶಕ್ಕೆ ಗ್ರಾಮಗಳು",
+      updated: "ನವೀಕರಿಸಲಾಗಿದೆ",
+      n_villages: "{n} ಗ್ರಾಮಗಳು", n_mandals: "{n} ಮಂಡಲಗಳು",
+      loading_data: "ಡೇಟಾ ಲೋಡ್ ಆಗುತ್ತಿದೆ…", loading_map: "ನಕ್ಷೆ ಲೋಡ್ ಆಗುತ್ತಿದೆ…",
+      data_lgd: "ಡೇಟಾ: LGD", mirror: "ಮಿರರ್",
+      report_issue: "ಸಮಸ್ಯೆ ವರದಿ ಮಾಡಿ", source: "ಮೂಲ",
+      language: "ಭಾಷೆ", hide_panel: "ಪ್ಯಾನೆಲ್ ಮರೆಮಾಡಿ", show_panel: "ಪ್ಯಾನೆಲ್ ತೋರಿಸಿ",
+      clear: "ತೆರವುಗೊಳಿಸಿ", currently_viewing: "ಪ್ರಸ್ತುತ {state} ನೋಡುತ್ತಿದ್ದೀರಿ",
+      approx_note: "ಅಂದಾಜು ಸ್ಥಳ (GeoNames ಮೂಲಕ ಹೊಂದಿಕೆ).",
+      mandal_note: "ಮಂಡಲ ಮಟ್ಟದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ — ನಿಖರ ಗ್ರಾಮ ನಿರ್ದೇಶಾಂಕಗಳು ಮುಕ್ತ ಡೇಟಾದಲ್ಲಿ ಇಲ್ಲ.",
+      boundary_missing: "{name} ಗೆ ನಕ್ಷೆ ಗಡಿ ಇನ್ನೂ ಪ್ರಕಟವಾಗಿಲ್ಲ (ಹೊಸ ಜಿಲ್ಲೆ).",
+      loc_missing: "{name} ಸ್ಥಳ ಇನ್ನೂ ನಕ್ಷೆಯಲ್ಲಿ ಇಲ್ಲ.",
+      pin_label: "ಪಿನ್", lgd_label: "LGD"
+    },
     ur: {
       village_finder: "گاؤں تلاش",
       search_ph: "کوئی بھی گاؤں، منڈل یا ضلع تلاش کریں…",
@@ -109,11 +152,14 @@ window.VF_I18N = (function () {
       districts: "اضلاع", mandals: "منڈل", villages: "گاؤں",
       district: "ضلع", mandal: "منڈل", village: "گاؤں",
       district_word: "ضلع", mandal_word: "منڈل",
+      taluks: "تعلقہ", taluk: "تعلقہ", taluk_word: "تعلقہ",
+      n_taluks: "{n} تعلقہ", villages_per_taluk: "فی تعلقہ گاؤں",
+      taluk_note: "تعلقہ سطح پر دکھایا گیا — درست گاؤں کوآرڈینیٹس کھلے ڈیٹا میں نہیں ہیں۔",
       az: "A → Z",
       rural: "دیہی", urban: "شہری",
       results: "نتائج", matches: "{n} نتائج",
       no_match: "“{q}” سے کوئی گاؤں، منڈل یا ضلع میل نہیں کھاتا۔",
-      no_villages: "اس منڈل کے لیے کوئی گاؤں درج نہیں۔",
+      no_villages: "اس علاقے کے لیے کوئی گاؤں درج نہیں۔",
       villages_per_district: "فی ضلع گاؤں",
       villages_per_mandal: "فی منڈل گاؤں",
       villages_per_area: "فی علاقہ گاؤں",
@@ -135,6 +181,7 @@ window.VF_I18N = (function () {
   var LANGS = [
     { code: "en", name: "English", dir: "ltr" },
     { code: "te", name: "తెలుగు", dir: "ltr" },
+    { code: "kn", name: "ಕನ್ನಡ", dir: "ltr" },
     { code: "hi", name: "हिन्दी", dir: "ltr" },
     { code: "ur", name: "اردو", dir: "rtl" }
   ];
@@ -155,38 +202,40 @@ window.VF_I18N = (function () {
   }
 
   // -------------------------------------------------- transliteration engine
-  // Vowels: [te_independent, te_matra, hi_independent, hi_matra]
+  // Indic abugida scripts share structure; index by language: te -> 0, hi -> 1, kn -> 2
+  // Vowels: [te_indep, te_matra, hi_indep, hi_matra, kn_indep, kn_matra]
   var V = {
-    "a":  ["అ", "",  "अ", ""],
-    "aa": ["ఆ", "ా", "आ", "ा"],
-    "i":  ["ఇ", "ి", "इ", "ि"],
-    "ii": ["ఈ", "ీ", "ई", "ी"],
-    "ee": ["ఈ", "ీ", "ई", "ी"],
-    "u":  ["ఉ", "ు", "उ", "ु"],
-    "uu": ["ఊ", "ూ", "ऊ", "ू"],
-    "oo": ["ఊ", "ూ", "ऊ", "ू"],
-    "e":  ["ఎ", "ె", "ए", "े"],
-    "ai": ["ఐ", "ై", "ऐ", "ै"],
-    "o":  ["ఒ", "ొ", "ओ", "ो"],
-    "au": ["ఔ", "ౌ", "औ", "ौ"],
-    "ou": ["ఔ", "ౌ", "औ", "ौ"]
+    "a":  ["అ", "",  "अ", "",  "ಅ", ""],
+    "aa": ["ఆ", "ా", "आ", "ा", "ಆ", "ಾ"],
+    "i":  ["ఇ", "ి", "इ", "ि", "ಇ", "ಿ"],
+    "ii": ["ఈ", "ీ", "ई", "ी", "ಈ", "ೀ"],
+    "ee": ["ఈ", "ీ", "ई", "ी", "ಈ", "ೀ"],
+    "u":  ["ఉ", "ు", "उ", "ु", "ಉ", "ು"],
+    "uu": ["ఊ", "ూ", "ऊ", "ू", "ಊ", "ೂ"],
+    "oo": ["ఊ", "ూ", "ऊ", "ू", "ಊ", "ೂ"],
+    "e":  ["ఎ", "ె", "ए", "े", "ಎ", "ೆ"],
+    "ai": ["ఐ", "ై", "ऐ", "ै", "ಐ", "ೈ"],
+    "o":  ["ఒ", "ొ", "ओ", "ो", "ಒ", "ೊ"],
+    "au": ["ఔ", "ౌ", "औ", "ौ", "ಔ", "ೌ"],
+    "ou": ["ఔ", "ౌ", "औ", "ौ", "ಔ", "ೌ"]
   };
-  // Consonants: [te, hi]
+  // Consonants: [te, hi, kn]
   var C = {
-    "k": ["క", "क"], "kh": ["ఖ", "ख"], "g": ["గ", "ग"], "gh": ["ఘ", "घ"],
-    "ch": ["చ", "च"], "chh": ["ఛ", "छ"], "c": ["చ", "च"],
-    "j": ["జ", "ज"], "jh": ["ఝ", "झ"],
-    "t": ["త", "त"], "th": ["థ", "थ"], "d": ["ద", "द"], "dh": ["ధ", "ध"],
-    "n": ["న", "न"], "p": ["ప", "प"], "ph": ["ఫ", "फ"], "f": ["ఫ", "फ़"],
-    "b": ["బ", "ब"], "bh": ["భ", "भ"], "m": ["మ", "म"],
-    "y": ["య", "य"], "r": ["ర", "र"], "l": ["ల", "ल"],
-    "v": ["వ", "व"], "w": ["వ", "व"],
-    "sh": ["శ", "श"], "s": ["స", "स"], "h": ["హ", "ह"],
-    "z": ["జ", "ज़"], "x": ["క్స", "क्स"], "ksh": ["క్ష", "क्ष"],
-    "gn": ["గ్న", "ग्न"], "jn": ["జ్ఞ", "ज्ञ"]
+    "k": ["క", "क", "ಕ"], "kh": ["ఖ", "ख", "ಖ"], "g": ["గ", "ग", "ಗ"], "gh": ["ఘ", "घ", "ಘ"],
+    "ch": ["చ", "च", "ಚ"], "chh": ["ఛ", "छ", "ಛ"], "c": ["చ", "च", "ಚ"],
+    "j": ["జ", "ज", "ಜ"], "jh": ["ఝ", "झ", "ಝ"],
+    "t": ["త", "त", "ತ"], "th": ["థ", "थ", "ಥ"], "d": ["ద", "द", "ದ"], "dh": ["ధ", "ध", "ಧ"],
+    "n": ["న", "न", "ನ"], "p": ["ప", "प", "ಪ"], "ph": ["ఫ", "फ", "ಫ"], "f": ["ఫ", "फ़", "ಫ"],
+    "b": ["బ", "ब", "ಬ"], "bh": ["భ", "भ", "ಭ"], "m": ["మ", "म", "ಮ"],
+    "y": ["య", "य", "ಯ"], "r": ["ర", "र", "ರ"], "l": ["ల", "ल", "ಲ"],
+    "v": ["వ", "व", "ವ"], "w": ["వ", "व", "ವ"],
+    "sh": ["శ", "श", "ಶ"], "s": ["స", "स", "ಸ"], "h": ["హ", "ह", "ಹ"],
+    "z": ["జ", "ज़", "ಜ"], "x": ["క్స", "क्स", "ಕ್ಸ"], "ksh": ["క్ష", "क्ष", "ಕ್ಷ"],
+    "gn": ["గ్న", "ग्न", "ಗ್ನ"], "jn": ["జ్ఞ", "ज्ञ", "ಜ್ಞ"]
   };
-  var ANUS = ["ం", "ं"];     // anusvara (nasal)  [te, hi]
-  var VIRAMA = ["్", "्"];   // virama (halant)   [te, hi]
+  var ANUS = ["ం", "ं", "ಂ"];       // anusvara (nasal)  [te, hi, kn]
+  var VIRAMA = ["్", "्", "್"];      // virama (halant)   [te, hi, kn]
+  var SCRIPT_IDX = { te: 0, hi: 1, kn: 2 };
 
   // Urdu (abjad): consonants + long vowels; short vowels omitted.
   var CUR = {
@@ -225,16 +274,17 @@ window.VF_I18N = (function () {
   }
 
   function renderIndic(toks, lang) {
-    var isTe = lang === "te";
-    var ind = isTe ? 0 : 2, mat = isTe ? 1 : 3, con = isTe ? 0 : 1;
-    var anus = isTe ? ANUS[0] : ANUS[1];
-    var virama = isTe ? VIRAMA[0] : VIRAMA[1];
+    var si = SCRIPT_IDX[lang];
+    var ind = si * 2, mat = si * 2 + 1, con = si;
+    var anus = ANUS[si], virama = VIRAMA[si];
+    var dravidian = (lang === "te" || lang === "kn"); // drop trailing inherent 'a'
     var out = "", prev = "start";
     for (var i = 0; i < toks.length; i++) {
       var tk = toks[i], next = toks[i + 1];
       if (C[tk]) {
-        // n / m before another consonant → nasal anusvara
-        if ((tk === "n" || tk === "m") && next && C[next]) { out += anus; prev = "nasal"; continue; }
+        // n / m after a vowel and before another consonant → nasal anusvara
+        // (must follow a vowel — an anusvara can't begin a syllable/word)
+        if ((tk === "n" || tk === "m") && prev === "vowel" && next && C[next]) { out += anus; prev = "nasal"; continue; }
         if (prev === "cons") out += virama;       // conjunct / gemination
         out += C[tk][con];
         prev = "cons";
@@ -245,7 +295,7 @@ window.VF_I18N = (function () {
         out += tk; prev = "other";
       }
     }
-    if (prev === "cons" && isTe) out += virama;     // Telugu: drop trailing inherent 'a'
+    if (prev === "cons" && dravidian) out += virama;
     return out;
   }
 
@@ -262,9 +312,10 @@ window.VF_I18N = (function () {
     return out;
   }
 
+  var SUPPORTED = { te: 1, hi: 1, kn: 1, ur: 1 };
   var CACHE = {};
   function translit(lang, name) {
-    if (!name || lang === "en" || (lang !== "te" && lang !== "hi" && lang !== "ur")) return name;
+    if (!name || lang === "en" || !SUPPORTED[lang]) return name;
     var ck = lang + "|" + name;
     if (CACHE[ck] != null) return CACHE[ck];
     var out = name.replace(/[A-Za-z]+/g, function (word) {

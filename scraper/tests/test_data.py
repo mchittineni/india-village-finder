@@ -25,9 +25,11 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 STATES = [
     ("andhra_pradesh", 28, "Andhra Pradesh", (10_000, 30_000)),
     ("telangana", 36, "Telangana", (5_000, 20_000)),
+    ("karnataka", 29, "Karnataka", (20_000, 45_000)),
 ]
-# AP/Telangana lie roughly within this lon/lat box (with generous margin).
-BBOX = (76.0, 12.0, 86.5, 20.5)  # min_lon, min_lat, max_lon, max_lat
+# AP/Telangana/Karnataka lie roughly within this lon/lat box (with generous margin).
+# Karnataka reaches the west coast (~74 E), so the box is wider than AP/TG alone.
+BBOX = (74.0, 11.5, 86.5, 20.5)  # min_lon, min_lat, max_lon, max_lat
 GEO_COVERAGE_MIN = 0.80  # >=80% of regions should have a matching polygon
 
 
@@ -237,7 +239,9 @@ def test_mandal_geojson_valid_and_joins(state):
 # cross-state invariant
 # --------------------------------------------------------------------------- #
 def test_village_codes_disjoint_across_states():
-    """LGD village codes are globally unique, so AP and TG must not overlap."""
-    ap = {row[2] for row in load("andhra_pradesh", "villages.json")["rows"]}
-    tg = {row[2] for row in load("telangana", "villages.json")["rows"]}
-    assert ap.isdisjoint(tg), "village codes overlap between AP and Telangana"
+    """LGD village codes are globally unique, so no two states may overlap."""
+    import itertools
+    codes = {slug: {row[2] for row in load(slug, "villages.json")["rows"]}
+             for slug, *_ in STATES}
+    for a, b in itertools.combinations(codes, 2):
+        assert codes[a].isdisjoint(codes[b]), f"village codes overlap between {a} and {b}"

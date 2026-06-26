@@ -5,11 +5,17 @@ window.VF_CONFIG = {
   "slug": "andhra_pradesh",
   "accent": "#1f6feb",
   "accentSoft": "#eaf2ff",
+  "division": "mandal",
   "siblings": [
     {
       "name": "Telangana",
       "slug": "telangana",
       "url": "../../telangana/web/index.html"
+    },
+    {
+      "name": "Karnataka",
+      "slug": "karnataka",
+      "url": "../../karnataka/web/index.html"
     }
   ],
   "source": {
@@ -18,7 +24,7 @@ window.VF_CONFIG = {
     "mirror": "https://github.com/ramSeraph/opendata"
   },
   "sourceDate": "25Jun2026",
-  "generatedAt": "2026-06-26T10:04:58Z",
+  "generatedAt": "2026-06-26T11:25:28Z",
   "counts": {
     "districts": 28,
     "mandals": 688,

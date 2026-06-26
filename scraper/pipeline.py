@@ -61,15 +61,20 @@ RELEASES_API = "https://api.github.com/repos/ramSeraph/opendata/releases?per_pag
 ASSET_RE = re.compile(r"^(pincode_villages|villages|subdistricts|districts)\.(\d{2}[A-Za-z]{3}\d{4})\.csv\.7z$")
 REQUIRED_KINDS = {"villages", "subdistricts", "districts"}  # pincode_villages is optional
 
-# One config block per state. `slug` is the folder name.
+# One config block per state. `slug` is the folder name. `division` is the local
+# name for a sub-district (Mandal in AP/Telangana, Taluk in Karnataka) — the web
+# app uses it to label that tier correctly.
 STATES = {
     28: {"name": "Andhra Pradesh", "slug": "andhra_pradesh",
-         "accent": "#1f6feb", "accentSoft": "#eaf2ff"},
+         "accent": "#1f6feb", "accentSoft": "#eaf2ff", "division": "mandal"},
     36: {"name": "Telangana", "slug": "telangana",
-         "accent": "#0f9d58", "accentSoft": "#e3f6ec"},
+         "accent": "#0f9d58", "accentSoft": "#e3f6ec", "division": "mandal"},
+    29: {"name": "Karnataka", "slug": "karnataka",
+         "accent": "#d97706", "accentSoft": "#fdeccf", "division": "taluk"},
 }
 ALIAS = {"ap": 28, "andhra_pradesh": 28, "andhra": 28,
-         "tg": 36, "ts": 36, "telangana": 36}
+         "tg": 36, "ts": 36, "telangana": 36,
+         "ka": 29, "kar": 29, "karnataka": 29}
 
 csv.field_size_limit(10_000_000)
 
@@ -314,6 +319,7 @@ def _build_web(state_code, cfg, web: Path, meta):
     config = {
         "state": cfg["name"], "stateCode": state_code, "slug": cfg["slug"],
         "accent": cfg["accent"], "accentSoft": cfg["accentSoft"],
+        "division": cfg.get("division", "mandal"),
         "siblings": siblings,
         "source": {"name": "Local Government Directory (LGD)", "url": "https://lgdirectory.gov.in",
                    "mirror": "https://github.com/ramSeraph/opendata"},
@@ -328,8 +334,8 @@ def _build_web(state_code, cfg, web: Path, meta):
 
 # ---------------------------------------------------------------------------
 def main():
-    ap = argparse.ArgumentParser(description="Build AP/Telangana village datasets + web apps")
-    ap.add_argument("--state", choices=["ap", "tg", "both"], default="both")
+    ap = argparse.ArgumentParser(description="Build AP/Telangana/Karnataka village datasets + web apps")
+    ap.add_argument("--state", choices=["ap", "tg", "ka", "both"], default="both")
     ap.add_argument("--offline", action="store_true", help="reuse already-extracted raw CSVs")
     ap.add_argument("--no-verify", action="store_true", help="skip live LGD cross-check")
     args = ap.parse_args()
