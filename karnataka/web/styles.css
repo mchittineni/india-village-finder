@@ -15,6 +15,7 @@
   --ap: #1f6feb;     /* Andhra Pradesh accent */
   --tg: #0f9d58;     /* Telangana accent */
   --ka: #d97706;     /* Karnataka accent */
+  --tn: #dc2626;     /* Tamil Nadu accent */
   --shadow: 0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.08);
   --shadow-sm: 0 1px 2px rgba(15,23,42,.08);
   --radius: 14px;
@@ -163,6 +164,7 @@ a { color: var(--brand); }
 .stat.ap .num { color: var(--ap); }
 .stat.tg .num { color: var(--tg); }
 .stat.ka .num { color: var(--ka); }
+.stat.tn .num { color: var(--tn); }
 
 .section-label {
   font-size: .72rem; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em;

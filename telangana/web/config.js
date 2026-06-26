@@ -6,6 +6,7 @@ window.VF_CONFIG = {
   "accent": "#0f9d58",
   "accentSoft": "#e3f6ec",
   "division": "mandal",
+  "nativeLang": "te",
   "siblings": [
     {
       "name": "Andhra Pradesh",
@@ -16,6 +17,11 @@ window.VF_CONFIG = {
       "name": "Karnataka",
       "slug": "karnataka",
       "url": "../../karnataka/web/index.html"
+    },
+    {
+      "name": "Tamil Nadu",
+      "slug": "tamil_nadu",
+      "url": "../../tamil_nadu/web/index.html"
     }
   ],
   "source": {
@@ -24,11 +30,12 @@ window.VF_CONFIG = {
     "mirror": "https://github.com/ramSeraph/opendata"
   },
   "sourceDate": "25Jun2026",
-  "generatedAt": "2026-06-26T11:25:30Z",
+  "generatedAt": "2026-06-26T14:05:26Z",
   "counts": {
     "districts": 33,
     "mandals": 621,
     "villages": 11308,
-    "with_pincode": 11290
+    "with_pincode": 11290,
+    "with_local_names": 11226
   }
 };

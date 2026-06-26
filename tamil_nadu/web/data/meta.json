@@ -1,19 +1,19 @@
 {
-  "state": "Telangana",
-  "state_code": 36,
-  "generated_at": "2026-06-26T14:05:26Z",
+  "state": "Tamil Nadu",
+  "state_code": 33,
+  "generated_at": "2026-06-26T14:05:30Z",
   "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
   "source_mirror": "github.com/ramSeraph/opendata (LGD daily dump)",
   "source_date": "25Jun2026",
   "counts": {
-    "districts": 33,
-    "mandals": 621,
-    "villages": 11308,
-    "with_pincode": 11290,
-    "with_local_names": 11226,
-    "with_coords": 912
+    "districts": 38,
+    "mandals": 317,
+    "villages": 18681,
+    "with_pincode": 18652,
+    "with_local_names": 1516,
+    "with_coords": 2383
   },
-  "native_lang": "te",
+  "native_lang": "ta",
   "dropped_villages_without_mandal": 0,
   "verification": {
     "ran": false,

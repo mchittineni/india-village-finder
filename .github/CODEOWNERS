@@ -6,6 +6,8 @@
 # Data deliverables (what the refresh PRs touch)
 /andhra_pradesh/   @mchittineni
 /telangana/        @mchittineni
+/karnataka/        @mchittineni
+/tamil_nadu/       @mchittineni
 
 # Pipeline / tooling
 /scraper/          @mchittineni

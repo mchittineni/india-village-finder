@@ -26,10 +26,12 @@ STATES = [
     ("andhra_pradesh", 28, "Andhra Pradesh", (10_000, 30_000)),
     ("telangana", 36, "Telangana", (5_000, 20_000)),
     ("karnataka", 29, "Karnataka", (20_000, 45_000)),
+    ("tamil_nadu", 33, "Tamil Nadu", (10_000, 25_000)),
 ]
-# AP/Telangana/Karnataka lie roughly within this lon/lat box (with generous margin).
-# Karnataka reaches the west coast (~74 E), so the box is wider than AP/TG alone.
-BBOX = (74.0, 11.5, 86.5, 20.5)  # min_lon, min_lat, max_lon, max_lat
+# AP/Telangana/Karnataka/Tamil Nadu lie roughly within this lon/lat box (generous
+# margin). Karnataka reaches the west coast (~74 E) and Tamil Nadu reaches
+# Kanyakumari (~8 N), so the box is wider/taller than AP/TG alone.
+BBOX = (74.0, 7.5, 86.5, 20.5)  # min_lon, min_lat, max_lon, max_lat
 GEO_COVERAGE_MIN = 0.80  # >=80% of regions should have a matching polygon
 
 
