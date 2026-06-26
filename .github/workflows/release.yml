@@ -98,7 +98,7 @@ jobs:
         run: python scraper/release_notes.py >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.ver.outputs.version }}
           name: ${{ steps.ver.outputs.version }} — village data (${{ steps.notes.outputs.source_date }})
