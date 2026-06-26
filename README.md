@@ -71,6 +71,10 @@ Karnataka's sub-districts are **Taluks**; AP/Telangana's are **Mandals**.)*
 - **Village locations** where we can confidently place them (matched via GeoNames and
   validated against the village's sub-district; coverage varies by state, ~8–17%); the
   rest pin at sub-district (mandal/taluk) level.
+- **Nearby civic services** — from a pinned village, look up the closest hospitals and
+  clinics, government offices, and police/post-office/fire stations, with distance and a
+  maps link. Fetched on demand from **[OpenStreetMap](https://www.openstreetmap.org)**
+  (rural coverage is uneven, so some villages legitimately return nothing).
 - **Fresh data, automatically** — refreshed from the Government of India's
   **Local Government Directory (LGD)** and proposed as a reviewed pull request,
   so nothing reaches the live site without passing tests and a review.
@@ -267,6 +271,8 @@ If you use this project in research or a product, please cite it — see
   [admin-boundary polygons](https://github.com/ramSeraph/indian_admin_boundaries) this
   project builds on.
 - **[GeoNames](https://www.geonames.org/)** — populated-place coordinates.
+- **[OpenStreetMap](https://www.openstreetmap.org/copyright)** contributors (ODbL),
+  queried via the [Overpass API](https://overpass-api.de/) for nearby civic services.
 - Built with **[Leaflet](https://leafletjs.com)**, **[CARTO](https://carto.com)**
   basemaps and **[Fuse.js](https://fusejs.io)**.
 

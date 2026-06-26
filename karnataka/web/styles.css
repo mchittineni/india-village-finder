@@ -287,6 +287,36 @@ a { color: var(--brand); }
              border: 1px solid var(--line-2); border-radius: 999px; padding: 1px 8px; }
 .vpop-note { margin-top: 9px; font-size: .72rem; color: var(--ink-3); line-height: 1.4; }
 
+/* Nearby services (live OpenStreetMap lookup) inside the village popup */
+.vpop-nb-btn {
+  margin-top: 11px; width: 100%;
+  border: 1px solid var(--brand); background: var(--brand-soft); color: var(--brand-dk);
+  font-weight: 700; font-size: .82rem; padding: 8px 10px; border-radius: 9px; transition: .15s;
+}
+.vpop-nb-btn:hover { background: var(--brand); color: #fff; }
+.vpop-nb-btn.loading { opacity: .65; cursor: default; }
+.vpop-nb { margin-top: 8px; max-height: 232px; overflow-y: auto; scrollbar-width: thin; }
+.nb-status { font-size: .8rem; color: var(--ink-3); padding: 8px 2px; text-align: center; line-height: 1.4; }
+button.nb-retry {
+  width: 100%; border: 1px dashed var(--line); background: #fff; color: var(--ink-2); border-radius: 9px;
+}
+button.nb-retry:hover { color: var(--brand); border-color: var(--brand); }
+.nb-group { margin-top: 8px; }
+.nb-group-head {
+  font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--ink-3); padding: 2px 2px 4px;
+}
+.nb-item {
+  display: block; text-decoration: none; color: inherit;
+  padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line-2);
+  background: #fff; margin-bottom: 4px; transition: .12s;
+}
+.nb-item:hover { background: var(--bg); border-color: var(--line); }
+.nb-item-name { display: block; font-size: .85rem; font-weight: 600; color: var(--ink); }
+.nb-item-meta { display: block; font-size: .74rem; color: var(--ink-3); margin-top: 1px; }
+.nb-src { display: inline-block; margin-top: 8px; font-size: .7rem; color: var(--ink-3); text-decoration: none; }
+.nb-src:hover { text-decoration: underline; color: var(--brand); }
+
 .hidden { display: none !important; }
 
 /* ---------------- RTL (Urdu) ----------------
@@ -305,6 +335,9 @@ a { color: var(--brand); }
 #sidebar[dir="rtl"] .back-row > * { transform: scaleX(-1); }
 .village-popup .vpop[dir="rtl"] { text-align: right; }
 .village-popup .vpop[dir="rtl"] .vpop-tags { flex-direction: row-reverse; justify-content: flex-end; }
+.village-popup .vpop[dir="rtl"] .nb-group-head,
+.village-popup .vpop[dir="rtl"] .nb-item,
+.village-popup .vpop[dir="rtl"] .nb-src { text-align: right; }
 
 /* ---------------- Responsive ---------------- */
 @media (max-width: 820px) {
