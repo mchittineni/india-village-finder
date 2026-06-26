@@ -12,14 +12,23 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [1.2.2] — 2026-06-26
+
+### Fixed
+- Transliteration: a doubled nasal (`nn`/`mm`) now geminates (న్న / మ్మ) instead of
+  becoming an anusvara + consonant (Dimma → దిమ్మ, Chennai → చెన్నై).
+
+## [1.2.1] — 2026-06-26
+
 ### Changed
-- **More faithful transliteration** — the engine now renders common place-name
+- **Morpheme-aware transliteration** — the engine now renders common place-name
   suffixes (`-pur`, `-palli`, `-puram`, `-gaon`, `-pettai`, …) from their canonical
-  spelling, nasalises stem-final `n`/`m` before them, and geminates doubled nasals
-  (`nn`/`mm` → న్న/మ్మ instead of an anusvara), rather than going letter-by-letter.
-  Measured against LGD's official names, exact-match roughly doubles and character
-  accuracy rises ~5–7 points per state. A new `scraper/translit_eval.mjs` reports the
-  metric and guards it in CI.
+  spelling and nasalises stem-final `n`/`m` before them, rather than going letter-by-
+  letter. Measured against LGD's official names, exact-match roughly doubles and
+  character accuracy rises a few points per state. A new `scraper/translit_eval.mjs`
+  reports the metric and guards it in CI.
 - **Native name in every CSV row** — the `<state>_villages.csv` exports now fill
   `Village (Native)` for every village (the authoritative LGD spelling where
   published, otherwise transliteration in the state's script), with a `Native
@@ -90,7 +99,9 @@ release attaches downloadable datasets — see [Releases][releases].
 - Community-health files: Contributing guide, Code of Conduct, Security policy,
   and issue / pull-request templates.
 
-[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/mchittineni/india-village-finder/compare/v1.2.1...v1.2.2
+[1.2.1]: https://github.com/mchittineni/india-village-finder/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/mchittineni/india-village-finder/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/mchittineni/india-village-finder/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/mchittineni/india-village-finder/compare/v1.0.1...v1.0.2
