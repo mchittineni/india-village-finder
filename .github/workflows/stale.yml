@@ -1,0 +1,41 @@
+name: Stale issues
+
+# Nudge and tidy up inactive issues:
+#   • after 45 days with no activity → post a reminder and mark `stale`
+#   • after 90 days total (45 more days as stale) → close as stale
+# Pull requests are left untouched. Activity (a comment/update) resets the clock.
+on:
+  schedule:
+    - cron: "30 1 * * *"   # daily 01:30 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: stale
+  cancel-in-progress: false
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 45
+          days-before-close: 45          # 45 days after going stale = 90 days total
+          stale-issue-label: stale
+          exempt-issue-labels: "pinned,security"
+          remove-stale-when-updated: true
+          stale-issue-message: >
+            ⏳ This issue has had no activity for **45 days**, so it's been marked
+            `stale`. It will be closed in **45 more days** (90 days total) unless
+            there's an update. Just leave a comment to keep it open — thanks!
+          close-issue-message: >
+            🗑️ Closing this as **stale** — there's been no activity for 90 days.
+            Please feel free to reopen it, or open a fresh issue, if it's still
+            relevant.
+          # Issues only — never auto-stale or close pull requests.
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+          ascending: true

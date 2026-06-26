@@ -40,7 +40,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r scraper/requirements-dev.txt
 
-      - name: Refresh village data (Andhra Pradesh + Telangana)
+      - name: Refresh village data (all states)
         run: python scraper/pipeline.py
 
       - name: Decide whether to refresh boundaries
@@ -70,22 +70,18 @@ jobs:
 
       # meta.json carries a build timestamp that changes every run; only open a
       # PR when the actual data (villages / mandals / districts / boundaries) moved.
+      # Globs cover every state folder automatically (incl. new ones like Karnataka)
+      # while deliberately excluding meta.json / boundaries_meta.json (timestamps).
       - name: Detect real data changes
         id: changed
         run: |
           DATA_FILES="
-            andhra_pradesh/web/data/regions.json
-            andhra_pradesh/web/data/villages.json
-            andhra_pradesh/web/data/districts.geojson
-            andhra_pradesh/web/data/mandals.geojson
-            andhra_pradesh/web/data/coords.json
-            andhra_pradesh/data/andhra_pradesh_villages.csv
-            telangana/web/data/regions.json
-            telangana/web/data/villages.json
-            telangana/web/data/districts.geojson
-            telangana/web/data/mandals.geojson
-            telangana/web/data/coords.json
-            telangana/data/telangana_villages.csv
+            */web/data/regions.json
+            */web/data/villages.json
+            */web/data/districts.geojson
+            */web/data/mandals.geojson
+            */web/data/coords.json
+            */data/*_villages.csv
           "
           if [ -n "$(git status --porcelain -- $DATA_FILES)" ]; then
             echo "yes=true" >> "$GITHUB_OUTPUT"
@@ -108,9 +104,16 @@ jobs:
               echo "⚠️ Data-validity tests **failed** — do not merge until fixed.";
               echo '```'; tail -n 25 /tmp/pytest.txt; echo '```'
             fi
+            echo ""
+            echo "<sub>🤖 Auto-maintained: while this PR is open, later refresh runs update it in place (this description reflects the latest run).</sub>"
           } >> /tmp/pr_body.md
           cat /tmp/pr_body.md >> "$GITHUB_STEP_SUMMARY"
 
+      # A single, fixed branch (data/auto-refresh) means consecutive runs reuse the
+      # SAME pull request: if a previous refresh PR is still open, this updates that
+      # branch in place and refreshes the PR title/body with the latest changes,
+      # rather than opening a second PR. A new PR is only created once the previous
+      # one has been merged or closed.
       - name: Create / update pull request
         id: cpr
         if: steps.changed.outputs.yes == 'true'
@@ -120,8 +123,8 @@ jobs:
           branch: data/auto-refresh
           delete-branch: true
           add-paths: |
-            andhra_pradesh
-            telangana
+            */web/data
+            */data
           commit-message: "chore(data): refresh LGD village data"
           title: "chore(data): LGD village data refresh"
           body-path: /tmp/pr_body.md
