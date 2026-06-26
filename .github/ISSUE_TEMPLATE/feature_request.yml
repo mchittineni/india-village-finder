@@ -1,0 +1,32 @@
+name: "💡 Feature request"
+description: Suggest an improvement or a new capability
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: What are you trying to do that's hard or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Proposed solution
+      description: What would you like to see?
+  - type: dropdown
+    id: theme
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Map / visualisation
+        - Search
+        - Data (new state, PIN codes, coordinates, …)
+        - Downloads / API
+        - Accessibility / mobile
+        - Other
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or extra context

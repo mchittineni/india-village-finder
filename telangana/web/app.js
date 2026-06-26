@@ -61,7 +61,7 @@
   }
 
   // ---- state -----------------------------------------------------------
-  var regions, villages, geoD, geoM, meta;
+  var regions, villages, geoD, geoM, meta, coords = {};
   var dByCode = {}, mByCode = {};
   var villagesByMandal = [];
   var dBreaks = [], fuse = null;
@@ -79,9 +79,10 @@
       var res = await Promise.all([
         fetchJSON("regions.json"), fetchJSON("villages.json"),
         fetchJSON("districts.geojson"), fetchJSON("mandals.geojson"),
-        fetchJSON("meta.json").catch(function () { return null; })
+        fetchJSON("meta.json").catch(function () { return null; }),
+        fetchJSON("coords.json").catch(function () { return {}; })
       ]);
-      regions = res[0]; villages = res[1]; geoD = res[2]; geoM = res[3]; meta = res[4];
+      regions = res[0]; villages = res[1]; geoD = res[2]; geoM = res[3]; meta = res[4]; coords = res[5] || {};
     } catch (e) {
       $("#map-loading").textContent = "Could not load data: " + e.message;
       return;
@@ -149,10 +150,11 @@
     var items = [];
     regions.districts.forEach(function (d) { items.push({ t: "d", name: d.n, ref: d }); });
     regions.mandals.forEach(function (m) { items.push({ t: "m", name: m.n, ref: m }); });
-    villages.rows.forEach(function (row) { items.push({ t: "v", name: row[0], ref: row }); });
+    villages.rows.forEach(function (row) { items.push({ t: "v", name: row[0], pin: row[4] || "", ref: row }); });
     fuse = new Fuse(items, {
-      keys: ["name"], threshold: 0.3, ignoreLocation: true, minMatchCharLength: 2,
-      getFn: function (obj) { var v = obj.name; return [v, v.replace(/\s+/g, "")]; }
+      keys: [{ name: "name", weight: 0.85 }, { name: "pin", weight: 0.15 }],
+      threshold: 0.3, ignoreLocation: true, minMatchCharLength: 2,
+      getFn: function (obj, path) { var v = obj[path] || ""; return [v, v.replace(/\s+/g, "")]; }
     });
   }
 
@@ -334,7 +336,8 @@
       if (highlightCode && row[2] === highlightCode) r.dataset.hl = "1";
       var main = el("div", "main");
       main.appendChild(el("div", "name", esc(row[0])));
-      main.appendChild(el("div", "meta", (row[3] === 0 ? "Rural" : "Urban") + " · LGD " + row[2]));
+      main.appendChild(el("div", "meta", (row[3] === 0 ? "Rural" : "Urban") +
+        (row[4] ? " · PIN " + row[4] : "") + (coords[row[2]] ? " · 📍" : "")));
       r.appendChild(main);
       r.appendChild(el("span", "dot"));
       r.lastChild.style.background = row[3] === 0 ? "#94a3b8" : "#c2570f";
@@ -367,21 +370,29 @@
     var d = regions.districts[m.d];
     var lyr = mLayerByCode[m.c];
     if (marker) { map.removeLayer(marker); marker = null; }
-    var center = lyr ? lyr.getBounds().getCenter() : null;
+    // precise GeoNames coordinate if we have a confident one, else mandal centroid
+    var precise = coords[row[2]];
+    var center = precise ? L.latLng(precise[0], precise[1])
+                         : (lyr ? lyr.getBounds().getCenter() : null);
     if (!center) { toast("Location of " + row[0] + " isn't on the map yet."); return; }
     marker = L.marker(center, {
       icon: L.divIcon({ className: "vpin-wrap", html: '<span class="village-pin"></span>',
                         iconSize: [22, 22], iconAnchor: [11, 20], popupAnchor: [0, -18] })
     }).addTo(map);
+    var pin = row[4] ? '<span class="vpop-code">PIN ' + esc(row[4]) + '</span>' : '';
+    var note = precise
+      ? 'Approximate location (matched via GeoNames).'
+      : 'Shown at mandal level — exact village coordinates aren’t in the open data.';
     var html =
       '<div class="vpop">' +
         '<div class="vpop-name">' + esc(row[0]) + '</div>' +
         '<div class="vpop-meta">' + esc(m.n) + ' mandal · ' + esc(d.n) + ' district</div>' +
         '<div class="vpop-tags"><span class="badge ' + (row[3] === 0 ? "rural" : "urban") + '">' +
-          (row[3] === 0 ? "Rural" : "Urban") + '</span><span class="vpop-code">LGD ' + row[2] + '</span></div>' +
-        '<div class="vpop-note">Pinned at its mandal — exact village coordinates aren’t in the open data.</div>' +
+          (row[3] === 0 ? "Rural" : "Urban") + '</span>' + pin +
+          '<span class="vpop-code">LGD ' + row[2] + '</span></div>' +
+        '<div class="vpop-note">' + note + '</div>' +
       '</div>';
-    marker.bindPopup(html, { className: "village-popup", maxWidth: 250 }).openPopup();
+    marker.bindPopup(html, { className: "village-popup", maxWidth: 260 }).openPopup();
     if (!map.getBounds().contains(center)) map.panTo(center, { animate: true });
   }
 
@@ -466,7 +477,7 @@
     var dot = el("span", "dot"); dot.style.background = (row[3] === 0 ? "#94a3b8" : "#c2570f"); r.appendChild(dot);
     var main = el("div", "main");
     main.appendChild(el("div", "name", esc(row[0])));
-    main.appendChild(el("div", "meta", esc(m.n) + " · " + esc(d.n)));
+    main.appendChild(el("div", "meta", esc(m.n) + " · " + esc(d.n) + (row[4] ? " · PIN " + row[4] : "")));
     r.appendChild(main);
     r.appendChild(el("span", "badge " + (row[3] === 0 ? "rural" : "urban"), row[3] === 0 ? "Rural" : "Urban"));
     r.onclick = function () { clearSearchUI(); selectMandal(m, row[2]); };

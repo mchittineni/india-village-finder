@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🗺️ Open the live maps
+    url: https://mchittineni.github.io/india-village-finder/
+    about: Browse Andhra Pradesh & Telangana before filing an issue.
+  - name: 🏛️ Local Government Directory (official source)
+    url: https://lgdirectory.gov.in
+    about: Verify official records, or report errors in the underlying government data.

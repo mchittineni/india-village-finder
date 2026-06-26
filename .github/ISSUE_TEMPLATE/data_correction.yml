@@ -1,0 +1,48 @@
+name: "🗂️ Data correction"
+description: Report an incorrect, missing, or misplaced village / mandal / district / pincode
+labels: ["data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Our data comes from the **Local Government Directory (LGD)**. We can fix mapping
+        issues on our side; for genuinely wrong source records, please also report to
+        [lgdirectory.gov.in](https://lgdirectory.gov.in).
+  - type: dropdown
+    id: state
+    attributes:
+      label: State
+      options: [Andhra Pradesh, Telangana]
+    validations:
+      required: true
+  - type: input
+    id: district
+    attributes:
+      label: District
+  - type: input
+    id: mandal
+    attributes:
+      label: Mandal
+  - type: input
+    id: village
+    attributes:
+      label: Village (and LGD code if known)
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What's wrong?
+      options:
+        - Wrong name / spelling
+        - Wrong district or mandal
+        - Missing village
+        - Wrong / missing pincode
+        - Wrong location on map
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details — what it says now vs. what it should be
+    validations:
+      required: true

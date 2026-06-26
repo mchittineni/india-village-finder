@@ -1,33 +1,22 @@
 {
   "state": "Andhra Pradesh",
   "state_code": 28,
-  "generated_at": "2026-06-26T08:36:21Z",
+  "generated_at": "2026-06-26T10:04:58Z",
   "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
   "source_mirror": "github.com/ramSeraph/opendata (LGD daily dump)",
   "source_date": "25Jun2026",
   "counts": {
     "districts": 28,
     "mandals": 688,
-    "villages": 17957
+    "villages": 17957,
+    "with_pincode": 17954,
+    "with_coords": 2983
   },
   "dropped_villages_without_mandal": 0,
   "verification": {
-    "ran": true,
-    "ok": true,
-    "checks": [
-      {
-        "check": "district count",
-        "live": 28,
-        "dump": 28,
-        "pass": true
-      },
-      {
-        "check": "mandals in Alluri Sitharama Raju",
-        "live": 11,
-        "dump": 11,
-        "pass": true
-      }
-    ],
-    "error": null
+    "ran": false,
+    "ok": null,
+    "checks": [],
+    "error": "skipped"
   }
 }
