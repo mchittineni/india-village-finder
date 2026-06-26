@@ -330,20 +330,59 @@
     var list = el("div", "list");
     if (!rows.length) { list.appendChild(el("div", "empty", "No villages listed for this mandal.")); }
     rows.forEach(function (row) {
-      var r = el("button", "row");
+      var r = el("button", "row clickable");
+      if (highlightCode && row[2] === highlightCode) r.dataset.hl = "1";
       var main = el("div", "main");
-      var nm = el("div", "name", esc(row[0]));
-      if (highlightCode && row[2] === highlightCode) { nm.innerHTML = "<mark>" + esc(row[0]) + "</mark>"; r.scrollIntoViewTarget = true; }
-      main.appendChild(nm);
-      main.appendChild(el("div", "meta", "LGD " + row[2]));
+      main.appendChild(el("div", "name", esc(row[0])));
+      main.appendChild(el("div", "meta", (row[3] === 0 ? "Rural" : "Urban") + " · LGD " + row[2]));
       r.appendChild(main);
-      r.appendChild(el("span", "badge " + (row[3] === 0 ? "rural" : "urban"), row[3] === 0 ? "Rural" : "Urban"));
+      r.appendChild(el("span", "dot"));
+      r.lastChild.style.background = row[3] === 0 ? "#94a3b8" : "#c2570f";
+      r.appendChild(el("span", "chev", "›"));
+      r.onclick = function () { selectVillageRow(list, r, row, m); };
       list.appendChild(r);
     });
     p.appendChild(list);
-    var hl = list.querySelector(".row");
-    var target = Array.prototype.find ? Array.prototype.slice.call(list.children).find(function (c) { return c.scrollIntoViewTarget; }) : null;
-    if (target) target.scrollIntoView({ block: "center" });
+
+    // if we arrived from a search hit, auto-select that village (pin + popup)
+    if (highlightCode) {
+      var hlEl = list.querySelector('.row[data-hl="1"]');
+      var hlRow = null;
+      for (var i = 0; i < rows.length; i++) if (rows[i][2] === highlightCode) { hlRow = rows[i]; break; }
+      if (hlEl && hlRow) { hlEl.scrollIntoView({ block: "center" }); selectVillageRow(list, hlEl, hlRow, m); }
+    }
+  }
+
+  function selectVillageRow(list, rowEl, row, m) {
+    Array.prototype.forEach.call(list.querySelectorAll(".row.selected"),
+      function (x) { x.classList.remove("selected"); });
+    rowEl.classList.add("selected");
+    showVillage(row, m);
+  }
+
+  // Villages have no published point coordinates, so we pin the selected village
+  // at the centre of its mandal and show its details in a popup.
+  function showVillage(row, m) {
+    if (!row) return;
+    var d = regions.districts[m.d];
+    var lyr = mLayerByCode[m.c];
+    if (marker) { map.removeLayer(marker); marker = null; }
+    var center = lyr ? lyr.getBounds().getCenter() : null;
+    if (!center) { toast("Location of " + row[0] + " isn't on the map yet."); return; }
+    marker = L.marker(center, {
+      icon: L.divIcon({ className: "vpin-wrap", html: '<span class="village-pin"></span>',
+                        iconSize: [22, 22], iconAnchor: [11, 20], popupAnchor: [0, -18] })
+    }).addTo(map);
+    var html =
+      '<div class="vpop">' +
+        '<div class="vpop-name">' + esc(row[0]) + '</div>' +
+        '<div class="vpop-meta">' + esc(m.n) + ' mandal · ' + esc(d.n) + ' district</div>' +
+        '<div class="vpop-tags"><span class="badge ' + (row[3] === 0 ? "rural" : "urban") + '">' +
+          (row[3] === 0 ? "Rural" : "Urban") + '</span><span class="vpop-code">LGD ' + row[2] + '</span></div>' +
+        '<div class="vpop-note">Pinned at its mandal — exact village coordinates aren’t in the open data.</div>' +
+      '</div>';
+    marker.bindPopup(html, { className: "village-popup", maxWidth: 250 }).openPopup();
+    if (!map.getBounds().contains(center)) map.panTo(center, { animate: true });
   }
 
   // ---- search ----------------------------------------------------------
