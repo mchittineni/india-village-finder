@@ -13,12 +13,13 @@ release attaches downloadable datasets — see [Releases][releases].
 ## [Unreleased]
 
 ### Changed
-- **Morpheme-aware transliteration** — the engine now renders common place-name
+- **More faithful transliteration** — the engine now renders common place-name
   suffixes (`-pur`, `-palli`, `-puram`, `-gaon`, `-pettai`, …) from their canonical
-  spelling and nasalises stem-final `n`/`m` before them, instead of going letter-by-
-  letter. Measured against LGD's official names, exact-match roughly doubles and
-  character accuracy rises a few points per state. A new `scraper/translit_eval.mjs`
-  reports the metric and guards it in CI.
+  spelling, nasalises stem-final `n`/`m` before them, and geminates doubled nasals
+  (`nn`/`mm` → న్న/మ్మ instead of an anusvara), rather than going letter-by-letter.
+  Measured against LGD's official names, exact-match roughly doubles and character
+  accuracy rises ~5–7 points per state. A new `scraper/translit_eval.mjs` reports the
+  metric and guards it in CI.
 - **Native name in every CSV row** — the `<state>_villages.csv` exports now fill
   `Village (Native)` for every village (the authoritative LGD spelling where
   published, otherwise transliteration in the state's script), with a `Native

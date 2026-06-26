@@ -359,11 +359,12 @@ window.VF_I18N = (function () {
     for (var i = 0; i < toks.length; i++) {
       var tk = toks[i], next = toks[i + 1];
       if (C[tk]) {
-        // n / m after a vowel and before another consonant → nasal anusvara
-        // (must follow a vowel — an anusvara can't begin a syllable/word).
-        // Tamil has no anusvara, so it falls through and writes the nasal
-        // consonant + pulli (e.g. சென்னை) via the normal conjunct path.
-        if (!tamil && (tk === "n" || tk === "m") && prev === "vowel" && next && C[next]) { out += anus; prev = "nasal"; continue; }
+        // n / m after a vowel and before a *different* consonant → nasal anusvara
+        // (must follow a vowel — an anusvara can't begin a syllable/word). A
+        // doubled nasal (nn / mm) is gemination, not an anusvara, so it falls
+        // through to the conjunct path (Dimma → దిమ్మ, not దింమ). Tamil has no
+        // anusvara either, so it always uses the consonant + pulli (சென்னை).
+        if (!tamil && (tk === "n" || tk === "m") && prev === "vowel" && next && C[next] && next !== tk) { out += anus; prev = "nasal"; continue; }
         if (prev === "cons") out += virama;       // conjunct / gemination
         // Tamil 'n': dental ந word-initially, alveolar ன elsewhere (best-effort).
         out += (tamil && tk === "n" && prev === "start") ? "ந" : C[tk][con];
