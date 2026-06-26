@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Village Finder — Andhra Pradesh &amp; Telangana</title>
+  <meta name="description" content="Interactive maps and search for every village in Andhra Pradesh and Telangana, organised by district and mandal. Data from the Local Government Directory (LGD)." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231f6feb' d='M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z'/%3E%3Ccircle cx='12' cy='9' r='2.6' fill='white'/%3E%3C/svg%3E" />
+  <style>
+    :root { --ink:#0f172a; --ink2:#475569; --ink3:#94a3b8; --line:#e6e8ec; --ap:#1f6feb; --tg:#0f9d58; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+           color:var(--ink); background:#f6f7f9; -webkit-font-smoothing:antialiased; line-height:1.55; }
+    .wrap { max-width:980px; margin:0 auto; padding:64px 24px 80px; }
+    .hero-mark { width:56px; height:56px; border-radius:15px; background:#eaf2ff; color:var(--ap);
+                 display:grid; place-items:center; font-size:30px; margin-bottom:22px; }
+    h1 { font-size:2.4rem; letter-spacing:-0.03em; margin:0 0 10px; line-height:1.1; }
+    .lede { font-size:1.12rem; color:var(--ink2); max-width:640px; margin:0 0 6px; }
+    .total { font-size:.95rem; color:var(--ink3); margin:14px 0 38px; }
+    .total b { color:var(--ink); }
+    .cards { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .card { display:block; text-decoration:none; color:inherit; background:#fff; border:1px solid var(--line);
+            border-radius:18px; padding:26px 26px 22px; transition:transform .18s, box-shadow .18s, border-color .18s;
+            position:relative; overflow:hidden; }
+    .card:hover { transform:translateY(-3px); box-shadow:0 14px 36px rgba(15,23,42,.10); }
+    .card .bar { position:absolute; inset:0 auto 0 0; width:6px; }
+    .card.ap { border-color:#cfe0ff; } .card.ap .bar { background:var(--ap); } .card.ap:hover{ border-color:var(--ap); }
+    .card.tg { border-color:#c6ecd5; } .card.tg .bar { background:var(--tg); } .card.tg:hover{ border-color:var(--tg); }
+    .card .kicker { font-size:.74rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--ink3); }
+    .card h2 { font-size:1.5rem; margin:4px 0 14px; letter-spacing:-0.02em; }
+    .card .stats { display:flex; gap:22px; margin-bottom:16px; }
+    .card .stat .n { font-size:1.5rem; font-weight:750; letter-spacing:-0.02em; }
+    .card.ap .stat .n { color:var(--ap); } .card.tg .stat .n { color:var(--tg); }
+    .card .stat .l { font-size:.74rem; color:var(--ink3); text-transform:uppercase; letter-spacing:.04em; }
+    .card .go { font-size:.92rem; font-weight:650; display:inline-flex; align-items:center; gap:6px; }
+    .card.ap .go { color:var(--ap); } .card.tg .go { color:var(--tg); }
+    .meta { margin-top:42px; padding-top:22px; border-top:1px solid var(--line); font-size:.86rem; color:var(--ink2); }
+    .meta a { color:var(--ap); }
+    .meta .row { margin:5px 0; }
+    @media (max-width:680px){ .cards{ grid-template-columns:1fr; } h1{ font-size:1.9rem; } .wrap{ padding:44px 18px 60px; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="hero-mark">◴</div>
+    <h1>Village Finder</h1>
+    <p class="lede">Find any village in <strong>Andhra Pradesh</strong> and <strong>Telangana</strong> on an
+      interactive map — drill from state to district to mandal, or search across thousands of villages instantly.</p>
+    <p class="total" id="total">Loading totals…</p>
+
+    <div class="cards">
+      <a class="card ap" href="andhra_pradesh/web/index.html">
+        <span class="bar"></span>
+        <div class="kicker">State</div>
+        <h2>Andhra Pradesh</h2>
+        <div class="stats">
+          <div class="stat"><div class="n" id="ap-d">—</div><div class="l">Districts</div></div>
+          <div class="stat"><div class="n" id="ap-m">—</div><div class="l">Mandals</div></div>
+          <div class="stat"><div class="n" id="ap-v">—</div><div class="l">Villages</div></div>
+        </div>
+        <span class="go">Open the map →</span>
+      </a>
+
+      <a class="card tg" href="telangana/web/index.html">
+        <span class="bar"></span>
+        <div class="kicker">State</div>
+        <h2>Telangana</h2>
+        <div class="stats">
+          <div class="stat"><div class="n" id="tg-d">—</div><div class="l">Districts</div></div>
+          <div class="stat"><div class="n" id="tg-m">—</div><div class="l">Mandals</div></div>
+          <div class="stat"><div class="n" id="tg-v">—</div><div class="l">Villages</div></div>
+        </div>
+        <span class="go">Open the map →</span>
+      </a>
+    </div>
+
+    <div class="meta">
+      <div class="row">Data source: <a href="https://lgdirectory.gov.in" target="_blank" rel="noopener">Local Government
+        Directory (LGD)</a>, Ministry of Panchayati Raj, Government of India
+        — via the <a href="https://github.com/ramSeraph/opendata" target="_blank" rel="noopener">daily open mirror</a>.</div>
+      <div class="row" id="freshness">Boundary maps: ramSeraph/indian_admin_boundaries (LGD admin polygons).</div>
+      <div class="row" style="color:var(--ink3)">Government data can be incomplete or lag recent reorganisations; verify
+        anything official against the LGD portal.</div>
+    </div>
+  </main>
+
+  <script>
+    function inr(n){ return (n||0).toLocaleString("en-IN"); }
+    async function load(slug, key){
+      try{
+        const m = await (await fetch(slug + "/web/data/meta.json")).json();
+        const c = m.counts || {};
+        document.getElementById(key+"-d").textContent = inr(c.districts);
+        document.getElementById(key+"-m").textContent = inr(c.mandals);
+        document.getElementById(key+"-v").textContent = inr(c.villages);
+        return { c, date: m.source_date };
+      }catch(e){ return null; }
+    }
+    (async () => {
+      const [ap, tg] = await Promise.all([load("andhra_pradesh","ap"), load("telangana","tg")]);
+      const tot = ((ap&&ap.c.villages)||0) + ((tg&&tg.c.villages)||0);
+      if (tot) document.getElementById("total").innerHTML =
+        "<b>" + inr(tot) + "</b> villages across both states · updated <b>" +
+        ((ap&&ap.date)||(tg&&tg.date)||"") + "</b> from LGD";
+    })();
+  </script>
+</body>
+</html>

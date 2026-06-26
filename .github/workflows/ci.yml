@@ -1,0 +1,30 @@
+name: data-validation
+
+on:
+  pull_request:
+
+  push:
+    branches: [main]
+
+  workflow_dispatch:
+
+jobs:
+  data-validation:
+
+    name: data-validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -r scraper/requirements-dev.txt
+        
+      - name: Validate data (pytest)
+        run: python -m pytest scraper/tests -v

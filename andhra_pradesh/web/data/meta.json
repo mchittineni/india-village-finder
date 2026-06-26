@@ -1,0 +1,20 @@
+{
+  "state": "Andhra Pradesh",
+  "state_code": 28,
+  "generated_at": "2026-06-26T08:13:48Z",
+  "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
+  "source_mirror": "github.com/ramSeraph/opendata (LGD daily dump)",
+  "source_date": "25Jun2026",
+  "counts": {
+    "districts": 28,
+    "mandals": 688,
+    "villages": 17957
+  },
+  "dropped_villages_without_mandal": 0,
+  "verification": {
+    "ran": false,
+    "ok": null,
+    "checks": [],
+    "error": "skipped"
+  }
+}

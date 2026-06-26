@@ -1,0 +1,12 @@
+# Code owners — a review from an owner is required before anything merges to main.
+# (Enable "Require review from Code Owners" in branch protection for this to gate.)
+
+*                  @mchittineni
+
+# Data deliverables (what the refresh PRs touch)
+/andhra_pradesh/   @mchittineni
+/telangana/        @mchittineni
+
+# Pipeline / tooling
+/scraper/          @mchittineni
+/.github/          @mchittineni
