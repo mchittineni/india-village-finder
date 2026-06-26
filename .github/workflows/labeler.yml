@@ -1,29 +1,70 @@
 name: Labeler
 
-# Automatically apply labels to a pull request based on which files it changes.
+# Apply labels to pull requests based on which files they change.
 # Configuration: .github/labeler.yml
 #
-# Uses pull_request_target so the label-writing token has the right permissions
-# even for fork PRs; the labeler reads the trusted config from the base branch
-# and never runs PR code, so this is safe.
+# Two ways it runs:
+#   1. On PR events — labels the PR that triggered the run.
+#   2. On a daily schedule (and on demand) — sweeps any OPEN pull request that
+#      currently has no labels and labels it, so PRs opened before the labeler
+#      existed (or that slipped through) get caught up.
+#
+# pull_request_target gives the label-writing token the right permissions even
+# for fork PRs; the labeler reads the trusted config from the base branch and
+# never runs PR code, so this is safe.
 on:
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    - cron: "0 4 * * *"   # daily 04:00 UTC — catch open PRs missing labels
+  workflow_dispatch:
 
 permissions:
   contents: read
   pull-requests: write
 
 concurrency:
-  group: labeler-${{ github.event.pull_request.number }}
+  group: labeler-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
+  # Event-driven: label the PR that triggered the run.
   label:
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     steps:
       - name: Apply path-based labels
         uses: actions/labeler@v6
         with:
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+
+  # Scheduled / manual sweep: label every OPEN PR that currently has no labels.
+  sweep:
+    if: github.event_name != 'pull_request_target'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find open PRs missing labels
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          nums=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open \
+                   --json number,labels \
+                   --jq '.[] | select((.labels | length) == 0) | .number')
+          count=$(printf '%s' "$nums" | grep -c . || true)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          {
+            echo "numbers<<__EOF__"
+            printf '%s\n' "$nums"
+            echo "__EOF__"
+          } >> "$GITHUB_OUTPUT"
+          echo "Found ${count} open PR(s) missing labels." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Apply path-based labels to those PRs
+        if: steps.find.outputs.count != '0'
+        uses: actions/labeler@v5
+        with:
+          pr-number: ${{ steps.find.outputs.numbers }}
           configuration-path: .github/labeler.yml
           sync-labels: true
