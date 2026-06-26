@@ -134,6 +134,7 @@
     var sb = $("#sidebar"); if (sb) sb.setAttribute("dir", dir);
 
     var h1 = $(".brand h1"); if (h1) h1.textContent = t("village_finder");
+    var bh = $("#brand-home"); if (bh) { bh.title = t("home"); bh.setAttribute("aria-label", t("home")); }
     var sub = $(".brand-sub"); if (sub) sub.textContent = nm(CFG.state || "");
     document.title = nm(CFG.state || "") + " " + t("village_finder");
     var srcHref = $("#src-link"); if (srcHref && CFG.source) srcHref.href = CFG.source.url;

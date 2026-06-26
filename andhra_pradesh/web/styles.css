@@ -59,13 +59,21 @@ a { color: var(--brand); }
   padding: 16px 16px 12px;
   border-bottom: 1px solid var(--line-2);
 }
-.brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.brand {
+  display: flex; align-items: center; gap: 11px; min-width: 0;
+  text-decoration: none; color: inherit; cursor: pointer; border-radius: 12px;
+}
+.brand:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .brand-mark {
   font-size: 26px; line-height: 1; color: var(--brand);
   background: var(--brand-soft); border-radius: 11px;
   width: 42px; height: 42px; display: grid; place-items: center;
-  transform: rotate(0deg);
+  transform: rotate(0deg); transition: box-shadow .15s, transform .15s;
 }
+/* the brand doubles as a "home" link back to the all-states landing page */
+.brand:hover .brand-mark { box-shadow: 0 0 0 3px var(--brand-soft); transform: scale(1.05); }
+.brand:hover h1 { color: var(--brand); }
+.brand h1 { transition: color .15s; }
 .brand h1 { font-size: 1.08rem; margin: 0; letter-spacing: -0.01em; }
 .brand-sub { margin: 1px 0 0; font-size: .8rem; color: var(--ink-3); }
 
