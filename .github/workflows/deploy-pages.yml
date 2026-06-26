@@ -1,12 +1,9 @@
 name: Deploy to GitHub Pages
 
-# Publishes the static site (root landing page + both state map apps) to
-# GitHub Pages on every push to main, and whenever the data workflow commits
-# fresh data. Set Pages source to "GitHub Actions" once in repo Settings → Pages.
-
 on:
   push:
     branches: [main]
+
   workflow_dispatch:
 
 permissions:
@@ -23,12 +20,21 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages        
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: .
-      - id: deployment
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
