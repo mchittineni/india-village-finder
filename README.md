@@ -211,7 +211,9 @@ rebuilds and republishes automatically.
 Every time fresh data is merged, a **GitHub Release** is published with downloadable
 artifacts (`.github/workflows/release.yml`):
 
-- `<state>_villages.csv` — flat village list per state (e.g. `karnataka_villages.csv`).
+- `<state>_villages.csv` — flat village list per state (e.g. `karnataka_villages.csv`),
+  including each village's **native-script name** (`Village (Native)`) — the official LGD
+  spelling where published, else transliteration — with a `Native Source` column marking which.
 - `<state>_data.zip` — the full per-state dataset (JSON + boundary GeoJSON + CSV).
 - `village_data_all.zip` — everything, all states.
 

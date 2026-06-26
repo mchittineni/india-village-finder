@@ -173,12 +173,26 @@ def test_csv_matches_villages(state):
     rows = list(csv.DictReader(io.StringIO(path.read_text(encoding="utf-8"))))
     assert len(rows) == len(state["villages"]["rows"]), "CSV row count != villages.json"
     expected_cols = {"State", "District", "District Code", "Mandal", "Mandal Code",
-                     "Village", "Village Code", "Category", "Status"}
+                     "Village", "Village (Native)", "Native Source", "Village Code",
+                     "Category", "Status"}
     assert expected_cols.issubset(rows[0].keys())
     assert all(r["State"] == state["name"] for r in rows)
     csv_codes = {int(r["Village Code"]) for r in rows}
     json_codes = {row[2] for row in state["villages"]["rows"]}
     assert csv_codes == json_codes, "village codes differ between CSV and JSON"
+
+
+def test_csv_native_names_populated(state):
+    """Every village should carry a native-script name (authoritative or
+    transliterated), tagged with its source."""
+    path = ROOT / state["slug"] / "data" / f"{state['slug']}_villages.csv"
+    rows = list(csv.DictReader(io.StringIO(path.read_text(encoding="utf-8"))))
+    filled = sum(1 for r in rows if r["Village (Native)"].strip())
+    assert filled / len(rows) >= 0.95, f"{state['slug']}: only {filled}/{len(rows)} native names"
+    assert all(r["Native Source"] in ("LGD", "transliterated", "") for r in rows)
+    # a native name must declare its source, and vice versa
+    assert all(bool(r["Village (Native)"].strip()) == bool(r["Native Source"].strip())
+               for r in rows)
 
 
 # --------------------------------------------------------------------------- #

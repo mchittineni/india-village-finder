@@ -43,6 +43,7 @@ import datetime as dt
 import json
 import re
 import shutil
+import subprocess
 from pathlib import Path
 
 import requests
@@ -94,6 +95,28 @@ def in_script(s: str, lang: str) -> bool:
         return False
     lo, hi = rng
     return any(lo <= ord(c) <= hi for c in s)
+
+
+def transliterate_batch(lang: str, names: list[str]) -> dict[str, str]:
+    """Transliterate English names into `lang`'s script via the web app's engine
+    (web_template/i18n.js, through translit_cli.mjs) — one shared implementation.
+    Returns {name: native}; empty on any failure (e.g. node unavailable), so the
+    caller cleanly falls back to LGD-only native names."""
+    names = list(names)
+    if not lang or not names or shutil.which("node") is None:
+        return {}
+    try:
+        proc = subprocess.run(
+            ["node", str(HERE / "translit_cli.mjs")],
+            input=json.dumps({"lang": lang, "names": names}),
+            capture_output=True, text=True, timeout=180, check=True,
+        )
+        out = json.loads(proc.stdout)
+        return {n: out[i] for i, n in enumerate(names) if i < len(out)}
+    except Exception as e:  # pragma: no cover - environment dependent
+        print(f"[warn] transliteration unavailable ({type(e).__name__}); "
+              f"native CSV names limited to LGD-published ones")
+        return {}
 ALIAS = {"ap": 28, "andhra_pradesh": 28, "andhra": 28,
          "tg": 36, "ts": 36, "telangana": 36,
          "ka": 29, "kar": 29, "karnataka": 29,
@@ -327,20 +350,30 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     (web_data / "names.json").write_text(json.dumps(names_local, ensure_ascii=False, separators=(",", ":")))
     (web_data / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
 
-    # flat CSV export
+    # flat CSV export. Every village gets a name in the state's script: the
+    # authoritative LGD spelling where published, else a best-effort
+    # transliteration (same engine as the UI). "Native Source" records which.
+    writable = [v for v in villages if m_index.get(v["mandal_code"]) is not None]
+    needs_translit = sorted({v["name"] for v in writable
+                             if not in_script(v.get("local", ""), state_lang)})
+    translit = transliterate_batch(state_lang, needs_translit)
     with open(state_dir / "data" / f"{cfg['slug']}_villages.csv", "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["State", "District", "District Code", "Mandal", "Mandal Code",
-                    "Village", "Village (Native)", "Village Code", "Pincode", "Category", "Status"])
-        for v in sorted(villages, key=lambda x: x["name"]):
-            mi = m_index.get(v["mandal_code"])
-            if mi is None:
-                continue
-            m = m_sorted[mi]
+                    "Village", "Village (Native)", "Native Source", "Village Code",
+                    "Pincode", "Category", "Status"])
+        for v in sorted(writable, key=lambda x: x["name"]):
+            m = m_sorted[m_index[v["mandal_code"]]]
             d = districts[m["district_code"]]
-            native = v.get("local", "") if in_script(v.get("local", ""), state_lang) else ""
+            loc = v.get("local", "")
+            if in_script(loc, state_lang):
+                native, source = loc, "LGD"
+            else:
+                native = translit.get(v["name"], "")
+                source = "transliterated" if native else ""
             w.writerow([cfg["name"], d["name"], d["code"], m["name"], m["code"],
-                        v["name"], native, v["code"], v.get("pincode", ""), v["category"], v["status"]])
+                        v["name"], native, source, v["code"],
+                        v.get("pincode", ""), v["category"], v["status"]])
 
     _build_web(state_code, cfg, web, meta)
     return meta

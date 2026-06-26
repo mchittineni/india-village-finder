@@ -33,6 +33,11 @@ release attaches downloadable datasets — see [Releases][releases].
   letter. Measured against LGD's official names, exact-match roughly doubles and
   character accuracy rises a few points per state. A new `scraper/translit_eval.mjs`
   reports the metric and guards it in CI.
+- **Native name in every CSV row** — the `<state>_villages.csv` exports now fill
+  `Village (Native)` for every village (the authoritative LGD spelling where
+  published, otherwise transliteration in the state's script), with a `Native
+  Source` column recording which. Generated via the shared UI engine
+  (`scraper/translit_cli.mjs`), so the CSV and the map agree.
 
 ## [1.1.0] — 2026-06-26
 
