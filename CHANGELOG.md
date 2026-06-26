@@ -12,7 +12,19 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+- **Tamil Nadu** (LGD state `33`) — 38 districts, 317 taluks and 18,681 villages,
+  with pincodes, district/taluk boundary maps and best-effort village coordinates.
+- **Tamil (தமிழ்)** added to the language selector, with Tamil-script
+  transliteration of place names.
+- **Authoritative native village names** — where LGD publishes a village's name in
+  the state's own script (`Village Name (In Local)`), it is shipped as `names.json`
+  and shown instead of transliteration when that language is selected. Script-
+  validated, so Latin/blank entries are dropped (Telangana ~99%, Tamil Nadu/AP
+  partial, Karnataka falls back to transliteration).
+- **Nearby civic services** — from a pinned village, an on-demand OpenStreetMap
+  (Overpass) lookup of nearby hospitals, government offices and police/post/fire.
+- **Home navigation** — the brand/◴ icon now links back to the landing page.
 
 ## [1.1.0] — 2026-06-26
 

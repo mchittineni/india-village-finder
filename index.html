@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Village Finder — Andhra Pradesh, Telangana &amp; Karnataka</title>
-  <meta name="description" content="Interactive maps and search for every village in Andhra Pradesh, Telangana and Karnataka, organised by district and mandal/taluk. Data from the Local Government Directory (LGD)." />
+  <title>Village Finder — Andhra Pradesh, Telangana, Karnataka &amp; Tamil Nadu</title>
+  <meta name="description" content="Interactive maps and search for every village in Andhra Pradesh, Telangana, Karnataka and Tamil Nadu, organised by district and mandal/taluk. Data from the Local Government Directory (LGD)." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231f6feb' d='M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z'/%3E%3Ccircle cx='12' cy='9' r='2.6' fill='white'/%3E%3C/svg%3E" />
   <style>
-    :root { --ink:#0f172a; --ink2:#475569; --ink3:#94a3b8; --line:#e6e8ec; --ap:#1f6feb; --tg:#0f9d58; --ka:#d97706; }
+    :root { --ink:#0f172a; --ink2:#475569; --ink3:#94a3b8; --line:#e6e8ec; --ap:#1f6feb; --tg:#0f9d58; --ka:#d97706; --tn:#dc2626; }
     * { box-sizing: border-box; }
     body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
            color:var(--ink); background:#f6f7f9; -webkit-font-smoothing:antialiased; line-height:1.55; }
@@ -27,14 +27,15 @@
     .card.ap { border-color:#cfe0ff; } .card.ap .bar { background:var(--ap); } .card.ap:hover{ border-color:var(--ap); }
     .card.tg { border-color:#c6ecd5; } .card.tg .bar { background:var(--tg); } .card.tg:hover{ border-color:var(--tg); }
     .card.ka { border-color:#fbdba7; } .card.ka .bar { background:var(--ka); } .card.ka:hover{ border-color:var(--ka); }
+    .card.tn { border-color:#f7c9c9; } .card.tn .bar { background:var(--tn); } .card.tn:hover{ border-color:var(--tn); }
     .card .kicker { font-size:.74rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--ink3); }
     .card h2 { font-size:1.5rem; margin:4px 0 14px; letter-spacing:-0.02em; }
     .card .stats { display:flex; gap:22px; margin-bottom:16px; }
     .card .stat .n { font-size:1.5rem; font-weight:750; letter-spacing:-0.02em; }
-    .card.ap .stat .n { color:var(--ap); } .card.tg .stat .n { color:var(--tg); } .card.ka .stat .n { color:var(--ka); }
+    .card.ap .stat .n { color:var(--ap); } .card.tg .stat .n { color:var(--tg); } .card.ka .stat .n { color:var(--ka); } .card.tn .stat .n { color:var(--tn); }
     .card .stat .l { font-size:.74rem; color:var(--ink3); text-transform:uppercase; letter-spacing:.04em; }
     .card .go { font-size:.92rem; font-weight:650; display:inline-flex; align-items:center; gap:6px; }
-    .card.ap .go { color:var(--ap); } .card.tg .go { color:var(--tg); } .card.ka .go { color:var(--ka); }
+    .card.ap .go { color:var(--ap); } .card.tg .go { color:var(--tg); } .card.ka .go { color:var(--ka); } .card.tn .go { color:var(--tn); }
     .meta { margin-top:42px; padding-top:22px; border-top:1px solid var(--line); font-size:.86rem; color:var(--ink2); }
     .meta a { color:var(--ap); }
     .meta .row { margin:5px 0; }
@@ -45,9 +46,9 @@
   <main class="wrap">
     <div class="hero-mark">◴</div>
     <h1>Village Finder</h1>
-    <p class="lede">Find any village in <strong>Andhra Pradesh</strong>, <strong>Telangana</strong> and
-      <strong>Karnataka</strong> on an interactive map — drill from state to district to mandal/taluk, or
-      search across tens of thousands of villages instantly.</p>
+    <p class="lede">Find any village in <strong>Andhra Pradesh</strong>, <strong>Telangana</strong>,
+      <strong>Karnataka</strong> and <strong>Tamil Nadu</strong> on an interactive map — drill from state
+      to district to mandal/taluk, or search across tens of thousands of villages instantly.</p>
     <p class="total" id="total">Loading totals…</p>
 
     <div class="cards">
@@ -86,6 +87,18 @@
         </div>
         <span class="go">Open the map →</span>
       </a>
+
+      <a class="card tn" href="tamil_nadu/web/index.html">
+        <span class="bar"></span>
+        <div class="kicker">State</div>
+        <h2>Tamil Nadu</h2>
+        <div class="stats">
+          <div class="stat"><div class="n" id="tn-d">—</div><div class="l">Districts</div></div>
+          <div class="stat"><div class="n" id="tn-m">—</div><div class="l">Taluks</div></div>
+          <div class="stat"><div class="n" id="tn-v">—</div><div class="l">Villages</div></div>
+        </div>
+        <span class="go">Open the map →</span>
+      </a>
     </div>
 
     <div class="meta">
@@ -111,12 +124,14 @@
       }catch(e){ return null; }
     }
     (async () => {
-      const [ap, tg, ka] = await Promise.all([
-        load("andhra_pradesh","ap"), load("telangana","tg"), load("karnataka","ka")]);
-      const tot = ((ap&&ap.c.villages)||0) + ((tg&&tg.c.villages)||0) + ((ka&&ka.c.villages)||0);
+      const [ap, tg, ka, tn] = await Promise.all([
+        load("andhra_pradesh","ap"), load("telangana","tg"),
+        load("karnataka","ka"), load("tamil_nadu","tn")]);
+      const tot = ((ap&&ap.c.villages)||0) + ((tg&&tg.c.villages)||0) +
+                  ((ka&&ka.c.villages)||0) + ((tn&&tn.c.villages)||0);
       if (tot) document.getElementById("total").innerHTML =
-        "<b>" + inr(tot) + "</b> villages across three states · updated <b>" +
-        ((ap&&ap.date)||(tg&&tg.date)||(ka&&ka.date)||"") + "</b> from LGD";
+        "<b>" + inr(tot) + "</b> villages across four states · updated <b>" +
+        ((ap&&ap.date)||(tg&&tg.date)||(ka&&ka.date)||(tn&&tn.date)||"") + "</b> from LGD";
     })();
   </script>
 </body>

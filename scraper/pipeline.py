@@ -62,19 +62,42 @@ ASSET_RE = re.compile(r"^(pincode_villages|villages|subdistricts|districts)\.(\d
 REQUIRED_KINDS = {"villages", "subdistricts", "districts"}  # pincode_villages is optional
 
 # One config block per state. `slug` is the folder name. `division` is the local
-# name for a sub-district (Mandal in AP/Telangana, Taluk in Karnataka) — the web
-# app uses it to label that tier correctly.
+# name for a sub-district (Mandal in AP/Telangana, Taluk in Karnataka/Tamil Nadu) —
+# the web app uses it to label that tier correctly. `lang` is the state's official
+# language: where LGD publishes a village's name in that script we ship it as an
+# authoritative name (preferred over machine transliteration when that language is
+# selected).
 STATES = {
-    28: {"name": "Andhra Pradesh", "slug": "andhra_pradesh",
+    28: {"name": "Andhra Pradesh", "slug": "andhra_pradesh", "lang": "te",
          "accent": "#1f6feb", "accentSoft": "#eaf2ff", "division": "mandal"},
-    36: {"name": "Telangana", "slug": "telangana",
+    36: {"name": "Telangana", "slug": "telangana", "lang": "te",
          "accent": "#0f9d58", "accentSoft": "#e3f6ec", "division": "mandal"},
-    29: {"name": "Karnataka", "slug": "karnataka",
+    29: {"name": "Karnataka", "slug": "karnataka", "lang": "kn",
          "accent": "#d97706", "accentSoft": "#fdeccf", "division": "taluk"},
+    33: {"name": "Tamil Nadu", "slug": "tamil_nadu", "lang": "ta",
+         "accent": "#dc2626", "accentSoft": "#fdeaea", "division": "taluk"},
 }
+
+# Unicode block per language script — used to validate that an LGD "local" name is
+# actually in the expected script (some states' local column is blank or Latin).
+SCRIPT_RANGE = {
+    "te": (0x0C00, 0x0C7F),   # Telugu
+    "kn": (0x0C80, 0x0CFF),   # Kannada
+    "ta": (0x0B80, 0x0BFF),   # Tamil
+    "hi": (0x0900, 0x097F),   # Devanagari
+}
+
+
+def in_script(s: str, lang: str) -> bool:
+    rng = SCRIPT_RANGE.get(lang)
+    if not rng or not s:
+        return False
+    lo, hi = rng
+    return any(lo <= ord(c) <= hi for c in s)
 ALIAS = {"ap": 28, "andhra_pradesh": 28, "andhra": 28,
          "tg": 36, "ts": 36, "telangana": 36,
-         "ka": 29, "kar": 29, "karnataka": 29}
+         "ka": 29, "kar": 29, "karnataka": 29,
+         "tn": 33, "tamil_nadu": 33, "tamilnadu": 33, "tamil": 33}
 
 csv.field_size_limit(10_000_000)
 
@@ -178,9 +201,14 @@ def load_state(paths: dict[str, Path], state_code: int):
         c_vname = _col(rd.fieldnames, "village name", "english")
         c_cat = _col(rd.fieldnames, "village category")
         c_status = _col(rd.fieldnames, "village status")
+        try:
+            c_vlocal = _col(rd.fieldnames, "village name", "local")
+        except KeyError:
+            c_vlocal = None
         for row in rd:
             if int(row[c_state]) == state_code:
                 villages.append({"code": int(row[c_vcode]), "name": row[c_vname].strip(),
+                                 "local": (row[c_vlocal].strip() if c_vlocal else ""),
                                  "mandal_code": int(row[c_scode]),
                                  "category": row[c_cat].strip(), "status": row[c_status].strip()})
 
@@ -252,6 +280,8 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     d_counts = [0] * len(d_sorted)
     m_counts = [0] * len(m_sorted)
     rows, dropped = [], 0
+    names_local = {}                       # villageCode -> authoritative native name
+    state_lang = cfg.get("lang")
     for v in villages:
         mi = m_index.get(v["mandal_code"])
         if mi is None:
@@ -262,6 +292,11 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         m_counts[mi] += 1
         cat = 0 if v["category"].lower().startswith("rural") else 1
         rows.append([v["name"], mi, v["code"], cat, v.get("pincode", "")])
+        # Keep the LGD-published local name only when it is genuinely in the
+        # state's script (some states leave it blank or fill it with Latin text).
+        loc = v.get("local", "")
+        if loc and in_script(loc, state_lang):
+            names_local[str(v["code"])] = loc
     rows.sort(key=lambda r: norm(r[0]))
     with_pincode = sum(1 for r in rows if r[4])
 
@@ -281,28 +316,31 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         "source_mirror": "github.com/ramSeraph/opendata (LGD daily dump)",
         "source_date": source_date,
         "counts": {"districts": len(d_sorted), "mandals": len(m_sorted), "villages": len(rows),
-                   "with_pincode": with_pincode},
+                   "with_pincode": with_pincode, "with_local_names": len(names_local)},
+        "native_lang": state_lang,
         "dropped_villages_without_mandal": dropped,
         "verification": verify,
     }
 
     (web_data / "regions.json").write_text(json.dumps(regions, ensure_ascii=False, separators=(",", ":")))
     (web_data / "villages.json").write_text(json.dumps(villages_doc, ensure_ascii=False, separators=(",", ":")))
+    (web_data / "names.json").write_text(json.dumps(names_local, ensure_ascii=False, separators=(",", ":")))
     (web_data / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
 
     # flat CSV export
     with open(state_dir / "data" / f"{cfg['slug']}_villages.csv", "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["State", "District", "District Code", "Mandal", "Mandal Code",
-                    "Village", "Village Code", "Pincode", "Category", "Status"])
+                    "Village", "Village (Native)", "Village Code", "Pincode", "Category", "Status"])
         for v in sorted(villages, key=lambda x: x["name"]):
             mi = m_index.get(v["mandal_code"])
             if mi is None:
                 continue
             m = m_sorted[mi]
             d = districts[m["district_code"]]
+            native = v.get("local", "") if in_script(v.get("local", ""), state_lang) else ""
             w.writerow([cfg["name"], d["name"], d["code"], m["name"], m["code"],
-                        v["name"], v["code"], v.get("pincode", ""), v["category"], v["status"]])
+                        v["name"], native, v["code"], v.get("pincode", ""), v["category"], v["status"]])
 
     _build_web(state_code, cfg, web, meta)
     return meta
@@ -320,6 +358,7 @@ def _build_web(state_code, cfg, web: Path, meta):
         "state": cfg["name"], "stateCode": state_code, "slug": cfg["slug"],
         "accent": cfg["accent"], "accentSoft": cfg["accentSoft"],
         "division": cfg.get("division", "mandal"),
+        "nativeLang": cfg.get("lang"),
         "siblings": siblings,
         "source": {"name": "Local Government Directory (LGD)", "url": "https://lgdirectory.gov.in",
                    "mirror": "https://github.com/ramSeraph/opendata"},
@@ -334,8 +373,8 @@ def _build_web(state_code, cfg, web: Path, meta):
 
 # ---------------------------------------------------------------------------
 def main():
-    ap = argparse.ArgumentParser(description="Build AP/Telangana/Karnataka village datasets + web apps")
-    ap.add_argument("--state", choices=["ap", "tg", "ka", "both"], default="both")
+    ap = argparse.ArgumentParser(description="Build AP/Telangana/Karnataka/Tamil Nadu village datasets + web apps")
+    ap.add_argument("--state", choices=["ap", "tg", "ka", "tn", "both"], default="both")
     ap.add_argument("--offline", action="store_true", help="reuse already-extracted raw CSVs")
     ap.add_argument("--no-verify", action="store_true", help="skip live LGD cross-check")
     args = ap.parse_args()

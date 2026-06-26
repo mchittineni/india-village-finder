@@ -1,14 +1,14 @@
 /* =====================================================================
-   AP, Telangana & Karnataka Village Finder — internationalisation (i18n)
+   AP, Telangana, Karnataka & Tamil Nadu Village Finder — i18n
    Exposes window.VF_I18N:
      LANGS              [{code, name, dir}, ...]
      t(lang, key, p)    translate a UI string ({n}-style placeholders)
      translit(lang, s)  best-effort transliteration of a Roman place name
-                        into Telugu / Devanagari / Kannada / Urdu script
+                        into Telugu / Devanagari / Kannada / Tamil / Urdu script
      dirOf(lang)        "ltr" | "rtl"
 
-   Sub-district tier: AP/Telangana call it a "Mandal", Karnataka a "Taluk".
-   Both term families are provided; the app picks one via config.division.
+   Sub-district tier: AP/Telangana call it a "Mandal", Karnataka & Tamil Nadu a
+   "Taluk". Both term families are provided; the app picks one via config.division.
 
    NOTE ON TRANSLITERATION
    The official LGD open data only carries *English* place names, so the
@@ -210,6 +210,44 @@ window.VF_I18N = (function () {
       nb_government: "سرکاری دفاتر", nb_civic: "پولیس اور شہری خدمات", km: "{n} کلومیٹر",
       t_hospital: "ہسپتال", t_clinic: "کلینک", t_police: "پولیس", t_post_office: "ڈاک خانہ",
       t_fire_station: "فائر اسٹیشن", t_townhall: "ٹاؤن ہال", t_courthouse: "عدالت", t_government: "سرکاری دفتر"
+    },
+    ta: {
+      village_finder: "கிராம தேடல்",
+      search_ph: "எந்த கிராமம், வட்டம் அல்லது மாவட்டத்தையும் தேடுங்கள்…",
+      all_districts: "அனைத்து மாவட்டங்கள்",
+      districts: "மாவட்டங்கள்", mandals: "மண்டலங்கள்", villages: "கிராமங்கள்",
+      district: "மாவட்டம்", mandal: "மண்டலம்", village: "கிராமம்",
+      district_word: "மாவட்டம்", mandal_word: "மண்டலம்",
+      taluks: "வட்டங்கள்", taluk: "வட்டம்", taluk_word: "வட்டம்",
+      n_taluks: "{n} வட்டங்கள்", villages_per_taluk: "வட்டத்திற்கு கிராமங்கள்",
+      taluk_note: "வட்ட அளவில் காட்டப்பட்டுள்ளது — துல்லியமான கிராம ஆயத்தொலைவுகள் திறந்த தரவில் இல்லை.",
+      az: "A → Z",
+      rural: "கிராமப்புறம்", urban: "நகர்ப்புறம்",
+      results: "முடிவுகள்", matches: "{n} முடிவுகள்",
+      no_match: "“{q}” உடன் பொருந்தும் கிராமம், வட்டம் அல்லது மாவட்டம் இல்லை.",
+      no_villages: "இந்தப் பகுதிக்கு கிராமங்கள் பட்டியலிடப்படவில்லை.",
+      villages_per_district: "மாவட்டத்திற்கு கிராமங்கள்",
+      villages_per_mandal: "மண்டலத்திற்கு கிராமங்கள்",
+      villages_per_area: "பகுதிக்கு கிராமங்கள்",
+      updated: "புதுப்பிக்கப்பட்டது",
+      n_villages: "{n} கிராமங்கள்", n_mandals: "{n} மண்டலங்கள்",
+      loading_data: "தரவு ஏற்றப்படுகிறது…", loading_map: "வரைபடம் ஏற்றப்படுகிறது…",
+      data_lgd: "தரவு: LGD", mirror: "மிரர்",
+      report_issue: "சிக்கலைப் புகாரளி", source: "மூலம்",
+      home: "முகப்பு — அனைத்து மாநிலங்கள்",
+      language: "மொழி", hide_panel: "பலகத்தை மறை", show_panel: "பலகத்தைக் காட்டு",
+      clear: "அழி", currently_viewing: "தற்போது {state} பார்க்கிறீர்கள்",
+      approx_note: "தோராயமான இடம் (GeoNames வழியாகப் பொருத்தப்பட்டது).",
+      mandal_note: "மண்டல அளவில் காட்டப்பட்டுள்ளது — துல்லியமான கிராம ஆயத்தொலைவுகள் திறந்த தரவில் இல்லை.",
+      boundary_missing: "{name} க்கான வரைபட எல்லை இன்னும் வெளியிடப்படவில்லை (புதிய மாவட்டம்).",
+      loc_missing: "{name} இன் இடம் இன்னும் வரைபடத்தில் இல்லை.",
+      pin_label: "பின்", lgd_label: "LGD",
+      nb_find: "அருகிலுள்ள சேவைகளைக் கண்டறி", nb_loading: "அருகிலுள்ள சேவைகள் தேடப்படுகின்றன…",
+      nb_none: "{km} கி.மீ. க்குள் எதுவும் இல்லை.", nb_err: "ஏற்ற முடியவில்லை — மீண்டும் முயற்சிக்கவும்.",
+      nb_src: "OpenStreetMap வழியாக", nb_health: "மருத்துவமனைகள் & கிளினிக்குகள்",
+      nb_government: "அரசு அலுவலகங்கள்", nb_civic: "காவல் & குடிமைச் சேவைகள்", km: "{n} கி.மீ.",
+      t_hospital: "மருத்துவமனை", t_clinic: "கிளினிக்", t_police: "காவல் நிலையம்", t_post_office: "தபால் அலுவலகம்",
+      t_fire_station: "தீயணைப்பு நிலையம்", t_townhall: "நகர மண்டபம்", t_courthouse: "நீதிமன்றம்", t_government: "அரசு அலுவலகம்"
     }
   };
 
@@ -217,6 +255,7 @@ window.VF_I18N = (function () {
     { code: "en", name: "English", dir: "ltr" },
     { code: "te", name: "తెలుగు", dir: "ltr" },
     { code: "kn", name: "ಕನ್ನಡ", dir: "ltr" },
+    { code: "ta", name: "தமிழ்", dir: "ltr" },
     { code: "hi", name: "हिन्दी", dir: "ltr" },
     { code: "ur", name: "اردو", dir: "rtl" }
   ];
@@ -237,40 +276,42 @@ window.VF_I18N = (function () {
   }
 
   // -------------------------------------------------- transliteration engine
-  // Indic abugida scripts share structure; index by language: te -> 0, hi -> 1, kn -> 2
-  // Vowels: [te_indep, te_matra, hi_indep, hi_matra, kn_indep, kn_matra]
+  // Indic abugida scripts share structure; index by language: te -> 0, hi -> 1, kn -> 2, ta -> 3
+  // Vowels: [te_indep, te_matra, hi_indep, hi_matra, kn_indep, kn_matra, ta_indep, ta_matra]
   var V = {
-    "a":  ["అ", "",  "अ", "",  "ಅ", ""],
-    "aa": ["ఆ", "ా", "आ", "ा", "ಆ", "ಾ"],
-    "i":  ["ఇ", "ి", "इ", "ि", "ಇ", "ಿ"],
-    "ii": ["ఈ", "ీ", "ई", "ी", "ಈ", "ೀ"],
-    "ee": ["ఈ", "ీ", "ई", "ी", "ಈ", "ೀ"],
-    "u":  ["ఉ", "ు", "उ", "ु", "ಉ", "ು"],
-    "uu": ["ఊ", "ూ", "ऊ", "ू", "ಊ", "ೂ"],
-    "oo": ["ఊ", "ూ", "ऊ", "ू", "ಊ", "ೂ"],
-    "e":  ["ఎ", "ె", "ए", "े", "ಎ", "ೆ"],
-    "ai": ["ఐ", "ై", "ऐ", "ै", "ಐ", "ೈ"],
-    "o":  ["ఒ", "ొ", "ओ", "ो", "ಒ", "ೊ"],
-    "au": ["ఔ", "ౌ", "औ", "ौ", "ಔ", "ೌ"],
-    "ou": ["ఔ", "ౌ", "औ", "ौ", "ಔ", "ೌ"]
+    "a":  ["అ", "",  "अ", "",  "ಅ", "",  "அ", ""],
+    "aa": ["ఆ", "ా", "आ", "ा", "ಆ", "ಾ", "ஆ", "ா"],
+    "i":  ["ఇ", "ి", "इ", "ि", "ಇ", "ಿ", "இ", "ி"],
+    "ii": ["ఈ", "ీ", "ई", "ी", "ಈ", "ೀ", "ஈ", "ீ"],
+    "ee": ["ఈ", "ీ", "ई", "ी", "ಈ", "ೀ", "ஈ", "ீ"],
+    "u":  ["ఉ", "ు", "उ", "ु", "ಉ", "ು", "உ", "ு"],
+    "uu": ["ఊ", "ూ", "ऊ", "ू", "ಊ", "ೂ", "ஊ", "ூ"],
+    "oo": ["ఊ", "ూ", "ऊ", "ू", "ಊ", "ೂ", "ஊ", "ூ"],
+    "e":  ["ఎ", "ె", "ए", "े", "ಎ", "ೆ", "எ", "ெ"],
+    "ai": ["ఐ", "ై", "ऐ", "ै", "ಐ", "ೈ", "ஐ", "ை"],
+    "o":  ["ఒ", "ొ", "ओ", "ो", "ಒ", "ೊ", "ஒ", "ொ"],
+    "au": ["ఔ", "ౌ", "औ", "ौ", "ಔ", "ೌ", "ஔ", "ௌ"],
+    "ou": ["ఔ", "ౌ", "औ", "ौ", "ಔ", "ೌ", "ஔ", "ௌ"]
   };
-  // Consonants: [te, hi, kn]
+  // Consonants: [te, hi, kn, ta]. Tamil has a reduced consonant set (no separate
+  // voiced/aspirated letters), so several Roman keys map to the same Tamil glyph;
+  // Sanskrit/Urdu sounds use the Grantha letters (ஜ ஷ ஸ ஹ க்ஷ).
   var C = {
-    "k": ["క", "क", "ಕ"], "kh": ["ఖ", "ख", "ಖ"], "g": ["గ", "ग", "ಗ"], "gh": ["ఘ", "घ", "ಘ"],
-    "ch": ["చ", "च", "ಚ"], "chh": ["ఛ", "छ", "ಛ"], "c": ["చ", "च", "ಚ"],
-    "j": ["జ", "ज", "ಜ"], "jh": ["ఝ", "झ", "ಝ"],
-    "t": ["త", "त", "ತ"], "th": ["థ", "थ", "ಥ"], "d": ["ద", "द", "ದ"], "dh": ["ధ", "ध", "ಧ"],
-    "n": ["న", "न", "ನ"], "p": ["ప", "प", "ಪ"], "ph": ["ఫ", "फ", "ಫ"], "f": ["ఫ", "फ़", "ಫ"],
-    "b": ["బ", "ब", "ಬ"], "bh": ["భ", "भ", "ಭ"], "m": ["మ", "म", "ಮ"],
-    "y": ["య", "य", "ಯ"], "r": ["ర", "र", "ರ"], "l": ["ల", "ल", "ಲ"],
-    "v": ["వ", "व", "ವ"], "w": ["వ", "व", "ವ"],
-    "sh": ["శ", "श", "ಶ"], "s": ["స", "स", "ಸ"], "h": ["హ", "ह", "ಹ"],
-    "z": ["జ", "ज़", "ಜ"], "x": ["క్స", "क्स", "ಕ್ಸ"], "ksh": ["క్ష", "क्ष", "ಕ್ಷ"],
-    "gn": ["గ్న", "ग्न", "ಗ್ನ"], "jn": ["జ్ఞ", "ज्ञ", "ಜ್ಞ"]
+    "k": ["క", "क", "ಕ", "க"], "kh": ["ఖ", "ख", "ಖ", "க"], "g": ["గ", "ग", "ಗ", "க"], "gh": ["ఘ", "घ", "ಘ", "க"],
+    "ch": ["చ", "च", "ಚ", "ச"], "chh": ["ఛ", "छ", "ಛ", "ச"], "c": ["చ", "च", "ಚ", "ச"],
+    "j": ["జ", "ज", "ಜ", "ஜ"], "jh": ["ఝ", "झ", "ಝ", "ஜ"],
+    "t": ["త", "त", "ತ", "ட"], "th": ["థ", "थ", "ಥ", "த"], "d": ["ద", "द", "ದ", "ட"], "dh": ["ధ", "ध", "ಧ", "த"],
+    "n": ["న", "न", "ನ", "ன"], "p": ["ప", "प", "ಪ", "ப"], "ph": ["ఫ", "फ", "ಫ", "ப"], "f": ["ఫ", "फ़", "ಫ", "ப"],
+    "b": ["బ", "ब", "ಬ", "ப"], "bh": ["భ", "भ", "ಭ", "ப"], "m": ["మ", "म", "ಮ", "ம"],
+    "y": ["య", "य", "ಯ", "ய"], "r": ["ర", "र", "ರ", "ர"], "l": ["ల", "ल", "ಲ", "ல"],
+    "v": ["వ", "व", "ವ", "வ"], "w": ["వ", "व", "ವ", "வ"],
+    "sh": ["శ", "श", "ಶ", "ஷ"], "s": ["స", "स", "ಸ", "ஸ"], "h": ["హ", "ह", "ಹ", "ஹ"],
+    "z": ["జ", "ज़", "ಜ", "ஜ"], "x": ["క్స", "क्स", "ಕ್ಸ", "க்ஸ"], "ksh": ["క్ష", "क्ष", "ಕ್ಷ", "க்ஷ"],
+    "gn": ["గ్న", "ग्न", "ಗ್ನ", "க்ன"], "jn": ["జ్ఞ", "ज्ञ", "ಜ್ಞ", "ஜ்ஞ"]
   };
-  var ANUS = ["ం", "ं", "ಂ"];       // anusvara (nasal)  [te, hi, kn]
-  var VIRAMA = ["్", "्", "್"];      // virama (halant)   [te, hi, kn]
-  var SCRIPT_IDX = { te: 0, hi: 1, kn: 2 };
+  var ANUS = ["ం", "ं", "ಂ", ""];        // anusvara (nasal)  [te, hi, kn]; Tamil writes nasals as full consonants
+  var VIRAMA = ["్", "्", "್", "்"];      // virama (halant / Tamil pulli) [te, hi, kn, ta]
+  var SCRIPT_IDX = { te: 0, hi: 1, kn: 2, ta: 3 };
 
   // Urdu (abjad): consonants + long vowels; short vowels omitted.
   var CUR = {
@@ -312,16 +353,20 @@ window.VF_I18N = (function () {
     var si = SCRIPT_IDX[lang];
     var ind = si * 2, mat = si * 2 + 1, con = si;
     var anus = ANUS[si], virama = VIRAMA[si];
-    var dravidian = (lang === "te" || lang === "kn"); // drop trailing inherent 'a'
+    var tamil = (lang === "ta");
+    var dravidian = (lang === "te" || lang === "kn" || tamil); // drop trailing inherent 'a'
     var out = "", prev = "start";
     for (var i = 0; i < toks.length; i++) {
       var tk = toks[i], next = toks[i + 1];
       if (C[tk]) {
         // n / m after a vowel and before another consonant → nasal anusvara
-        // (must follow a vowel — an anusvara can't begin a syllable/word)
-        if ((tk === "n" || tk === "m") && prev === "vowel" && next && C[next]) { out += anus; prev = "nasal"; continue; }
+        // (must follow a vowel — an anusvara can't begin a syllable/word).
+        // Tamil has no anusvara, so it falls through and writes the nasal
+        // consonant + pulli (e.g. சென்னை) via the normal conjunct path.
+        if (!tamil && (tk === "n" || tk === "m") && prev === "vowel" && next && C[next]) { out += anus; prev = "nasal"; continue; }
         if (prev === "cons") out += virama;       // conjunct / gemination
-        out += C[tk][con];
+        // Tamil 'n': dental ந word-initially, alveolar ன elsewhere (best-effort).
+        out += (tamil && tk === "n" && prev === "start") ? "ந" : C[tk][con];
         prev = "cons";
       } else if (V[tk]) {
         out += (prev === "cons") ? V[tk][mat] : V[tk][ind];
@@ -347,7 +392,7 @@ window.VF_I18N = (function () {
     return out;
   }
 
-  var SUPPORTED = { te: 1, hi: 1, kn: 1, ur: 1 };
+  var SUPPORTED = { te: 1, hi: 1, kn: 1, ta: 1, ur: 1 };
   var CACHE = {};
   function translit(lang, name) {
     if (!name || lang === "en" || !SUPPORTED[lang]) return name;

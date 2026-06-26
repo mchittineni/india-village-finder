@@ -25,6 +25,15 @@
   })();
   function t(key, params) { return I18N.t(LANG, key, params); }   // UI string
   function nm(name) { return I18N.translit(LANG, name); }          // place name
+  // Village display name: prefer the authoritative LGD native name when the chosen
+  // language is the state's official one; otherwise fall back to transliteration.
+  function vname(row) {
+    if (CFG.nativeLang && LANG === CFG.nativeLang) {
+      var loc = localNames[row[2]];
+      if (loc) return loc;
+    }
+    return nm(row[0]);
+  }
   // Sub-district tier term: "mandal" (AP/Telangana) or "taluk" (Karnataka).
   // The data still stores this tier under regions.mandals; only the label changes.
   var DIV = (CFG.division === "taluk") ? "taluk" : "mandal";
@@ -84,7 +93,7 @@
   }
 
   // ---- state -----------------------------------------------------------
-  var regions, villages, geoD, geoM, meta, coords = {};
+  var regions, villages, geoD, geoM, meta, coords = {}, localNames = {};
   var dByCode = {}, mByCode = {};
   var villagesByMandal = [];
   var dBreaks = [], fuse = null;
@@ -104,9 +113,11 @@
         fetchJSON("regions.json"), fetchJSON("villages.json"),
         fetchJSON("districts.geojson"), fetchJSON("mandals.geojson"),
         fetchJSON("meta.json").catch(function () { return null; }),
-        fetchJSON("coords.json").catch(function () { return {}; })
+        fetchJSON("coords.json").catch(function () { return {}; }),
+        fetchJSON("names.json").catch(function () { return {}; })
       ]);
-      regions = res[0]; villages = res[1]; geoD = res[2]; geoM = res[3]; meta = res[4]; coords = res[5] || {};
+      regions = res[0]; villages = res[1]; geoD = res[2]; geoM = res[3]; meta = res[4];
+      coords = res[5] || {}; localNames = res[6] || {};
     } catch (e) {
       $("#map-loading").textContent = "Could not load data: " + e.message;
       return;
@@ -422,7 +433,7 @@
       r.title = row[0];
       if (highlightCode && row[2] === highlightCode) r.dataset.hl = "1";
       var main = el("div", "main");
-      main.appendChild(el("div", "name", esc(nm(row[0]))));
+      main.appendChild(el("div", "name", esc(vname(row))));
       main.appendChild(el("div", "meta", (row[3] === 0 ? t("rural") : t("urban")) +
         (row[4] ? " · " + t("pin_label") + " " + row[4] : "") + (coords[row[2]] ? " · 📍" : "")));
       r.appendChild(main);
@@ -460,7 +471,7 @@
     var precise = coords[row[2]];
     var center = precise ? L.latLng(precise[0], precise[1])
                          : (lyr ? lyr.getBounds().getCenter() : null);
-    if (!center) { toast(t("loc_missing", { name: nm(row[0]) })); return; }
+    if (!center) { toast(t("loc_missing", { name: vname(row) })); return; }
     marker = L.marker(center, {
       icon: L.divIcon({ className: "vpin-wrap", html: '<span class="village-pin"></span>',
                         iconSize: [22, 22], iconAnchor: [11, 20], popupAnchor: [0, -18] })
@@ -473,7 +484,7 @@
     // from bubbling to the map, which would otherwise auto-close the popup.
     wrap.addEventListener("click", function (ev) { ev.stopPropagation(); });
     wrap.innerHTML =
-        '<div class="vpop-name" title="' + esc(row[0]) + '">' + esc(nm(row[0])) + '</div>' +
+        '<div class="vpop-name" title="' + esc(row[0]) + '">' + esc(vname(row)) + '</div>' +
         '<div class="vpop-meta">' + esc(nm(m.n)) + ' ' + esc(t(DIV + "_word")) + ' · ' + esc(nm(d.n)) + ' ' + esc(t("district_word")) + '</div>' +
         '<div class="vpop-tags"><span class="badge ' + (row[3] === 0 ? "rural" : "urban") + '">' +
           esc(row[3] === 0 ? t("rural") : t("urban")) + '</span>' + pin +
@@ -588,7 +599,8 @@
 
   // ---- row builders ----------------------------------------------------
   function stat(num, lab) {
-    var statCls = CFG.slug === "telangana" ? " tg" : CFG.slug === "karnataka" ? " ka" : " ap";
+    var statCls = CFG.slug === "telangana" ? " tg" : CFG.slug === "karnataka" ? " ka"
+                : CFG.slug === "tamil_nadu" ? " tn" : " ap";
     var s = el("div", "stat" + statCls);
     s.appendChild(el("div", "num", num));
     s.appendChild(el("div", "lab", lab));
@@ -636,7 +648,7 @@
     r.title = row[0];
     var dot = el("span", "dot"); dot.style.background = (row[3] === 0 ? "#94a3b8" : "#c2570f"); r.appendChild(dot);
     var main = el("div", "main");
-    main.appendChild(el("div", "name", esc(nm(row[0]))));
+    main.appendChild(el("div", "name", esc(vname(row))));
     main.appendChild(el("div", "meta", esc(nm(m.n)) + " · " + esc(nm(d.n)) + (row[4] ? " · " + t("pin_label") + " " + row[4] : "")));
     r.appendChild(main);
     r.appendChild(el("span", "badge " + (row[3] === 0 ? "rural" : "urban"), esc(row[3] === 0 ? t("rural") : t("urban"))));
