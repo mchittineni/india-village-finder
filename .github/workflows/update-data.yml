@@ -1,10 +1,15 @@
 name: Update village data
 
+# Keeps the Andhra Pradesh + Telangana datasets fresh from the Local Government
+# Directory (LGD). Village data is refreshed WEEKLY; map boundaries (rarely
+# changing) MONTHLY. Changes are NOT pushed to main directly — they are proposed
+# as a pull request with a data-change summary, validated by the test suite, and
+# require review (CODEOWNERS / Copilot) before merge.
+
 on:
   schedule:
     - cron: "0 2 * * 1"   # weekly  — Mondays 02:00 UTC: refresh village data
     - cron: "0 3 1 * *"   # monthly — 1st 03:00 UTC: data + boundaries
-
   workflow_dispatch:
     inputs:
       refresh_boundaries:
@@ -24,20 +29,20 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
+      # Node is only needed for mapshaper (boundary simplification).
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install dependencies
         run: pip install -r scraper/requirements-dev.txt
@@ -66,7 +71,33 @@ jobs:
           python -m pytest scraper/tests -v | tee /tmp/pytest.txt
           echo "outcome=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
 
+      # meta.json carries a build timestamp that changes every run; only open a
+      # PR when the actual data (villages / mandals / districts / boundaries) moved.
+      - name: Detect real data changes
+        id: changed
+        run: |
+          DATA_FILES="
+            andhra_pradesh/web/data/regions.json
+            andhra_pradesh/web/data/villages.json
+            andhra_pradesh/web/data/districts.geojson
+            andhra_pradesh/web/data/mandals.geojson
+            andhra_pradesh/data/andhra_pradesh_villages.csv
+            telangana/web/data/regions.json
+            telangana/web/data/villages.json
+            telangana/web/data/districts.geojson
+            telangana/web/data/mandals.geojson
+            telangana/data/telangana_villages.csv
+          "
+          if [ -n "$(git status --porcelain -- $DATA_FILES)" ]; then
+            echo "yes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "yes=false" >> "$GITHUB_OUTPUT"
+            git checkout -- . || true   # discard timestamp-only churn → no empty PR
+            echo "No real data changes — skipping PR." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Build PR summary
+        if: steps.changed.outputs.yes == 'true'
         run: |
           python scraper/changelog.py --out /tmp/pr_body.md
           {
@@ -83,7 +114,8 @@ jobs:
 
       - name: Create / update pull request
         id: cpr
-        uses: peter-evans/create-pull-request@v7
+        if: steps.changed.outputs.yes == 'true'
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.DATA_PAT || secrets.GITHUB_TOKEN }}
           branch: data/auto-refresh
@@ -122,5 +154,6 @@ jobs:
             -f "reviewers[]=copilot-pull-request-reviewer[bot]"
 
       - name: Summary
+        if: steps.changed.outputs.yes == 'true'
         run: |
-          echo "PR: ${{ steps.cpr.outputs.pull-request-url || 'no changes — none opened' }}"
+          echo "PR ${{ steps.cpr.outputs.pull-request-url || 'opened (see PRs)' }}"
