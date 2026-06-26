@@ -1,4 +1,4 @@
-# 🗺️ Village Finder — Andhra Pradesh & Telangana
+# 🗺️ Village Finder — Andhra Pradesh, Telangana & Karnataka
 
 [![Build](https://github.com/mchittineni/india-village-finder/actions/workflows/ci.yml/badge.svg)](https://github.com/mchittineni/india-village-finder/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
@@ -7,9 +7,9 @@
 [![Stars](https://img.shields.io/github/stars/mchittineni/india-village-finder?style=flat&logo=github)](https://github.com/mchittineni/india-village-finder/stargazers)
 [![Issues welcome](https://img.shields.io/badge/issues-welcome-brightgreen.svg)](https://github.com/mchittineni/india-village-finder/issues/new/choose)
 
-Find **any village** in Andhra Pradesh or Telangana on an interactive map, organised
-by the official **District → Mandal → Village** hierarchy — and keep that data fresh
-automatically.
+Find **any village** in Andhra Pradesh, Telangana or Karnataka on an interactive map,
+organised by the official **District → Mandal/Taluk → Village** hierarchy — and keep
+that data fresh automatically.
 
 > **Live site:** https://mchittineni.github.io/india-village-finder/
 
@@ -29,17 +29,18 @@ The project is designed for developers, researchers, government services, logist
 platforms, and citizens who need quick and accurate location information through a
 modern web interface or API.
 
-> **This release** delivers interactive village maps + search for **Andhra Pradesh**
-> and **Telangana** (District → Mandal → Village). More states, PIN-code lookup and a
+> **This release** delivers interactive village maps + search for **Andhra Pradesh**,
+> **Telangana** and **Karnataka** (District → Mandal/Taluk → Village). More states and a
 > public API are on the roadmap.
 
-|  | Andhra Pradesh | Telangana |
-|---|---:|---:|
-| Districts | 28 | 33 |
-| Mandals | 688 | 621 |
-| **Villages** | **17,957** | **11,308** |
+|  | Andhra Pradesh | Telangana | Karnataka |
+|---|---:|---:|---:|
+| Districts | 28 | 33 | 31 |
+| Mandals / Taluks | 688 | 621 | 240 |
+| **Villages** | **17,957** | **11,308** | **30,771** |
 
-*(Counts come from the latest LGD dump; the automated pipeline keeps them current.)*
+*(Counts come from the latest LGD dump; the automated pipeline keeps them current.
+Karnataka's sub-districts are **Taluks**; AP/Telangana's are **Mandals**.)*
 
 ---
 
@@ -49,10 +50,10 @@ modern web interface or API.
   contain (a *choropleth*). Click a district to zoom into its mandals; click a
   mandal to list its villages; click a village to pin it.
 - **Instant search** across every village, mandal and district — or by **pincode**.
-- **Multilingual UI** — switch the interface between **English, Telugu, Hindi and
-  Urdu** (Urdu right-to-left). Place names are also rendered in the chosen script via
-  best-effort transliteration (approximate; the canonical English name is always kept
-  on hover and used for search).
+- **Multilingual UI** — switch the interface between **English, Telugu, Kannada, Hindi
+  and Urdu** (Urdu right-to-left). Place names are also rendered in the chosen script
+  via best-effort transliteration (approximate; the canonical English name is always
+  kept on hover and used for search).
 - **Districts, mandals and villages listed A → Z** for predictable scanning.
 - **Pincodes** for ~99.9% of villages (from LGD), shown in lists, search and pins.
 - **Village locations** where we can confidently place them (~13%, matched via
@@ -60,8 +61,8 @@ modern web interface or API.
 - **Fresh data, automatically** — refreshed from the Government of India's
   **Local Government Directory (LGD)** and proposed as a reviewed pull request,
   so nothing reaches the live site without passing tests and a review.
-- **Two independent state apps** — `andhra_pradesh/` and `telangana/` each stand
-  on their own and can be hosted separately.
+- **Three independent state apps** — `andhra_pradesh/`, `telangana/` and `karnataka/`
+  each stand on their own and can be hosted separately.
 
 ---
 
@@ -69,13 +70,14 @@ modern web interface or API.
 
 ```
 .
-├── index.html               # landing page → links to both state maps
+├── index.html               # landing page → links to all three state maps
 ├── andhra_pradesh/          # self-contained Andhra Pradesh deliverable
 │   ├── data/                #   andhra_pradesh_villages.csv (one row per village)
-│   └── web/                 #   the map app (index.html, app.js, styles.css, config.js)
+│   └── web/                 #   the map app (index.html, app.js, i18n.js, styles.css, config.js)
 │       └── data/            #   regions.json, villages.json, meta.json, *.geojson
 ├── telangana/               # identical structure, for Telangana
-├── scraper/                 # SHARED tooling — one code path builds both states
+├── karnataka/               # identical structure, for Karnataka (sub-districts = Taluks)
+├── scraper/                 # SHARED tooling — one code path builds all states
 │   ├── pipeline.py          #   LGD dump → per-state village data (JSON + CSV)
 │   ├── build_boundaries.py  #   LGD polygons → simplified per-state map shapes
 │   ├── lgd_client.py        #   live LGD client, used to verify the dump
@@ -89,9 +91,9 @@ modern web interface or API.
     └── deploy-pages.yml     #   publishes the site to GitHub Pages
 ```
 
-The `scraper/` is shared on purpose: the logic is identical for both states and only
-differs by an LGD state code (Andhra Pradesh = `28`, Telangana = `36`). Everything a
-state needs to be hosted lives inside its own folder.
+The `scraper/` is shared on purpose: the logic is identical for every state and only
+differs by an LGD state code (Andhra Pradesh = `28`, Telangana = `36`, Karnataka =
+`29`). Everything a state needs to be hosted lives inside its own folder.
 
 ---
 
@@ -120,7 +122,7 @@ cd scraper
 python3 -m venv .venv
 ./.venv/bin/pip install -r requirements-dev.txt
 
-# 1) refresh village data for both states (auto-detects the latest LGD dump)
+# 1) refresh village data for all states (auto-detects the latest LGD dump)
 ./.venv/bin/python pipeline.py
 
 # 2) (occasionally) rebuild the map boundary shapes
@@ -130,7 +132,7 @@ python3 -m venv .venv
 ./.venv/bin/python -m pytest tests -v
 ```
 
-Handy flags: `--state ap|tg|both`, `--offline` (reuse downloads), `--no-verify`.
+Handy flags: `--state ap|tg|ka|both`, `--offline` (reuse downloads), `--no-verify`.
 
 **Preview the website locally:**
 
@@ -182,10 +184,9 @@ rebuilds and republishes automatically.
 Every time fresh data is merged, a **GitHub Release** is published with downloadable
 artifacts (`.github/workflows/release.yml`):
 
-- `andhra_pradesh_villages.csv` / `telangana_villages.csv` — flat village lists.
-- `andhra_pradesh_data.zip` / `telangana_data.zip` — the full per-state dataset
-  (JSON + boundary GeoJSON + CSV).
-- `village_data_all.zip` — everything, both states.
+- `<state>_villages.csv` — flat village list per state (e.g. `karnataka_villages.csv`).
+- `<state>_data.zip` — the full per-state dataset (JSON + boundary GeoJSON + CSV).
+- `village_data_all.zip` — everything, all states.
 
 Grab the newest at **[Releases](https://github.com/mchittineni/india-village-finder/releases/latest)**.
 

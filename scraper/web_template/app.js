@@ -25,6 +25,11 @@
   })();
   function t(key, params) { return I18N.t(LANG, key, params); }   // UI string
   function nm(name) { return I18N.translit(LANG, name); }          // place name
+  // Sub-district tier term: "mandal" (AP/Telangana) or "taluk" (Karnataka).
+  // The data still stores this tier under regions.mandals; only the label changes.
+  var DIV = (CFG.division === "taluk") ? "taluk" : "mandal";
+  function tdivs(params) { return t(DIV + "s", params); }          // plural label
+  function tdivN(params) { return t("n_" + DIV + "s", params); }   // "{n} mandals/taluks"
 
   // ---- tiny DOM helpers ------------------------------------------------
   function $(s, r) { return (r || document).querySelector(s); }
@@ -316,7 +321,7 @@
       toast(t("boundary_missing", { name: nm(d.n) }));
     }
     renderBreadcrumb(); renderDistrictPanel(d);
-    renderLegend(breaks, t("villages_per_mandal"));
+    renderLegend(breaks, t("villages_per_" + DIV));
     if (opts.then) opts.then();
   }
 
@@ -369,7 +374,7 @@
     var totV = c.districts.reduce(function (a, d) { return a + d.vc; }, 0);
     var grid = el("div", "stat-grid");
     grid.appendChild(stat(fmt(c.districts.length), t("districts")));
-    grid.appendChild(stat(fmt(c.mandals.length), t("mandals")));
+    grid.appendChild(stat(fmt(c.mandals.length), tdivs()));
     var sv = stat(fmt(totV), t("villages")); sv.style.gridColumn = "1 / -1"; grid.appendChild(sv);
     p.appendChild(grid);
 
@@ -387,10 +392,10 @@
     var mandals = regions.mandals.filter(function (m) { return m.d === d.i; });
     var head = el("div", "detail-head");
     var title = el("div", "title", esc(nm(d.n))); title.title = d.n; head.appendChild(title);
-    head.appendChild(el("div", "sub", esc(t("n_mandals", { n: mandals.length }) + " · " +
+    head.appendChild(el("div", "sub", esc(tdivN({ n: mandals.length }) + " · " +
       t("n_villages", { n: fmt(d.vc) }) + " · " + t("lgd_label") + " " + d.c)));
     p.appendChild(head);
-    p.appendChild(sectionLabel(t("mandals"), t("az")));
+    p.appendChild(sectionLabel(tdivs(), t("az")));
     var list = el("div", "list");
     mandals.sort(function (a, b) { return norm(a.n) < norm(b.n) ? -1 : 1; }).forEach(function (m) {
       list.appendChild(mandalRow(m));
@@ -460,11 +465,11 @@
                         iconSize: [22, 22], iconAnchor: [11, 20], popupAnchor: [0, -18] })
     }).addTo(map);
     var pin = row[4] ? '<span class="vpop-code">' + esc(t("pin_label")) + ' ' + esc(row[4]) + '</span>' : '';
-    var note = precise ? t("approx_note") : t("mandal_note");
+    var note = precise ? t("approx_note") : t(DIV + "_note");
     var html =
       '<div class="vpop" dir="' + I18N.dirOf(LANG) + '">' +
         '<div class="vpop-name" title="' + esc(row[0]) + '">' + esc(nm(row[0])) + '</div>' +
-        '<div class="vpop-meta">' + esc(nm(m.n)) + ' ' + esc(t("mandal_word")) + ' · ' + esc(nm(d.n)) + ' ' + esc(t("district_word")) + '</div>' +
+        '<div class="vpop-meta">' + esc(nm(m.n)) + ' ' + esc(t(DIV + "_word")) + ' · ' + esc(nm(d.n)) + ' ' + esc(t("district_word")) + '</div>' +
         '<div class="vpop-tags"><span class="badge ' + (row[3] === 0 ? "rural" : "urban") + '">' +
           esc(row[3] === 0 ? t("rural") : t("urban")) + '</span>' + pin +
           '<span class="vpop-code">' + esc(t("lgd_label")) + ' ' + row[2] + '</span></div>' +
@@ -512,7 +517,8 @@
 
   // ---- row builders ----------------------------------------------------
   function stat(num, lab) {
-    var s = el("div", "stat" + (CFG.slug === "telangana" ? " tg" : " ap"));
+    var statCls = CFG.slug === "telangana" ? " tg" : CFG.slug === "karnataka" ? " ka" : " ap";
+    var s = el("div", "stat" + statCls);
     s.appendChild(el("div", "num", num));
     s.appendChild(el("div", "lab", lab));
     return s;
@@ -540,14 +546,14 @@
   }
   function districtRow(d, showKind) {
     var meta = showKind ? t("district")
-      : t("n_mandals", { n: regions.mandals.filter(function (m) { return m.d === d.i; }).length });
+      : tdivN({ n: regions.mandals.filter(function (m) { return m.d === d.i; }).length });
     var r = rowEl(nm(d.n), meta, d.vc, showKind, d.n);
     r.onclick = function () { selectDistrict(d); };
     return r;
   }
   function mandalRow(m, showKind) {
     var d = regions.districts[m.d];
-    var meta = showKind ? t("mandal") + " · " + nm(d.n) : nm(d.n);
+    var meta = showKind ? t(DIV) + " · " + nm(d.n) : nm(d.n);
     var r = rowEl(nm(m.n), meta, m.vc, showKind, m.n);
     r.onclick = function () { selectMandal(m); };
     return r;

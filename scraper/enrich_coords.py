@@ -30,12 +30,14 @@ import requests
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 RAW = HERE / ".cache" / "raw"
-STATES = {28: "andhra_pradesh", 36: "telangana"}
-ALIAS = {"ap": 28, "tg": 36, "ts": 36}
+STATES = {28: "andhra_pradesh", 36: "telangana", 29: "karnataka"}
+ALIAS = {"ap": 28, "tg": 36, "ts": 36, "ka": 29, "kar": 29}
 
 GEONAMES_URL = "https://download.geonames.org/export/dump/IN.zip"
-# AP + Telangana bounding box (generous) — filters GeoNames noise from other states.
-BBOX = (76.0, 12.0, 86.5, 20.5)            # min_lon, min_lat, max_lon, max_lat
+# Bounding box covering AP + Telangana + Karnataka (generous) — filters GeoNames
+# noise from other states. Karnataka reaches the west coast (~74°E), so the box is
+# wider than AP/TG alone; the per-village mandal-proximity check still gates matches.
+BBOX = (74.0, 11.5, 86.5, 20.5)            # min_lon, min_lat, max_lon, max_lat
 MATCH_DEG = 0.20                            # ~22 km: keep a name match only this close to its mandal
 
 
@@ -70,7 +72,7 @@ def load_geonames() -> dict[str, list[tuple[float, float]]]:
             names = [f[1]] + [a for a in f[3].split(",") if a]
             for nm in names:
                 idx.setdefault(norm(nm), []).append((lat, lng))
-    print(f"  GeoNames places in AP/TG box: indexed {len(idx)} distinct names")
+    print(f"  GeoNames places in box: indexed {len(idx)} distinct names")
     return idx
 
 
@@ -137,7 +139,7 @@ def enrich(state_code: int, geo_idx) -> dict:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--state", choices=["ap", "tg", "both"], default="both")
+    ap.add_argument("--state", choices=["ap", "tg", "ka", "both"], default="both")
     args = ap.parse_args()
     targets = list(STATES) if args.state == "both" else [ALIAS[args.state]]
     print("[geonames] loading place index ...")
