@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Keep GitHub Actions pinned to current, non-deprecated runners
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["ci", "dependencies"]
+    commit-message:
+      prefix: "ci"
+
+  # Keep the Python pipeline dependencies fresh
+  - package-ecosystem: "pip"
+    directory: "/scraper"
+    schedule:
+      interval: "weekly"
+    labels: ["scraper", "dependencies"]
+    commit-message:
+      prefix: "build"

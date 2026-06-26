@@ -4,14 +4,26 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Data: GODL-India](https://img.shields.io/badge/data-GODL--India-orange.svg)](DATA_LICENSE.md)
+[![Latest release](https://img.shields.io/github/v/release/mchittineni/india-village-finder?sort=semver&color=blueviolet)](https://github.com/mchittineni/india-village-finder/releases/latest)
 [![Stars](https://img.shields.io/github/stars/mchittineni/india-village-finder?style=flat&logo=github)](https://github.com/mchittineni/india-village-finder/stargazers)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 [![Issues welcome](https://img.shields.io/badge/issues-welcome-brightgreen.svg)](https://github.com/mchittineni/india-village-finder/issues/new/choose)
 
 Find **any village** in Andhra Pradesh, Telangana or Karnataka on an interactive map,
 organised by the official **District → Mandal/Taluk → Village** hierarchy — and keep
 that data fresh automatically.
 
-> **Live site:** https://mchittineni.github.io/india-village-finder/
+> 🌐 **Live site:** <https://mchittineni.github.io/india-village-finder/>
+
+## Contents
+
+- [What you get](#what-you-get) · [How it's organised](#how-the-project-is-organised) ·
+  [Where the data comes from](#where-the-data-comes-from) · [Run it yourself](#run-it-yourself)
+- [The review flow](#how-updates-stay-safe-the-review-flow) · [Hosting](#hosting-github-pages) ·
+  [Downloads](#downloads-github-releases) · [Roadmap](#roadmap)
+- [Contributing & community](#contributing--community) · [Licence](#licence) ·
+  [Acknowledgements](#acknowledgements)
 
 ## About
 
@@ -56,8 +68,9 @@ Karnataka's sub-districts are **Taluks**; AP/Telangana's are **Mandals**.)*
   kept on hover and used for search).
 - **Districts, mandals and villages listed A → Z** for predictable scanning.
 - **Pincodes** for ~99.9% of villages (from LGD), shown in lists, search and pins.
-- **Village locations** where we can confidently place them (~13%, matched via
-  GeoNames and validated against the mandal); the rest pin at mandal level.
+- **Village locations** where we can confidently place them (matched via GeoNames and
+  validated against the village's sub-district; coverage varies by state, ~8–17%); the
+  rest pin at sub-district (mandal/taluk) level.
 - **Fresh data, automatically** — refreshed from the Government of India's
   **Local Government Directory (LGD)** and proposed as a reviewed pull request,
   so nothing reaches the live site without passing tests and a review.
@@ -105,7 +118,7 @@ differs by an LGD state code (Andhra Pradesh = `28`, Telangana = `36`, Karnataka
 | Live cross-check | LGD's real-time portal | Every build compares its district & mandal counts against the **live** LGD site, so a stale mirror is caught. The result is saved in each `web/data/meta.json`. |
 | Map shapes | [`ramSeraph/indian_admin_boundaries`](https://github.com/ramSeraph/indian_admin_boundaries) | Current (2016/2022) LGD boundary polygons, joined to the village data by LGD code. |
 | Pincodes | **LGD** `pincode_villages` mapping | Joined to villages by LGD village code (~99.9% coverage). |
-| Village coordinates | [GeoNames](https://www.geonames.org/) (name match, mandal-validated) | Best-effort *approximate* points; only kept when close to the village's mandal, so coverage is partial (~13%). |
+| Village coordinates | [GeoNames](https://www.geonames.org/) (name match, sub-district-validated) | Best-effort *approximate* points; only kept when close to the village's mandal/taluk, so coverage is partial (~8–17%). |
 
 > ℹ️ Government data can lag recent changes. For example, the brand-new AP districts
 > **Markapuram** and **Polavaram** appear in the lists and search but don't yet have
@@ -196,6 +209,38 @@ Releases are **semantically versioned** (`vMAJOR.MINOR.PATCH`):
 - **minor** — a new state is added to the project (auto-detected).
 - **major** — only when explicitly requested (`Run workflow → bump: major`).
 
+See **[`CHANGELOG.md`](CHANGELOG.md)** for what changed in each release.
+
+---
+
+## Roadmap
+
+- [ ] **More states** — the pipeline is state-code driven, so [adding one](CONTRIBUTING.md) is small.
+- [ ] **Public read-only API** for village / pincode lookup.
+- [ ] **Better coordinate coverage** for villages.
+- [ ] **Native-script place names** from authoritative sources (beyond transliteration).
+- [ ] **Accessibility pass** — keyboard, screen-reader and contrast.
+
+Have an idea? [Open a feature request](https://github.com/mchittineni/india-village-finder/issues/new?template=feature_request.yml).
+
+---
+
+## Contributing & community
+
+Contributions are welcome — a **data correction** needs no coding, and code changes
+are encouraged.
+
+- 📖 **[Contributing guide](CONTRIBUTING.md)** — dev setup, project layout and the PR flow.
+- 🤝 **[Code of Conduct](CODE_OF_CONDUCT.md)** — Contributor Covenant 2.1.
+- 🔐 **[Security policy](SECURITY.md)** — report a vulnerability privately.
+- 🗒️ **[Changelog](CHANGELOG.md)** — what changed in each release.
+- 🐛 **[Open an issue](https://github.com/mchittineni/india-village-finder/issues/new/choose)** — bug, feature or data correction.
+- 📌 **[Good first issues](https://github.com/mchittineni/india-village-finder/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)** — newcomer-friendly.
+
+`main` is protected — every change lands through a reviewed, tested pull request.
+
+---
+
 ## Licence
 
 This project is **dual-licensed**, because it combines original code with government
@@ -208,6 +253,21 @@ open data:
   reuse the data you must keep the attribution to the **Local Government Directory**
   (Ministry of Panchayati Raj, Government of India).
 
-Built with [Leaflet](https://leafletjs.com), [CARTO](https://carto.com) basemaps and
-[Fuse.js](https://fusejs.io), on the open mirrors maintained by
-[@ramSeraph](https://github.com/ramSeraph). Provided for educational and research use.
+If you use this project in research or a product, please cite it — see
+[`CITATION.cff`](CITATION.cff).
+
+---
+
+## Acknowledgements
+
+- **[Local Government Directory (LGD)](https://lgdirectory.gov.in)** — Ministry of
+  Panchayati Raj, Government of India — the authoritative registry of administrative areas.
+- **[@ramSeraph](https://github.com/ramSeraph)** — the captcha-free
+  [LGD mirror](https://github.com/ramSeraph/opendata) and the
+  [admin-boundary polygons](https://github.com/ramSeraph/indian_admin_boundaries) this
+  project builds on.
+- **[GeoNames](https://www.geonames.org/)** — populated-place coordinates.
+- Built with **[Leaflet](https://leafletjs.com)**, **[CARTO](https://carto.com)**
+  basemaps and **[Fuse.js](https://fusejs.io)**.
+
+Provided for educational and research use.

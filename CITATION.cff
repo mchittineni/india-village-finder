@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this dataset or software, please cite it as below."
+title: "Village Finder — Andhra Pradesh, Telangana & Karnataka"
+abstract: >-
+  An open-source interactive map and search for every village in Andhra Pradesh,
+  Telangana and Karnataka (India), organised by the official District ->
+  Mandal/Taluk -> Village hierarchy. Data is derived from the Government of India
+  Local Government Directory (LGD) and is licensed under GODL-India; the software
+  is licensed under the MIT License.
+type: software
+authors:
+  - name: "mchittineni and the Village Finder contributors"
+    website: "https://github.com/mchittineni"
+repository-code: "https://github.com/mchittineni/india-village-finder"
+url: "https://mchittineni.github.io/india-village-finder/"
+license: MIT
+version: "1.1.0"
+date-released: "2026-06-26"
+keywords:
+  - india
+  - villages
+  - local-government-directory
+  - lgd
+  - open-data
+  - geospatial
+  - leaflet
+  - andhra-pradesh
+  - telangana
+  - karnataka
