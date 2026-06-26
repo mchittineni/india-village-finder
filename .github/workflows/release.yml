@@ -1,0 +1,107 @@
+name: Publish data release
+
+# Publishes the datasets as a versioned GitHub Release whenever fresh data lands
+# on main (a data-refresh PR merge), or on manual dispatch.
+#
+# Semantic versioning (vMAJOR.MINOR.PATCH):
+#   • PATCH  — a data update to existing states            (automatic default)
+#   • MINOR  — a new state folder is added to the project  (auto-detected)
+#   • MAJOR  — only when explicitly requested              (workflow_dispatch: bump=major)
+#
+# State folders are discovered generically (any `*/web/data/regions.json`), so a
+# new state is picked up automatically — both for packaging and for the version bump.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "*/web/data/**"
+      - "*/data/**"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump"
+        type: choice
+        default: auto
+        options: [auto, patch, minor, major]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0          # need tags + history to compute the next version
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Compute next version
+        id: ver
+        run: |
+          set -euo pipefail
+          LATEST=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)
+          if [ -z "$LATEST" ]; then
+            echo "First release."
+            echo "version=v1.0.0" >> "$GITHUB_OUTPUT"
+            echo "bump=initial" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          VER=${LATEST#v}; MAJ=${VER%%.*}; REST=${VER#*.}; MIN=${REST%%.*}; PAT=${REST##*.}
+
+          BUMP="${{ github.event.inputs.bump }}"
+          [ -z "$BUMP" ] && BUMP=auto
+          if [ "$BUMP" = "auto" ]; then
+            CUR=$(ls */web/data/regions.json 2>/dev/null | cut -d/ -f1 | sort)
+            PREV=$(git ls-tree -r --name-only "$LATEST" | grep '/web/data/regions.json$' | cut -d/ -f1 | sort || true)
+            if [ -n "$(comm -23 <(echo "$CUR") <(echo "$PREV"))" ]; then
+              BUMP=minor    # a new state appeared since the last release
+            else
+              BUMP=patch    # data-only update to existing states
+            fi
+          fi
+          case "$BUMP" in
+            major) MAJ=$((MAJ+1)); MIN=0; PAT=0;;
+            minor) MIN=$((MIN+1)); PAT=0;;
+            patch) PAT=$((PAT+1));;
+          esac
+          echo "Previous: $LATEST  ->  bump: $BUMP  ->  next: v$MAJ.$MIN.$PAT"
+          echo "version=v$MAJ.$MIN.$PAT" >> "$GITHUB_OUTPUT"
+          echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
+
+      - name: Package data artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for reg in */web/data/regions.json; do
+            state="${reg%%/*}"
+            cp "$state/data/${state}_villages.csv" dist/ 2>/dev/null || true
+            zip -rq "dist/${state}_data.zip" "$state/data" "$state/web/data"
+          done
+          zip -rq dist/village_data_all.zip */data */web/data
+          ls -lh dist
+
+      - name: Build release notes
+        id: notes
+        env:
+          VF_VERSION: ${{ steps.ver.outputs.version }}
+        run: python scraper/release_notes.py >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.version }}
+          name: ${{ steps.ver.outputs.version }} — village data (${{ steps.notes.outputs.source_date }})
+          body_path: release_notes.md
+          files: dist/*
+          make_latest: true
