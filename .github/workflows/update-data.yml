@@ -1,15 +1,10 @@
 name: Update village data
 
-# Keeps the Andhra Pradesh + Telangana datasets fresh from the Local Government
-# Directory (LGD). Village data is refreshed WEEKLY; map boundaries (rarely
-# changing) MONTHLY. Changes are NOT pushed to main directly — they are proposed
-# as a pull request with a data-change summary, validated by the test suite, and
-# require review (CODEOWNERS / Copilot) before merge.
-
 on:
   schedule:
     - cron: "0 2 * * 1"   # weekly  — Mondays 02:00 UTC: refresh village data
     - cron: "0 3 1 * *"   # monthly — 1st 03:00 UTC: data + boundaries
+
   workflow_dispatch:
     inputs:
       refresh_boundaries:
@@ -29,15 +24,18 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # Node is only needed for mapshaper (boundary simplification).
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
 
