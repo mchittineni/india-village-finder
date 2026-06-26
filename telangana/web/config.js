@@ -18,7 +18,7 @@ window.VF_CONFIG = {
     "mirror": "https://github.com/ramSeraph/opendata"
   },
   "sourceDate": "25Jun2026",
-  "generatedAt": "2026-06-26T08:13:50Z",
+  "generatedAt": "2026-06-26T08:36:25Z",
   "counts": {
     "districts": 33,
     "mandals": 621,
