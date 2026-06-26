@@ -51,7 +51,13 @@ window.VF_I18N = (function () {
       mandal_note: "Shown at mandal level — exact village coordinates aren’t in the open data.",
       boundary_missing: "Map boundary not yet published for {name} (a new district).",
       loc_missing: "Location of {name} isn’t on the map yet.",
-      pin_label: "PIN", lgd_label: "LGD"
+      pin_label: "PIN", lgd_label: "LGD",
+      nb_find: "Find nearby services", nb_loading: "Finding nearby services…",
+      nb_none: "Nothing mapped within {km} km.", nb_err: "Couldn’t load — tap to retry.",
+      nb_src: "via OpenStreetMap", nb_health: "Hospitals & clinics",
+      nb_government: "Government offices", nb_civic: "Police & civic", km: "{n} km",
+      t_hospital: "Hospital", t_clinic: "Clinic", t_police: "Police", t_post_office: "Post office",
+      t_fire_station: "Fire station", t_townhall: "Town hall", t_courthouse: "Court", t_government: "Govt. office"
     },
     te: {
       village_finder: "గ్రామ శోధన",
@@ -83,7 +89,13 @@ window.VF_I18N = (function () {
       mandal_note: "మండల స్థాయిలో చూపబడింది — ఖచ్చితమైన గ్రామ నిర్దేశాంకాలు ఓపెన్ డేటాలో లేవు.",
       boundary_missing: "{name} కోసం మ్యాప్ సరిహద్దు ఇంకా ప్రచురించబడలేదు (కొత్త జిల్లా).",
       loc_missing: "{name} స్థానం ఇంకా మ్యాప్‌లో లేదు.",
-      pin_label: "పిన్", lgd_label: "LGD"
+      pin_label: "పిన్", lgd_label: "LGD",
+      nb_find: "సమీప సేవలను కనుగొనండి", nb_loading: "సమీప సేవలను కనుగొంటోంది…",
+      nb_none: "{km} కి.మీ లోపల ఏమీ లేదు.", nb_err: "లోడ్ కాలేదు — మళ్ళీ ప్రయత్నించండి.",
+      nb_src: "OpenStreetMap ద్వారా", nb_health: "ఆసుపత్రులు & క్లినిక్‌లు",
+      nb_government: "ప్రభుత్వ కార్యాలయాలు", nb_civic: "పోలీస్ & పౌర సేవలు", km: "{n} కి.మీ",
+      t_hospital: "ఆసుపత్రి", t_clinic: "క్లినిక్", t_police: "పోలీస్", t_post_office: "పోస్టాఫీసు",
+      t_fire_station: "అగ్నిమాపక కేంద్రం", t_townhall: "టౌన్ హాల్", t_courthouse: "కోర్టు", t_government: "ప్రభుత్వ కార్యాలయం"
     },
     hi: {
       village_finder: "ग्राम खोजक",
@@ -115,7 +127,13 @@ window.VF_I18N = (function () {
       mandal_note: "मंडल स्तर पर दिखाया गया — सटीक गाँव निर्देशांक खुले डेटा में नहीं हैं।",
       boundary_missing: "{name} के लिए मानचित्र सीमा अभी प्रकाशित नहीं हुई (नया ज़िला)।",
       loc_missing: "{name} का स्थान अभी मानचित्र पर नहीं है।",
-      pin_label: "पिन", lgd_label: "LGD"
+      pin_label: "पिन", lgd_label: "LGD",
+      nb_find: "आस-पास की सेवाएँ खोजें", nb_loading: "आस-पास की सेवाएँ खोजी जा रही हैं…",
+      nb_none: "{km} किमी के भीतर कुछ नहीं मिला।", nb_err: "लोड नहीं हुआ — पुनः प्रयास करें।",
+      nb_src: "OpenStreetMap से", nb_health: "अस्पताल और क्लिनिक",
+      nb_government: "सरकारी कार्यालय", nb_civic: "पुलिस और नागरिक सेवाएँ", km: "{n} किमी",
+      t_hospital: "अस्पताल", t_clinic: "क्लिनिक", t_police: "पुलिस", t_post_office: "डाकघर",
+      t_fire_station: "अग्निशमन केंद्र", t_townhall: "नगर भवन", t_courthouse: "न्यायालय", t_government: "सरकारी कार्यालय"
     },
     kn: {
       village_finder: "ಗ್ರಾಮ ಹುಡುಕಾಟ",
@@ -147,7 +165,13 @@ window.VF_I18N = (function () {
       mandal_note: "ಮಂಡಲ ಮಟ್ಟದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ — ನಿಖರ ಗ್ರಾಮ ನಿರ್ದೇಶಾಂಕಗಳು ಮುಕ್ತ ಡೇಟಾದಲ್ಲಿ ಇಲ್ಲ.",
       boundary_missing: "{name} ಗೆ ನಕ್ಷೆ ಗಡಿ ಇನ್ನೂ ಪ್ರಕಟವಾಗಿಲ್ಲ (ಹೊಸ ಜಿಲ್ಲೆ).",
       loc_missing: "{name} ಸ್ಥಳ ಇನ್ನೂ ನಕ್ಷೆಯಲ್ಲಿ ಇಲ್ಲ.",
-      pin_label: "ಪಿನ್", lgd_label: "LGD"
+      pin_label: "ಪಿನ್", lgd_label: "LGD",
+      nb_find: "ಸಮೀಪದ ಸೇವೆಗಳನ್ನು ಹುಡುಕಿ", nb_loading: "ಸಮೀಪದ ಸೇವೆಗಳನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ…",
+      nb_none: "{km} ಕಿ.ಮೀ ಒಳಗೆ ಏನೂ ಇಲ್ಲ.", nb_err: "ಲೋಡ್ ಆಗಲಿಲ್ಲ — ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+      nb_src: "OpenStreetMap ಮೂಲಕ", nb_health: "ಆಸ್ಪತ್ರೆಗಳು & ಕ್ಲಿನಿಕ್‌ಗಳು",
+      nb_government: "ಸರ್ಕಾರಿ ಕಚೇರಿಗಳು", nb_civic: "ಪೊಲೀಸ್ & ನಾಗರಿಕ ಸೇವೆಗಳು", km: "{n} ಕಿ.ಮೀ",
+      t_hospital: "ಆಸ್ಪತ್ರೆ", t_clinic: "ಕ್ಲಿನಿಕ್", t_police: "ಪೊಲೀಸ್", t_post_office: "ಅಂಚೆ ಕಚೇರಿ",
+      t_fire_station: "ಅಗ್ನಿಶಾಮಕ ಠಾಣೆ", t_townhall: "ಟೌನ್ ಹಾಲ್", t_courthouse: "ನ್ಯಾಯಾಲಯ", t_government: "ಸರ್ಕಾರಿ ಕಚೇರಿ"
     },
     ur: {
       village_finder: "گاؤں تلاش",
@@ -179,7 +203,13 @@ window.VF_I18N = (function () {
       mandal_note: "منڈل سطح پر دکھایا گیا — درست گاؤں کوآرڈینیٹس کھلے ڈیٹا میں نہیں ہیں۔",
       boundary_missing: "{name} کے لیے نقشے کی حد ابھی شائع نہیں ہوئی (نیا ضلع)۔",
       loc_missing: "{name} کا مقام ابھی نقشے پر نہیں ہے۔",
-      pin_label: "پن", lgd_label: "LGD"
+      pin_label: "پن", lgd_label: "LGD",
+      nb_find: "قریبی خدمات تلاش کریں", nb_loading: "قریبی خدمات تلاش کی جا رہی ہیں…",
+      nb_none: "{km} کلومیٹر کے اندر کچھ نہیں ملا۔", nb_err: "لوڈ نہیں ہوا — دوبارہ کوشش کریں۔",
+      nb_src: "بذریعہ OpenStreetMap", nb_health: "ہسپتال اور کلینک",
+      nb_government: "سرکاری دفاتر", nb_civic: "پولیس اور شہری خدمات", km: "{n} کلومیٹر",
+      t_hospital: "ہسپتال", t_clinic: "کلینک", t_police: "پولیس", t_post_office: "ڈاک خانہ",
+      t_fire_station: "فائر اسٹیشن", t_townhall: "ٹاؤن ہال", t_courthouse: "عدالت", t_government: "سرکاری دفتر"
     }
   };
 

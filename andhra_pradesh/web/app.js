@@ -467,17 +467,87 @@
     }).addTo(map);
     var pin = row[4] ? '<span class="vpop-code">' + esc(t("pin_label")) + ' ' + esc(row[4]) + '</span>' : '';
     var note = precise ? t("approx_note") : t(DIV + "_note");
-    var html =
-      '<div class="vpop" dir="' + I18N.dirOf(LANG) + '">' +
+    var wrap = el("div", "vpop");
+    wrap.setAttribute("dir", I18N.dirOf(LANG));
+    // Keep clicks on the interactive popup content (nearby button, retry, links)
+    // from bubbling to the map, which would otherwise auto-close the popup.
+    wrap.addEventListener("click", function (ev) { ev.stopPropagation(); });
+    wrap.innerHTML =
         '<div class="vpop-name" title="' + esc(row[0]) + '">' + esc(nm(row[0])) + '</div>' +
         '<div class="vpop-meta">' + esc(nm(m.n)) + ' ' + esc(t(DIV + "_word")) + ' · ' + esc(nm(d.n)) + ' ' + esc(t("district_word")) + '</div>' +
         '<div class="vpop-tags"><span class="badge ' + (row[3] === 0 ? "rural" : "urban") + '">' +
           esc(row[3] === 0 ? t("rural") : t("urban")) + '</span>' + pin +
           '<span class="vpop-code">' + esc(t("lgd_label")) + ' ' + row[2] + '</span></div>' +
-        '<div class="vpop-note">' + esc(note) + '</div>' +
-      '</div>';
-    marker.bindPopup(html, { className: "village-popup", maxWidth: 260 }).openPopup();
+        '<div class="vpop-note">' + esc(note) + '</div>';
+
+    // Nearby civic services — live OpenStreetMap lookup, fetched on demand.
+    var nbBtn, nbBox;
+    if (window.VF_NEARBY) {
+      nbBtn = el("button", "vpop-nb-btn", esc(t("nb_find")));
+      nbBox = el("div", "vpop-nb");
+      wrap.appendChild(nbBtn);
+      wrap.appendChild(nbBox);
+    }
+
+    marker.bindPopup(wrap, { className: "village-popup", maxWidth: 280 }).openPopup();
+    if (nbBtn) {
+      nbBtn.onclick = function () { loadNearby(nbBtn, nbBox, center.lat, center.lng); };
+    }
     if (!map.getBounds().contains(center)) map.panTo(center, { animate: true });
+  }
+
+  // ---- nearby services (OpenStreetMap / Overpass, on demand) ------------
+  // The popup wrapper grows to fit and the results list scrolls internally, so
+  // we deliberately don't call popup.update() — repeated auto-pan on rapid
+  // content swaps can dismiss the Leaflet popup mid-interaction.
+  var NB_RADIUS_KM = 10;
+  function fmtKm(km) { return km < 10 ? km.toFixed(1) : String(Math.round(km)); }
+
+  function loadNearby(btn, box, lat, lng) {
+    btn.disabled = true; btn.classList.add("loading");
+    box.innerHTML = "";
+    box.appendChild(el("div", "nb-status", esc(t("nb_loading"))));
+    window.VF_NEARBY.fetch(lat, lng, { radius: NB_RADIUS_KM * 1000 }).then(function (groups) {
+      renderNearby(btn, box, groups);
+    }).catch(function () {
+      btn.classList.add("hidden");
+      box.innerHTML = "";
+      var retry = el("button", "nb-status nb-retry", esc(t("nb_err")));
+      retry.onclick = function () { btn.classList.remove("hidden"); btn.disabled = false; btn.classList.remove("loading"); loadNearby(btn, box, lat, lng); };
+      box.appendChild(retry);
+    });
+  }
+
+  function renderNearby(btn, box, groups) {
+    btn.classList.add("hidden");   // the trigger is replaced by its results
+    box.innerHTML = "";
+    var ORDER = ["health", "government", "civic"];
+    var total = ORDER.reduce(function (a, g) { return a + ((groups[g] || []).length); }, 0);
+    if (!total) {
+      box.appendChild(el("div", "nb-status", esc(t("nb_none", { km: NB_RADIUS_KM }))));
+      return;
+    }
+    ORDER.forEach(function (g) {
+      var items = groups[g] || [];
+      if (!items.length) return;
+      var sec = el("div", "nb-group");
+      sec.appendChild(el("div", "nb-group-head", esc(t("nb_" + g))));
+      items.forEach(function (it) {
+        var a = document.createElement("a");
+        a.className = "nb-item";
+        a.href = "https://www.google.com/maps/search/?api=1&query=" + it.lat + "," + it.lng;
+        a.target = "_blank"; a.rel = "noopener";
+        a.innerHTML =
+          '<span class="nb-item-name">' + esc(it.name || t("t_" + it.type)) + '</span>' +
+          '<span class="nb-item-meta">' + esc(t("t_" + it.type)) + ' · ' + esc(t("km", { n: fmtKm(it.dist) })) + '</span>';
+        sec.appendChild(a);
+      });
+      box.appendChild(sec);
+    });
+    var src = document.createElement("a");
+    src.className = "nb-src"; src.href = "https://www.openstreetmap.org/copyright";
+    src.target = "_blank"; src.rel = "noopener"; src.textContent = t("nb_src");
+    box.appendChild(src);
   }
 
   // ---- search ----------------------------------------------------------
