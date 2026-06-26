@@ -241,6 +241,26 @@ a { color: var(--brand); }
   display: grid; place-items: center; font-size: .68rem; font-weight: 700;
 }
 
+/* Selected village row */
+.row.selected { border-color: var(--brand); background: var(--brand-soft); }
+.row.selected .name { color: var(--brand-dk); }
+
+/* Village map pin + popup */
+.village-pin {
+  display: block; width: 16px; height: 16px;
+  background: var(--brand); border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  box-shadow: 0 2px 6px rgba(15,23,42,.35);
+}
+.village-popup .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: var(--shadow); }
+.village-popup .leaflet-popup-content { margin: 11px 13px; }
+.vpop-name { font-weight: 750; font-size: 1rem; letter-spacing: -0.01em; }
+.vpop-meta { color: var(--ink-3); font-size: .8rem; margin-top: 2px; }
+.vpop-tags { display: flex; gap: 6px; align-items: center; margin-top: 9px; }
+.vpop-code { font-size: .73rem; color: var(--ink-2); background: var(--bg);
+             border: 1px solid var(--line-2); border-radius: 999px; padding: 1px 8px; }
+.vpop-note { margin-top: 9px; font-size: .72rem; color: var(--ink-3); line-height: 1.4; }
+
 .hidden { display: none !important; }
 
 /* ---------------- Responsive ---------------- */

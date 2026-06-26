@@ -160,12 +160,36 @@ rebuilds and republishes automatically.
 
 ---
 
-## Credits & licence
+## Downloads (GitHub Releases)
 
-Built on the open data of the **Local Government Directory** (Ministry of Panchayati
-Raj, Government of India) and the open mirrors maintained by
-[@ramSeraph](https://github.com/ramSeraph). The map uses
-[Leaflet](https://leafletjs.com) with [CARTO](https://carto.com) basemaps and
-[Fuse.js](https://fusejs.io) for search.
+Every time fresh data is merged, a **GitHub Release** is published with downloadable
+artifacts (`.github/workflows/release.yml`):
 
-For educational and research use. See [`LICENSE`](LICENSE).
+- `andhra_pradesh_villages.csv` / `telangana_villages.csv` — flat village lists.
+- `andhra_pradesh_data.zip` / `telangana_data.zip` — the full per-state dataset
+  (JSON + boundary GeoJSON + CSV).
+- `village_data_all.zip` — everything, both states.
+
+Grab the newest at **[Releases](https://github.com/mchittineni/india-village-finder/releases/latest)**.
+
+Releases are **semantically versioned** (`vMAJOR.MINOR.PATCH`):
+
+- **patch** — a data refresh of existing states (automatic).
+- **minor** — a new state is added to the project (auto-detected).
+- **major** — only when explicitly requested (`Run workflow → bump: major`).
+
+## Licence
+
+This project is **dual-licensed**, because it combines original code with government
+open data:
+
+- **Code** (everything in `scraper/` and the web apps) — **MIT License**, see
+  [`LICENSE`](LICENSE).
+- **Data** (all CSV / JSON / GeoJSON files and release artifacts) — **Government Open
+  Data License – India (GODL-India)**, see [`DATA_LICENSE.md`](DATA_LICENSE.md). If you
+  reuse the data you must keep the attribution to the **Local Government Directory**
+  (Ministry of Panchayati Raj, Government of India).
+
+Built with [Leaflet](https://leafletjs.com), [CARTO](https://carto.com) basemaps and
+[Fuse.js](https://fusejs.io), on the open mirrors maintained by
+[@ramSeraph](https://github.com/ramSeraph). Provided for educational and research use.
