@@ -1,0 +1,42 @@
+# Path-based PR labels, applied by .github/workflows/labeler.yml (actions/labeler@v5).
+# Each top-level key is an existing repo label; a PR gets the label when it touches
+# any matching file. `sync-labels: true` also removes a label once its files are gone.
+
+data:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/data/**'
+          - '**/*.csv'
+          - '**/*.geojson'
+          - '**/coords.json'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'LICENSE'
+          - 'DATA_LICENSE.md'
+
+web:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'scraper/web_template/**'
+          - '**/web/*.html'
+          - '**/web/*.css'
+          - '**/web/*.js'
+
+scraper:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'scraper/*.py'
+          - 'scraper/requirements*.txt'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'scraper/tests/**'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
