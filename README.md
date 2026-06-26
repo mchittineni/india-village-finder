@@ -1,5 +1,12 @@
 # 🗺️ Village Finder — Andhra Pradesh & Telangana
 
+[![Build](https://github.com/mchittineni/india-village-finder/actions/workflows/ci.yml/badge.svg)](https://github.com/mchittineni/india-village-finder/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Data: GODL-India](https://img.shields.io/badge/data-GODL--India-orange.svg)](DATA_LICENSE.md)
+[![Stars](https://img.shields.io/github/stars/mchittineni/india-village-finder?style=flat&logo=github)](https://github.com/mchittineni/india-village-finder/stargazers)
+[![Issues welcome](https://img.shields.io/badge/issues-welcome-brightgreen.svg)](https://github.com/mchittineni/india-village-finder/issues/new/choose)
+
 Find **any village** in Andhra Pradesh or Telangana on an interactive map, organised
 by the official **District → Mandal → Village** hierarchy — and keep that data fresh
 automatically.
@@ -40,8 +47,11 @@ modern web interface or API.
 
 - **A visual map** for each state — districts shaded by how many villages they
   contain (a *choropleth*). Click a district to zoom into its mandals; click a
-  mandal to list its villages.
-- **Instant search** across every village, mandal and district.
+  mandal to list its villages; click a village to pin it.
+- **Instant search** across every village, mandal and district — or by **pincode**.
+- **Pincodes** for ~99.9% of villages (from LGD), shown in lists, search and pins.
+- **Village locations** where we can confidently place them (~13%, matched via
+  GeoNames and validated against the mandal); the rest pin at mandal level.
 - **Fresh data, automatically** — refreshed from the Government of India's
   **Local Government Directory (LGD)** and proposed as a reviewed pull request,
   so nothing reaches the live site without passing tests and a review.
@@ -87,6 +97,8 @@ state needs to be hosted lives inside its own folder.
 | Districts, mandals, villages | **LGD** (`lgdirectory.gov.in`), Ministry of Panchayati Raj | The official Indian government registry of administrative areas. We read it from a **captcha-free [daily mirror](https://github.com/ramSeraph/opendata)** of the LGD dump. |
 | Live cross-check | LGD's real-time portal | Every build compares its district & mandal counts against the **live** LGD site, so a stale mirror is caught. The result is saved in each `web/data/meta.json`. |
 | Map shapes | [`ramSeraph/indian_admin_boundaries`](https://github.com/ramSeraph/indian_admin_boundaries) | Current (2016/2022) LGD boundary polygons, joined to the village data by LGD code. |
+| Pincodes | **LGD** `pincode_villages` mapping | Joined to villages by LGD village code (~99.9% coverage). |
+| Village coordinates | [GeoNames](https://www.geonames.org/) (name match, mandal-validated) | Best-effort *approximate* points; only kept when close to the village's mandal, so coverage is partial (~13%). |
 
 > ℹ️ Government data can lag recent changes. For example, the brand-new AP districts
 > **Markapuram** and **Polavaram** appear in the lists and search but don't yet have

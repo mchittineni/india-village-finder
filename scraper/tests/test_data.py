@@ -93,17 +93,46 @@ def test_counts_are_internally_consistent(state):
 # --------------------------------------------------------------------------- #
 def test_village_rows_structure(state):
     v = state["villages"]
-    assert v["columns"] == ["name", "mandal", "code", "cat"]
+    assert v["columns"] == ["name", "mandal", "code", "cat", "pin"]
     n_m = len(state["regions"]["mandals"])
     codes = set()
     for row in v["rows"]:
-        assert len(row) == 4
-        name, mi, code, cat = row
+        assert len(row) == 5
+        name, mi, code, cat, pin = row
         assert isinstance(name, str) and name.strip()
         assert 0 <= mi < n_m, "village references invalid mandal index"
         assert cat in (0, 1)
+        assert pin == "" or (isinstance(pin, str) and pin.isdigit() and len(pin) == 6), \
+            f"bad pincode {pin!r}"
         codes.add(code)
     assert len(codes) == len(v["rows"]), "duplicate village codes"
+
+
+def test_pincode_coverage(state):
+    v = state["villages"]
+    with_pin = sum(1 for r in v["rows"] if r[4])
+    frac = with_pin / len(v["rows"])
+    assert frac >= 0.95, f"only {frac:.1%} of villages have a pincode"
+    assert state["meta"]["counts"].get("with_pincode") == with_pin
+
+
+def test_coords_valid(state):
+    """coords.json (precise village coordinates) is optional, but if present it must
+    be well-formed and inside the AP/TG bounding box, keyed by real village codes."""
+    path = ROOT / state["slug"] / "web" / "data" / "coords.json"
+    if not path.exists():
+        return
+    coords = json.loads(path.read_text(encoding="utf-8"))
+    village_codes = {str(r[2]) for r in state["villages"]["rows"]}
+    min_lon, min_lat, max_lon, max_lat = BBOX
+    for code, ll in coords.items():
+        assert code in village_codes, f"coords for unknown village {code}"
+        assert isinstance(ll, list) and len(ll) == 2
+        lat, lng = ll
+        assert min_lat <= lat <= max_lat and min_lon <= lng <= max_lon, \
+            f"coord {ll} outside AP/TG bbox"
+    if "with_coords" in state["meta"]["counts"]:
+        assert state["meta"]["counts"]["with_coords"] == len(coords)
 
 
 def test_village_count_in_range(state):
