@@ -27,3 +27,6 @@ jobs:
         
       - name: Validate data (pytest)
         run: python -m pytest scraper/tests -v
+
+      - name: Transliteration accuracy (regression guard)
+        run: node scraper/translit_eval.mjs --check

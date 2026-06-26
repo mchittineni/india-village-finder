@@ -19,6 +19,8 @@ python3 -m venv .venv
 | `lgd_client.py` | Minimal client for LGD's live DWR endpoints. Used by `pipeline.py` for the verification cross-check. |
 | `changelog.py` | Compares the working tree to `HEAD` and prints a Markdown summary of data changes — used as the body of the automated refresh PR. |
 | `release_notes.py` | Generates the notes + version inputs for the automated GitHub Release. |
+| `translit_eval.mjs` | Scores the UI transliteration engine against LGD's authoritative native names (exact-match % + character accuracy). `node scraper/translit_eval.mjs` to report; `--check` enforces a floor (run in CI). |
+| `translit_cli.mjs` | Batch transliteration bridge (stdin JSON → native script) so `pipeline.py` can fill the CSV's native-name column using the *same* engine as the UI (`web_template/i18n.js`). |
 | `tests/` | `pytest` data-validity suite (see the root README). |
 
 Common flags: `--state ap|tg|ka|tn|both` · `--offline` (reuse cached downloads) ·

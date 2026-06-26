@@ -64,8 +64,11 @@ Karnataka's and Tamil Nadu's sub-districts are **Taluks**; AP/Telangana's are **
 - **Instant search** across every village, mandal and district — or by **pincode**.
 - **Multilingual UI** — switch the interface between **English, Telugu, Kannada, Tamil,
   Hindi and Urdu** (Urdu right-to-left). Place names are also rendered in the chosen
-  script via best-effort transliteration (approximate; the canonical English name is
-  always kept on hover and used for search).
+  script via a **morpheme-aware** transliteration engine (it renders common place-name
+  suffixes like `-pur`/`-palli`/`-puram` from their canonical spelling, not letter-by-
+  letter). It's still approximate — the canonical English name is always kept on hover
+  and used for search — but its fidelity is **measured against LGD's official names**
+  (`scraper/translit_eval.mjs`) and guarded in CI.
 - **Authoritative native names** — where LGD publishes a village's name in the state's
   own script, that official name is shown instead of transliteration when that language
   is selected (e.g. Telangana villages in Telugu, Tamil Nadu villages in Tamil). Coverage
@@ -208,7 +211,9 @@ rebuilds and republishes automatically.
 Every time fresh data is merged, a **GitHub Release** is published with downloadable
 artifacts (`.github/workflows/release.yml`):
 
-- `<state>_villages.csv` — flat village list per state (e.g. `karnataka_villages.csv`).
+- `<state>_villages.csv` — flat village list per state (e.g. `karnataka_villages.csv`),
+  including each village's **native-script name** (`Village (Native)`) — the official LGD
+  spelling where published, else transliteration — with a `Native Source` column marking which.
 - `<state>_data.zip` — the full per-state dataset (JSON + boundary GeoJSON + CSV).
 - `village_data_all.zip` — everything, all states.
 

@@ -12,6 +12,21 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ## [Unreleased]
 
+### Changed
+- **Morpheme-aware transliteration** — the engine now renders common place-name
+  suffixes (`-pur`, `-palli`, `-puram`, `-gaon`, `-pettai`, …) from their canonical
+  spelling and nasalises stem-final `n`/`m` before them, instead of going letter-by-
+  letter. Measured against LGD's official names, exact-match roughly doubles and
+  character accuracy rises a few points per state. A new `scraper/translit_eval.mjs`
+  reports the metric and guards it in CI.
+- **Native name in every CSV row** — the `<state>_villages.csv` exports now fill
+  `Village (Native)` for every village (the authoritative LGD spelling where
+  published, otherwise transliteration in the state's script), with a `Native
+  Source` column recording which. Generated via the shared UI engine
+  (`scraper/translit_cli.mjs`), so the CSV and the map agree.
+
+## [1.2.0] — 2026-06-26
+
 ### Added
 - **Tamil Nadu** (LGD state `33`) — 38 districts, 317 taluks and 18,681 villages,
   with pincodes, district/taluk boundary maps and best-effort village coordinates.
@@ -74,7 +89,8 @@ release attaches downloadable datasets — see [Releases][releases].
 - Community-health files: Contributing guide, Code of Conduct, Security policy,
   and issue / pull-request templates.
 
-[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/mchittineni/india-village-finder/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/mchittineni/india-village-finder/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/mchittineni/india-village-finder/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/mchittineni/india-village-finder/compare/v1.0.0...v1.0.1

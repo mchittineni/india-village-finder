@@ -392,6 +392,62 @@ window.VF_I18N = (function () {
     return out;
   }
 
+  // Common place-name suffixes → canonical native spelling [te, hi, kn, ta].
+  // Indian village names are highly compositional, and these morphemes carry long
+  // vowels that the English spelling drops (e.g. "-pur" → పూర్, not పుర్). Rendering
+  // them directly — and transliterating only the preceding stem — is markedly more
+  // faithful to the official LGD spelling than going letter-by-letter. (Validated
+  // against LGD's authoritative names via scraper/translit_eval.mjs.)
+  var MORPH = {
+    "puram":   ["పురం", "पुरम", "ಪುರ", "புரம்"],
+    "pur":     ["పూర్", "पुर", "ಪುರ", "பூர்"],
+    "palle":   ["పల్లె", "पल्ले", "ಪಲ್ಲೆ", "பள்ளி"],
+    "palli":   ["పల్లి", "पल्ली", "ಪಲ್ಲಿ", "பள்ளி"],
+    "pally":   ["పల్లి", "पल्ली", "ಪಲ್ಲಿ", "பள்ளி"],
+    "halli":   ["హళ్ళి", "हल्ली", "ಹಳ್ಳಿ", "அள்ளி"],
+    "hatti":   ["హట్టి", "हट्टी", "ಹಟ್ಟಿ", "அட்டி"],
+    "gaon":    ["గాంవ్", "गांव", "ಗಾಂವ್", "காவ்"],
+    "wadi":    ["వాడి", "वाडी", "ವಾಡಿ", "வாடி"],
+    "wada":    ["వాడ", "वाडा", "ವಾಡ", "வாடா"],
+    "vada":    ["వాడ", "वाडा", "ವಾಡ", "வாடா"],
+    "palayam": ["పాళయం", "पालयम", "ಪಾಳ್ಯ", "பாளையம்"],
+    "palem":   ["పాలెం", "पालेम", "ಪಾಳೆಂ", "பாளேம்"],
+    "gudem":   ["గూడెం", "गूडेम", "ಗೂಡೆಂ", "கூடேம்"],
+    "guda":    ["గూడ", "गूडा", "ಗೂಡ", "குடா"],
+    "kunta":   ["కుంట", "कुंटा", "ಕುಂಟ", "குந்த"],
+    "pettai":  ["పేట్టై", "पेट्टै", "ಪೇಟ್ಟೈ", "பேட்டை"],
+    "pakkam":  ["పాక్కం", "पाक्कम", "ಪಾಕ್ಕಂ", "பாக்கம்"],
+    "kuppam":  ["కుప్పం", "कुप्पम", "ಕುಪ್ಪಂ", "குப்பம்"],
+    "patti":   ["పట్టి", "पट्टी", "ಪಟ್ಟಿ", "பட்டி"],
+    "peta":    ["పేట", "पेठा", "ಪೇಟ", "பேட்டை"],
+    "nagar":   ["నగర్", "नगर", "ನಗರ", "நகர்"],
+    "mangalam": ["మంగళం", "मंगलम", "ಮಂಗಳ", "மங்கலம்"]
+  };
+  var MORPHKEYS = Object.keys(MORPH).sort(function (a, b) { return b.length - a.length; });
+
+  // Transliterate one Roman word: peel off a known place-name suffix (rendered
+  // from its canonical spelling) and transliterate the remaining stem.
+  function renderWord(lang, word) {
+    if (lang === "ur") return renderUrdu(tokenize(word.toLowerCase()));
+    var lw = word.toLowerCase(), si = SCRIPT_IDX[lang];
+    for (var i = 0; i < MORPHKEYS.length; i++) {
+      var suf = MORPHKEYS[i];
+      if (lw.length > suf.length + 1 && lw.slice(-suf.length) === suf && MORPH[suf][si] != null) {
+        var stem = word.slice(0, word.length - suf.length);
+        var nasal = "";
+        // A stem-final n/m before the (consonant-initial) suffix nasalises to an
+        // anusvara in Telugu/Kannada (e.g. Bheem+pur → భీంపూర్). Tamil has no
+        // anusvara, so it keeps the nasal consonant via the normal path.
+        if (lang !== "ta" && /[aeiou][nm]$/.test(stem.toLowerCase())) {
+          nasal = ANUS[si];
+          stem = stem.slice(0, -1);
+        }
+        return renderIndic(tokenize(stem.toLowerCase()), lang) + nasal + MORPH[suf][si];
+      }
+    }
+    return renderIndic(tokenize(lw), lang);
+  }
+
   var SUPPORTED = { te: 1, hi: 1, kn: 1, ta: 1, ur: 1 };
   var CACHE = {};
   function translit(lang, name) {
@@ -399,9 +455,7 @@ window.VF_I18N = (function () {
     var ck = lang + "|" + name;
     if (CACHE[ck] != null) return CACHE[ck];
     var out = name.replace(/[A-Za-z]+/g, function (word) {
-      var toks = tokenize(word.toLowerCase());
-      var r = (lang === "ur") ? renderUrdu(toks) : renderIndic(toks, lang);
-      return r || word;
+      return renderWord(lang, word) || word;
     });
     CACHE[ck] = out;
     return out;
