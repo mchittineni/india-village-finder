@@ -18,10 +18,11 @@ window.VF_CONFIG = {
     "mirror": "https://github.com/ramSeraph/opendata"
   },
   "sourceDate": "25Jun2026",
-  "generatedAt": "2026-06-26T08:36:25Z",
+  "generatedAt": "2026-06-26T10:05:00Z",
   "counts": {
     "districts": 33,
     "mandals": 621,
-    "villages": 11308
+    "villages": 11308,
+    "with_pincode": 11290
   }
 };

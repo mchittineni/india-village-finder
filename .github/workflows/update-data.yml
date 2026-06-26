@@ -57,6 +57,10 @@ jobs:
         if: steps.bounds.outputs.run == 'true'
         run: python scraper/build_boundaries.py
 
+      - name: Refresh village coordinates (needs boundaries)
+        if: steps.bounds.outputs.run == 'true'
+        run: python scraper/enrich_coords.py
+
       - name: Validate new data (pytest)
         id: tests
         continue-on-error: true
@@ -74,11 +78,13 @@ jobs:
             andhra_pradesh/web/data/villages.json
             andhra_pradesh/web/data/districts.geojson
             andhra_pradesh/web/data/mandals.geojson
+            andhra_pradesh/web/data/coords.json
             andhra_pradesh/data/andhra_pradesh_villages.csv
             telangana/web/data/regions.json
             telangana/web/data/villages.json
             telangana/web/data/districts.geojson
             telangana/web/data/mandals.geojson
+            telangana/web/data/coords.json
             telangana/data/telangana_villages.csv
           "
           if [ -n "$(git status --porcelain -- $DATA_FILES)" ]; then
