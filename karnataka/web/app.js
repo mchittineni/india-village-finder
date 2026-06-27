@@ -25,12 +25,16 @@
   })();
   function t(key, params) { return I18N.t(LANG, key, params); }   // UI string
   function nm(name) { return I18N.translit(LANG, name); }          // place name
-  // Village display name: prefer the authoritative LGD native name when the chosen
-  // language is the state's official one; otherwise fall back to transliteration.
+  // Village display name, in preference order when the chosen language is the state's
+  // official one: (1) the authoritative LGD native spelling, (2) a neural
+  // transliteration precomputed offline (names_translit.json, IndicXlit), (3) the
+  // rule-based UI transliteration. Anything else falls back to (3).
   function vname(row) {
     if (CFG.nativeLang && LANG === CFG.nativeLang) {
       var loc = localNames[row[2]];
       if (loc) return loc;
+      var nt = translitNames[row[2]];
+      if (nt) return nt;
     }
     return nm(row[0]);
   }
@@ -93,7 +97,7 @@
   }
 
   // ---- state -----------------------------------------------------------
-  var regions, villages, geoD, geoM, meta, coords = {}, localNames = {};
+  var regions, villages, geoD, geoM, meta, coords = {}, localNames = {}, translitNames = {};
   var dByCode = {}, mByCode = {};
   var villagesByMandal = [];
   var dBreaks = [], fuse = null;
@@ -114,10 +118,11 @@
         fetchJSON("districts.geojson"), fetchJSON("mandals.geojson"),
         fetchJSON("meta.json").catch(function () { return null; }),
         fetchJSON("coords.json").catch(function () { return {}; }),
-        fetchJSON("names.json").catch(function () { return {}; })
+        fetchJSON("names.json").catch(function () { return {}; }),
+        fetchJSON("names_translit.json").catch(function () { return {}; })
       ]);
       regions = res[0]; villages = res[1]; geoD = res[2]; geoM = res[3]; meta = res[4];
-      coords = res[5] || {}; localNames = res[6] || {};
+      coords = res[5] || {}; localNames = res[6] || {}; translitNames = res[7] || {};
     } catch (e) {
       $("#map-loading").textContent = "Could not load data: " + e.message;
       return;

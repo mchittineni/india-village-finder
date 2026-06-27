@@ -357,6 +357,17 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     needs_translit = sorted({v["name"] for v in writable
                              if not in_script(v.get("local", ""), state_lang)})
     translit = transliterate_batch(state_lang, needs_translit)
+    # Prefer the committed NEURAL native names (web/data/names_translit.json, produced
+    # offline by enrich_native_names.py) over the rule engine, so the CSV agrees with
+    # the map. Absent file → rule engine only. Reading a plain JSON keeps this build
+    # (and CI) free of the heavy IndicXlit dependency.
+    neural_native = {}
+    nt_path = web_data / "names_translit.json"
+    if nt_path.exists():
+        try:
+            neural_native = json.loads(nt_path.read_text(encoding="utf-8"))
+        except Exception:
+            neural_native = {}
     with open(state_dir / "data" / f"{cfg['slug']}_villages.csv", "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["State", "District", "District Code", "Mandal", "Mandal Code",
@@ -369,7 +380,7 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
             if in_script(loc, state_lang):
                 native, source = loc, "LGD"
             else:
-                native = translit.get(v["name"], "")
+                native = neural_native.get(str(v["code"])) or translit.get(v["name"], "")
                 source = "transliterated" if native else ""
             w.writerow([cfg["name"], d["name"], d["code"], m["name"], m["code"],
                         v["name"], native, source, v["code"],
