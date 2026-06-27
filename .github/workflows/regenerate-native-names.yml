@@ -1,0 +1,113 @@
+name: Regenerate native names (IndicXlit)
+
+# Heavy, on-demand regeneration of the neural native-name layer
+# (web/data/names_translit.json) using AI4Bharat IndicXlit — kept OFF the normal
+# CI/data path because it pulls in PyTorch + fairseq. Runs only when dispatched and
+# opens a PR with the result; it never pushes to main.
+#
+# This deliberately rebuilds the torch/fairseq stack here so the work happens on
+# GitHub's runners, not a developer laptop. Python 3.10 + torch<2.6 are chosen so
+# none of the newer-interpreter shims are needed (Python 3.11+ tightened the
+# dataclass check fairseq/hydra rely on; torch 2.6 flipped torch.load to
+# weights_only=True, which rejects fairseq checkpoints).
+
+on:
+  schedule:
+    - cron: "0 0 * * 0"   # weekly — Sundays 00:00 UTC
+  workflow_dispatch:
+    inputs:
+      state:
+        description: "State(s) to regenerate: all | ap | tg | ka | tn"
+        default: "all"
+      beam:
+        description: "IndicXlit beam width (higher = better, slower)"
+        default: "4"
+
+permissions:
+  contents: write          # push the data branch
+  pull-requests: write     # open the PR
+
+concurrency:
+  group: regenerate-native-names
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"   # fairseq/hydra predate 3.11's stricter dataclass rule
+
+      - name: Install IndicXlit stack (PyTorch + fairseq, offline model)
+        run: |
+          set -euxo pipefail
+          echo "numpy==1.26.4" > /tmp/constraints.txt   # pin so fairseq builds against numpy 1.x
+          # omegaconf 2.0.x (a fairseq dep) ships legacy metadata that pip>=24.1 rejects.
+          python -m pip install "pip<24.1"
+          python -m pip install -c /tmp/constraints.txt "numpy==1.26.4" "cython<3" "torch==2.2.2"
+          # fairseq 0.12.2's PyPI sdist omits its clib C++ sources -> build from the git tag.
+          git clone --depth 1 --branch v0.12.2 https://github.com/facebookresearch/fairseq.git /tmp/fairseq
+          python -m pip install -c /tmp/constraints.txt --no-build-isolation /tmp/fairseq
+          python -m pip install -c /tmp/constraints.txt ai4bharat-transliteration
+          python -m pip install -r scraper/requirements-dev.txt   # pytest for validation
+          python -c "from ai4bharat.transliteration import XlitEngine; print('IndicXlit import OK')"
+
+      - name: Regenerate names_translit.json
+        run: python scraper/enrich_native_names.py --state "${{ inputs.state || 'all' }}" --beam "${{ inputs.beam || '4' }}"
+
+      - name: Report neural accuracy vs LGD gold
+        continue-on-error: true
+        run: python scraper/enrich_native_names.py --eval --state "${{ inputs.state || 'all' }}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate data (pytest)
+        id: tests
+        continue-on-error: true
+        run: |
+          python -m pytest scraper/tests -q | tee /tmp/pytest.txt
+          echo "outcome=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Detect changes to neural names
+        id: changed
+        run: |
+          if [ -n "$(git status --porcelain -- '*/web/data/names_translit.json')" ]; then
+            echo "yes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "yes=false" >> "$GITHUB_OUTPUT"
+            echo "No change to names_translit.json — skipping PR." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Create / update pull request
+        id: cpr
+        if: steps.changed.outputs.yes == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.DATA_PAT || secrets.GITHUB_TOKEN }}
+          branch: data/neural-native-names
+          delete-branch: true
+          add-paths: |
+            */web/data/names_translit.json
+          commit-message: "chore(data): regenerate IndicXlit neural native names"
+          title: "chore(data): regenerate neural native names"
+          body: |
+            Regenerated `web/data/names_translit.json` via `scraper/enrich_native_names.py`
+            (AI4Bharat IndicXlit) on GitHub Actions — state(s) `${{ inputs.state || 'all' }}`, beam `${{ inputs.beam || '4' }}`.
+
+            Accuracy vs LGD gold and the pytest result are in the
+            [run summary](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+            > The committed JSON is read as plain data by the map, the CSV build and CI —
+            > none of them need PyTorch. CSV native columns sync on the next `pipeline.py` run.
+          labels: |
+            data-update
+            automated
+          reviewers: mchittineni
+
+      - name: Summary
+        if: steps.changed.outputs.yes == 'true'
+        run: echo "PR ${{ steps.cpr.outputs.pull-request-url || 'opened (see PRs)' }}" >> "$GITHUB_STEP_SUMMARY"
