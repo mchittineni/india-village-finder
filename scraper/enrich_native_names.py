@@ -42,12 +42,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent          # scraper/
 ROOT = HERE.parent                              # Village Finder/
-CACHE_FILE = HERE / ".cache" / "indicxlit_cache.json"
+# Cache location; override with $INDICXLIT_CACHE so several state runs can execute
+# in parallel without clobbering one shared file (e.g. one cache per language).
+CACHE_FILE = Path(os.environ.get("INDICXLIT_CACHE", str(HERE / ".cache" / "indicxlit_cache.json")))
 
 # slug -> language script (mirrors pipeline.STATES). IndicXlit supports te/kn/ta.
 STATES = {
@@ -113,22 +116,29 @@ def get_engine(lang: str, beam: int):
     return _ENGINES[key]
 
 
+def _clean_native(s: str) -> str:
+    # IndicXlit appends a presentational ZWNJ/ZWJ after a trailing halant
+    # (e.g. రాంపూర్‌); LGD's stored spellings don't, so drop the joiners.
+    return s.replace("‌", "").replace("‍", "")
+
+
 def _xlit_name(engine, lang: str, name: str) -> str:
-    """Transliterate one (possibly multi-word) name. IndicXlit's translit_word works on
-    a single token, so we transliterate each whitespace token and rejoin; tokens with
-    no ASCII letter (e.g. a stray "(Urban)") pass through unchanged."""
-    parts = []
-    for tok in name.split():
-        if not any("a" <= c.lower() <= "z" for c in tok):
-            parts.append(tok)
-            continue
-        try:
-            out = engine.translit_word(tok, topk=1)
-            cand = out.get(lang) or []
-            parts.append(cand[0] if cand else tok)
-        except Exception:
-            parts.append(tok)
-    return " ".join(parts)
+    """Transliterate a name segment-by-segment. We split on every run of non-letters
+    (space, '.', '-', digits) and transliterate each letter-run on its own, preserving
+    the separators. This matters for dotted prefixes like "A.Bandaveedhi": IndicXlit's
+    own word splitter only converts the final segment and lower-cases the rest, leaking
+    a latin "a." — splitting ourselves converts the "A" too."""
+    out = []
+    for seg in re.split(r"([^A-Za-z]+)", name):
+        if seg and re.search(r"[A-Za-z]", seg):
+            try:
+                cand = engine.translit_word(seg, topk=1).get(lang) or []
+                out.append(_clean_native(cand[0]) if cand else seg)
+            except Exception:
+                out.append(seg)
+        else:
+            out.append(seg)
+    return "".join(out)
 
 
 def transliterate(lang: str, names, beam: int, cache: dict) -> dict:

@@ -34,6 +34,12 @@ STATES = [
 BBOX = (74.0, 7.5, 86.5, 20.5)  # min_lon, min_lat, max_lon, max_lat
 GEO_COVERAGE_MIN = 0.80  # >=80% of regions should have a matching polygon
 
+# Unicode block per language script, for validating native-script output.
+SCRIPT_RANGES = {
+    "te": (0x0C00, 0x0C7F), "kn": (0x0C80, 0x0CFF),
+    "ta": (0x0B80, 0x0BFF), "hi": (0x0900, 0x097F),
+}
+
 
 def load(slug, name):
     return json.loads((ROOT / slug / "web" / "data" / name).read_text(encoding="utf-8"))
@@ -193,6 +199,30 @@ def test_csv_native_names_populated(state):
     # a native name must declare its source, and vice versa
     assert all(bool(r["Village (Native)"].strip()) == bool(r["Native Source"].strip())
                for r in rows)
+
+
+def test_neural_native_names(state):
+    """The optional neural layer (names_translit.json, IndicXlit) must key real
+    villages that LACK an authoritative LGD name, with values genuinely in the
+    state's script — it never overrides or duplicates the authoritative names.json."""
+    base = ROOT / state["slug"] / "web" / "data"
+    path = base / "names_translit.json"
+    if not path.exists():
+        return
+    nt = json.loads(path.read_text(encoding="utf-8"))
+    if not nt:
+        return
+    names_path = base / "names.json"
+    auth = json.loads(names_path.read_text(encoding="utf-8")) if names_path.exists() else {}
+    village_codes = {str(r[2]) for r in state["villages"]["rows"]}
+    lang = state["meta"].get("native_lang")
+    lo, hi = SCRIPT_RANGES[lang]
+    for code, native in nt.items():
+        assert code in village_codes, f"neural name for unknown village {code}"
+        assert code not in auth, f"neural name overlaps authoritative for {code}"
+        assert native.strip(), f"empty neural name for {code}"
+        assert any(lo <= ord(c) <= hi for c in native), \
+            f"neural name {native!r} ({code}) not in {lang} script"
 
 
 # --------------------------------------------------------------------------- #
