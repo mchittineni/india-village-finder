@@ -13,19 +13,27 @@ release attaches downloadable datasets — see [Releases][releases].
 ## [Unreleased]
 
 ### Added
-- **Neural transliteration layer (opt-in)** — a new offline tool
-  `scraper/enrich_native_names.py` runs **AI4Bharat IndicXlit** to produce
-  native-script names for the villages LGD doesn't publish in-script (Andhra Pradesh
-  ~98%, Tamil Nadu ~92%, Karnataka ~99.8% of villages), writing
-  `web/data/names_translit.json`. Both the map and the CSV now resolve a village's
-  native name as **authoritative LGD → neural → rule-based transliteration**. The
-  model dependency is isolated in `scraper/requirements-translit.txt` and the
-  committed JSON is read at build time, so CI, the daily pipeline and the browser
-  never load PyTorch. `--eval` scores the model against LGD's authoritative names
-  (an independent gold), complementing the rule-engine guard in `translit_eval.mjs`.
+- **Neural native village names (AI4Bharat IndicXlit)** — every village now carries a
+  native-script name. Where LGD doesn't publish one in-script, it is supplied by a
+  trained neural transliteration model instead of the rule engine, shipped as
+  `web/data/names_translit.json` (Andhra Pradesh 17,585, Telangana 82, Karnataka
+  30,711, Tamil Nadu 17,165 names — **100% village coverage** in each state). The map
+  and the CSV resolve a name as **authoritative LGD → neural → rule-based**.
 
-  > Regenerate with `pip install -r scraper/requirements-translit.txt &&
-  > python scraper/enrich_native_names.py`, then commit `names_translit.json`.
+  Measured against LGD's own gold spellings, character accuracy / exact-match jumps
+  well past the rule engine:
+
+  | State | rule engine | **neural** |
+  |---|---|---|
+  | Andhra Pradesh (te) | 76.1% / 11.4% | **88.4% / 43.3%** |
+  | Karnataka (kn) | 82.5% / 16.9% | **91.3% / 47.5%** |
+  | Tamil Nadu (ta) | 69.3% / 3.4% | **81.8% / 21.6%** |
+
+  The model is produced offline by a new tool, `scraper/enrich_native_names.py`, whose
+  output is committed; the heavy dependency lives in `scraper/requirements-translit.txt`
+  and is read as plain JSON at build time, so CI, the daily pipeline and the browser
+  never load PyTorch. `--eval` scores the model against the authoritative names (an
+  independent gold), complementing the rule-engine guard in `translit_eval.mjs`.
 
 ## [1.2.2] — 2026-06-26
 
