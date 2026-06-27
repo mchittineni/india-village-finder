@@ -38,6 +38,22 @@
     }
     return nm(row[0]);
   }
+  // District / sub-district / state names: prefer the committed native name
+  // (regions_native.json) when the chosen language is the state's own, else fall back
+  // to rule-based transliteration. (LGD publishes no local-script name for these.)
+  function rn(code, english, tier) {
+    if (CFG.nativeLang && LANG === CFG.nativeLang) {
+      var map = regionNative[tier];
+      if (map && map[code]) return map[code];
+    }
+    return nm(english);
+  }
+  function rdist(d) { return rn(d.c, d.n, "districts"); }
+  function rmand(m) { return rn(m.c, m.n, "mandals"); }
+  function sname() {
+    if (CFG.nativeLang && LANG === CFG.nativeLang && regionNative.state) return regionNative.state;
+    return nm(CFG.state || "");
+  }
   // Sub-district tier term: "mandal" (AP/Telangana) or "taluk" (Karnataka).
   // The data still stores this tier under regions.mandals; only the label changes.
   var DIV = (CFG.division === "taluk") ? "taluk" : "mandal";
@@ -98,6 +114,7 @@
 
   // ---- state -----------------------------------------------------------
   var regions, villages, geoD, geoM, meta, coords = {}, localNames = {}, translitNames = {};
+  var regionNative = {};   // { state, districts:{code:native}, mandals:{code:native} }
   var dByCode = {}, mByCode = {};
   var villagesByMandal = [];
   var dBreaks = [], fuse = null;
@@ -119,10 +136,12 @@
         fetchJSON("meta.json").catch(function () { return null; }),
         fetchJSON("coords.json").catch(function () { return {}; }),
         fetchJSON("names.json").catch(function () { return {}; }),
-        fetchJSON("names_translit.json").catch(function () { return {}; })
+        fetchJSON("names_translit.json").catch(function () { return {}; }),
+        fetchJSON("regions_native.json").catch(function () { return {}; })
       ]);
       regions = res[0]; villages = res[1]; geoD = res[2]; geoM = res[3]; meta = res[4];
       coords = res[5] || {}; localNames = res[6] || {}; translitNames = res[7] || {};
+      regionNative = res[8] || {};
     } catch (e) {
       $("#map-loading").textContent = "Could not load data: " + e.message;
       return;
@@ -151,8 +170,8 @@
 
     var h1 = $(".brand h1"); if (h1) h1.textContent = t("village_finder");
     var bh = $("#brand-home"); if (bh) { bh.title = t("home"); bh.setAttribute("aria-label", t("home")); }
-    var sub = $(".brand-sub"); if (sub) sub.textContent = nm(CFG.state || "");
-    document.title = nm(CFG.state || "") + " " + t("village_finder");
+    var sub = $(".brand-sub"); if (sub) sub.textContent = sname();
+    document.title = sname() + " " + t("village_finder");
     var srcHref = $("#src-link"); if (srcHref && CFG.source) srcHref.href = CFG.source.url;
 
     var s = $("#search"); if (s) s.placeholder = t("search_ph");
@@ -207,7 +226,7 @@
     var box = $("#state-switch");
     if (!box) return;
     box.innerHTML = "";
-    var cur = el("button", "active", esc(nm(CFG.state)));
+    var cur = el("button", "active", esc(sname()));
     cur.title = t("currently_viewing", { state: CFG.state });
     box.appendChild(cur);
     (CFG.siblings || []).forEach(function (sib) {
@@ -295,7 +314,7 @@
       onEachFeature: function (f, layer) {
         var d = dByCode[f.properties.c];
         dLayerByCode[f.properties.c] = layer;
-        layer.bindTooltip(tip(nm(f.properties.n), (d ? t("n_villages", { n: fmt(d.vc) }) : "")), { sticky: true, className: "region-tip", direction: "top" });
+        layer.bindTooltip(tip(rn(f.properties.c, f.properties.n, "districts"), (d ? t("n_villages", { n: fmt(d.vc) }) : "")), { sticky: true, className: "region-tip", direction: "top" });
         layer.on({
           mouseover: function () { layer.setStyle({ weight: 2.4, color: "#334155" }); layer.bringToFront(); },
           mouseout: function () { dLayer.resetStyle(layer); },
@@ -323,7 +342,7 @@
       onEachFeature: function (f, layer) {
         var m = mByCode[f.properties.c];
         mLayerByCode[f.properties.c] = layer;
-        layer.bindTooltip(tip(nm(f.properties.n), (m ? t("n_villages", { n: fmt(m.vc) }) : "")), { sticky: true, className: "region-tip", direction: "top" });
+        layer.bindTooltip(tip(rn(f.properties.c, f.properties.n, "mandals"), (m ? t("n_villages", { n: fmt(m.vc) }) : "")), { sticky: true, className: "region-tip", direction: "top" });
         layer.on({
           mouseover: function () { layer.setStyle({ weight: 2.4, color: "#334155" }); layer.bringToFront(); },
           mouseout: function () { mLayer.resetStyle(layer); },
@@ -335,7 +354,7 @@
     if (feats.length) {
       map.fitBounds(mLayer.getBounds(), { padding: [30, 30] });
     } else {
-      toast(t("boundary_missing", { name: nm(d.n) }));
+      toast(t("boundary_missing", { name: rdist(d) }));
     }
     renderBreadcrumb(); renderDistrictPanel(d);
     renderLegend(breaks, t("villages_per_" + DIV));
@@ -380,8 +399,8 @@
     }
     function sep() { bc.appendChild(el("span", "crumb-sep", "›")); }
     crumb(t("all_districts"), view.level === "state", function () { clearSearchUI(); showDistrictView(true); });
-    if (view.d) { sep(); crumb(nm(view.d.n), view.level === "district", function () { selectDistrict(view.d); }); }
-    if (view.m) { sep(); crumb(nm(view.m.n), true); }
+    if (view.d) { sep(); crumb(rdist(view.d), view.level === "district", function () { selectDistrict(view.d); }); }
+    if (view.m) { sep(); crumb(rmand(view.m), true); }
   }
 
   // ---- panels ----------------------------------------------------------
@@ -408,7 +427,7 @@
     p.appendChild(backRow(t("all_districts"), function () { showDistrictView(true); }));
     var mandals = regions.mandals.filter(function (m) { return m.d === d.i; });
     var head = el("div", "detail-head");
-    var title = el("div", "title", esc(nm(d.n))); title.title = d.n; head.appendChild(title);
+    var title = el("div", "title", esc(rdist(d))); title.title = d.n; head.appendChild(title);
     head.appendChild(el("div", "sub", esc(tdivN({ n: mandals.length }) + " · " +
       t("n_villages", { n: fmt(d.vc) }) + " · " + t("lgd_label") + " " + d.c)));
     p.appendChild(head);
@@ -423,10 +442,10 @@
   function renderMandalPanel(m, highlightCode) {
     var d = regions.districts[m.d];
     var p = $("#panel"); p.innerHTML = "";
-    p.appendChild(backRow(nm(d.n), function () { selectDistrict(d); }));
+    p.appendChild(backRow(rdist(d), function () { selectDistrict(d); }));
     var head = el("div", "detail-head");
-    var title = el("div", "title", esc(nm(m.n))); title.title = m.n; head.appendChild(title);
-    head.appendChild(el("div", "sub", esc(nm(d.n) + " " + t("district_word") + " · " +
+    var title = el("div", "title", esc(rmand(m))); title.title = m.n; head.appendChild(title);
+    head.appendChild(el("div", "sub", esc(rdist(d) + " " + t("district_word") + " · " +
       t("n_villages", { n: fmt(m.vc) }) + " · " + t("lgd_label") + " " + m.c)));
     p.appendChild(head);
     p.appendChild(sectionLabel(t("villages"), t("az")));
@@ -490,7 +509,7 @@
     wrap.addEventListener("click", function (ev) { ev.stopPropagation(); });
     wrap.innerHTML =
         '<div class="vpop-name" title="' + esc(row[0]) + '">' + esc(vname(row)) + '</div>' +
-        '<div class="vpop-meta">' + esc(nm(m.n)) + ' ' + esc(t(DIV + "_word")) + ' · ' + esc(nm(d.n)) + ' ' + esc(t("district_word")) + '</div>' +
+        '<div class="vpop-meta">' + esc(rmand(m)) + ' ' + esc(t(DIV + "_word")) + ' · ' + esc(rdist(d)) + ' ' + esc(t("district_word")) + '</div>' +
         '<div class="vpop-tags"><span class="badge ' + (row[3] === 0 ? "rural" : "urban") + '">' +
           esc(row[3] === 0 ? t("rural") : t("urban")) + '</span>' + pin +
           '<span class="vpop-code">' + esc(t("lgd_label")) + ' ' + row[2] + '</span></div>' +
@@ -635,14 +654,14 @@
   function districtRow(d, showKind) {
     var meta = showKind ? t("district")
       : tdivN({ n: regions.mandals.filter(function (m) { return m.d === d.i; }).length });
-    var r = rowEl(nm(d.n), meta, d.vc, showKind, d.n);
+    var r = rowEl(rdist(d), meta, d.vc, showKind, d.n);
     r.onclick = function () { selectDistrict(d); };
     return r;
   }
   function mandalRow(m, showKind) {
     var d = regions.districts[m.d];
-    var meta = showKind ? t(DIV) + " · " + nm(d.n) : nm(d.n);
-    var r = rowEl(nm(m.n), meta, m.vc, showKind, m.n);
+    var meta = showKind ? t(DIV) + " · " + rdist(d) : rdist(d);
+    var r = rowEl(rmand(m), meta, m.vc, showKind, m.n);
     r.onclick = function () { selectMandal(m); };
     return r;
   }
@@ -654,7 +673,7 @@
     var dot = el("span", "dot"); dot.style.background = (row[3] === 0 ? "#94a3b8" : "#c2570f"); r.appendChild(dot);
     var main = el("div", "main");
     main.appendChild(el("div", "name", esc(vname(row))));
-    main.appendChild(el("div", "meta", esc(nm(m.n)) + " · " + esc(nm(d.n)) + (row[4] ? " · " + t("pin_label") + " " + row[4] : "")));
+    main.appendChild(el("div", "meta", esc(rmand(m)) + " · " + esc(rdist(d)) + (row[4] ? " · " + t("pin_label") + " " + row[4] : "")));
     r.appendChild(main);
     r.appendChild(el("span", "badge " + (row[3] === 0 ? "rural" : "urban"), esc(row[3] === 0 ? t("rural") : t("urban"))));
     r.onclick = function () { clearSearchUI(); selectMandal(m, row[2]); };

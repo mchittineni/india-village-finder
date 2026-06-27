@@ -58,8 +58,11 @@ jobs:
           python -m pip install -r scraper/requirements-dev.txt   # pytest for validation
           python -c "from ai4bharat.transliteration import XlitEngine; print('IndicXlit import OK')"
 
-      - name: Regenerate names_translit.json
+      - name: Regenerate names_translit.json (villages)
         run: python scraper/enrich_native_names.py --state "${{ inputs.state || 'all' }}" --beam "${{ inputs.beam || '4' }}"
+
+      - name: Regenerate regions_native.json (districts/mandals/state)
+        run: python scraper/enrich_native_names.py --regions --state "${{ inputs.state || 'all' }}" --beam "${{ inputs.beam || '4' }}"
 
       - name: Report neural accuracy vs LGD gold
         continue-on-error: true
@@ -75,11 +78,11 @@ jobs:
       - name: Detect changes to neural names
         id: changed
         run: |
-          if [ -n "$(git status --porcelain -- '*/web/data/names_translit.json')" ]; then
+          if [ -n "$(git status --porcelain -- '*/web/data/names_translit.json' '*/web/data/regions_native.json')" ]; then
             echo "yes=true" >> "$GITHUB_OUTPUT"
           else
             echo "yes=false" >> "$GITHUB_OUTPUT"
-            echo "No change to names_translit.json — skipping PR." >> "$GITHUB_STEP_SUMMARY"
+            echo "No change to native names — skipping PR." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Create / update pull request
@@ -92,6 +95,7 @@ jobs:
           delete-branch: true
           add-paths: |
             */web/data/names_translit.json
+            */web/data/regions_native.json
           commit-message: "chore(data): regenerate IndicXlit neural native names"
           title: "chore(data): regenerate neural native names"
           body: |
