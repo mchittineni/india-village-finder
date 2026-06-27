@@ -16,6 +16,7 @@ python3 -m venv .venv
 | `pipeline.py` | Downloads the latest LGD dump (districts / sub-districts / villages / pincodes), filters to each state, **verifies counts against the live LGD portal**, and writes each state's `web/data/*.json` + `data/*.csv`. Also extracts LGD's authoritative native village names (`web/data/names.json`, script-validated), copies the UI template, and writes `web/config.js` (incl. the per-state sub-district term — Mandal or Taluk — and native language). |
 | `build_boundaries.py` | Downloads LGD district & sub-district boundary polygons, filters per state, drops invalid/duplicate codes, and **simplifies** them (via `mapshaper`) into `web/data/{districts,mandals}.geojson`. Run occasionally — boundaries rarely change. |
 | `enrich_coords.py` | Best-effort **precise village coordinates**: matches each village by name to a GeoNames place and keeps it only when close to the village's sub-district. Writes `web/data/coords.json`. |
+| `enrich_native_names.py` | Best-effort **neural native names** for villages LGD doesn't publish in-script: runs **AI4Bharat IndicXlit** (a trained English→Indic model, far better than the rule engine) and writes `web/data/names_translit.json`. Run **occasionally** and commit the output — it needs a heavy, **offline-only** dependency (`pip install -r requirements-translit.txt`, pulls in PyTorch). `--eval` scores the model against LGD's authoritative names; `--state ap\|tg\|ka\|tn` limits scope. The map and CSV read the committed JSON, so CI/the browser never need PyTorch. |
 | `lgd_client.py` | Minimal client for LGD's live DWR endpoints. Used by `pipeline.py` for the verification cross-check. |
 | `changelog.py` | Compares the working tree to `HEAD` and prints a Markdown summary of data changes — used as the body of the automated refresh PR. |
 | `release_notes.py` | Generates the notes + version inputs for the automated GitHub Release. |
@@ -31,10 +32,19 @@ Common flags: `--state ap|tg|ka|tn|both` · `--offline` (reuse cached downloads)
 ```
 pipeline.py ──> ../<state>/web/data/{regions,villages,names,meta}.json  +  ../<state>/data/*.csv
                  (<state> = andhra_pradesh | telangana | karnataka | tamil_nadu)
-build_boundaries.py ──> ../<state>/web/data/{districts,mandals}.geojson
-enrich_coords.py    ──> ../<state>/web/data/coords.json
+build_boundaries.py     ──> ../<state>/web/data/{districts,mandals}.geojson
+enrich_coords.py        ──> ../<state>/web/data/coords.json
+enrich_native_names.py  ──> ../<state>/web/data/names_translit.json  (offline; IndicXlit)
 web_template/ ──(copied by pipeline)──> ../<state>/web/{index.html,app.js,i18n.js,nearby.js,styles.css}
 ```
 
 `.cache/` holds the downloaded source dumps and is git-ignored (re-downloaded on demand).
 Edit the UI **only** in `web_template/`; the per-state copies are regenerated.
+
+**Native village names — two layers.** `names.json` is the **authoritative** LGD
+spelling (script-validated) and is the only one the pipeline writes. Where LGD has no
+in-script name, `enrich_native_names.py` produces a clearly-**approximate** neural
+spelling in `names_translit.json`. The map (`vname`) and the CSV prefer them in order
+**LGD → neural → rule-based transliteration**, so the heavy IndicXlit step is optional
+and run offline, yet its committed output upgrades both surfaces. Its dependency lives
+in `requirements-translit.txt`, intentionally separate from `requirements-dev.txt`.

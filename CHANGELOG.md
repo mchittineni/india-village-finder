@@ -12,7 +12,20 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+- **Neural transliteration layer (opt-in)** — a new offline tool
+  `scraper/enrich_native_names.py` runs **AI4Bharat IndicXlit** to produce
+  native-script names for the villages LGD doesn't publish in-script (Andhra Pradesh
+  ~98%, Tamil Nadu ~92%, Karnataka ~99.8% of villages), writing
+  `web/data/names_translit.json`. Both the map and the CSV now resolve a village's
+  native name as **authoritative LGD → neural → rule-based transliteration**. The
+  model dependency is isolated in `scraper/requirements-translit.txt` and the
+  committed JSON is read at build time, so CI, the daily pipeline and the browser
+  never load PyTorch. `--eval` scores the model against LGD's authoritative names
+  (an independent gold), complementing the rule-engine guard in `translit_eval.mjs`.
+
+  > Regenerate with `pip install -r scraper/requirements-translit.txt &&
+  > python scraper/enrich_native_names.py`, then commit `names_translit.json`.
 
 ## [1.2.2] — 2026-06-26
 

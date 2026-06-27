@@ -1,0 +1,9 @@
+# Offline-only dependency for scraper/enrich_native_names.py — neural English→Indic
+# transliteration (AI4Bharat IndicXlit). It pulls in PyTorch + fairseq (multi-GB) and
+# downloads model weights on first use, so it is deliberately kept OUT of
+# requirements.txt / requirements-dev.txt: the pipeline, CI and the browser never
+# need it. Install only to (re)generate web/data/names_translit.json:
+#
+#     ./.venv/bin/pip install -r scraper/requirements-translit.txt
+#
+ai4bharat-transliteration>=1.1.0
