@@ -1,0 +1,25 @@
+{
+  "name": "village-finder",
+  "version": "1.2.2",
+  "private": true,
+  "description": "Interactive village maps + search for Indian states, built from LGD open data.",
+  "license": "MIT",
+  "homepage": "https://mchittineni.github.io/india-village-finder/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mchittineni/india-village-finder.git"
+  },
+  "scripts": {
+    "docs": "npm run docs:js && npm run docs:py",
+    "docs:js": "jsdoc -c jsdoc.json",
+    "docs:py": "python3 -m pdoc scraper/pipeline.py scraper/lgd_client.py scraper/build_boundaries.py scraper/enrich_coords.py scraper/enrich_native_names.py scraper/changelog.py scraper/release_notes.py -o docs/api/python",
+    "docs:clean": "rm -rf docs/api",
+    "format": "prettier --write . && black scraper",
+    "format:check": "prettier --check . && black --check scraper"
+  },
+  "devDependencies": {
+    "docdash": "^2.0.2",
+    "jsdoc": "^4.0.4",
+    "prettier": "^3.4.2"
+  }
+}

@@ -1,2 +1,4 @@
 -r requirements.txt
 pytest>=9.1.1
+black>=24.10.0    # Python formatter (see pyproject.toml; `npm run format`)
+pdoc>=15.0.0      # Python API reference generator (see docs/, `npm run docs:py`)
