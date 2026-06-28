@@ -13,6 +13,12 @@ release attaches downloadable datasets — see [Releases][releases].
 ## [Unreleased]
 
 ### Added
+- **Native district, sub-district and state names** — when the state's own language is
+  selected, district/taluk/mandal names and the state name now render in native script
+  (`web/data/regions_native.json`) instead of going through the rule engine. LGD has no
+  local-script column for these, so each is resolved from a same-named village's native
+  name where one exists, otherwise IndicXlit (`enrich_native_names.py --regions`). The
+  map falls back to the rule engine for anything not yet covered.
 - **Neural native village names (AI4Bharat IndicXlit)** — every village now carries a
   native-script name. Where LGD doesn't publish one in-script, it is supplied by a
   trained neural transliteration model instead of the rule engine, shipped as

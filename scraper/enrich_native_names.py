@@ -62,6 +62,14 @@ ALIAS = {"ap": "andhra_pradesh", "andhra": "andhra_pradesh",
          "ka": "karnataka", "kar": "karnataka",
          "tn": "tamil_nadu", "tamilnadu": "tamil_nadu", "tamil": "tamil_nadu"}
 
+# Curated state names in their own script (prominent, so not left to the model).
+STATE_NATIVE = {
+    "andhra_pradesh": "ఆంధ్రప్రదేశ్",
+    "telangana": "తెలంగాణ",
+    "karnataka": "ಕರ್ನಾಟಕ",
+    "tamil_nadu": "தமிழ்நாடு",
+}
+
 # Unicode block per script — used to keep only genuine native-script output.
 SCRIPT_RANGE = {
     "te": (0x0C00, 0x0C7F), "kn": (0x0C80, 0x0CFF),
@@ -183,6 +191,74 @@ def build_state(slug: str, lang: str, beam: int, cache: dict) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# generate: web/data/regions_native.json (district + mandal names, + state name)
+# --------------------------------------------------------------------------- #
+def _engine_or_none(lang: str, beam: int):
+    """The region set is small and partly covered by village names, so the model is
+    optional here: return an engine if IndicXlit is installed, else None (the caller
+    then ships only the names it could resolve from existing data)."""
+    try:
+        import ai4bharat.transliteration  # noqa: F401
+    except Exception:
+        return None
+    try:
+        return get_engine(lang, beam)
+    except SystemExit:
+        return None
+
+
+def _norm(s: str) -> str:
+    return " ".join((s or "").split()).strip().lower()
+
+
+def build_regions(slug: str, lang: str, beam: int) -> None:
+    """Native names for districts + sub-districts (+ the state name). LGD has no
+    local-script column for these, so each name is resolved as: a same-named village's
+    native name (authoritative or neural, already committed) → IndicXlit if available
+    → omitted (the app then falls back to the rule engine for that one)."""
+    web_data = ROOT / slug / "web" / "data"
+    reg = json.loads((web_data / "regions.json").read_text(encoding="utf-8"))
+    villages = json.loads((web_data / "villages.json").read_text(encoding="utf-8"))["rows"]
+    auth = _load_json(web_data / "names.json")
+    neural = _load_json(web_data / "names_translit.json")
+
+    v_native = {}                                   # normalised english village name -> native
+    for r in villages:
+        nat = auth.get(str(r[2])) or neural.get(str(r[2]))
+        if nat:
+            v_native.setdefault(_norm(r[0]), nat)
+
+    out = {"state": STATE_NATIVE.get(slug, ""), "districts": {}, "mandals": {}}
+    todo = []                                       # (tier, code, english) needing the model
+    for tier in ("districts", "mandals"):
+        for r in reg[tier]:
+            code, en = str(r["c"]), r["n"]
+            nat = v_native.get(_norm(en))
+            if nat:
+                out[tier][code] = nat
+            else:
+                todo.append((tier, code, en))
+
+    engine = _engine_or_none(lang, beam) if todo else None
+    if engine:
+        for tier, code, en in todo:
+            nat = _xlit_name(engine, lang, en)
+            if in_script(nat, lang):
+                out[tier][code] = nat
+
+    (web_data / "regions_native.json").write_text(
+        json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    total = len(reg["districts"]) + len(reg["mandals"])
+    have = len(out["districts"]) + len(out["mandals"])
+    print(f"[{slug}] regions_native {have}/{total} regions + state "
+          f"({'model' if engine else 'from village data only'})")
+
+
+def _load_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+# --------------------------------------------------------------------------- #
 # eval: score the model against the authoritative LGD names (independent gold)
 # --------------------------------------------------------------------------- #
 def _lev(a: str, b: str) -> int:
@@ -242,6 +318,8 @@ def main():
     ap.add_argument("--beam", type=int, default=4, help="IndicXlit beam width (default 4)")
     ap.add_argument("--eval", action="store_true",
                     help="score the model against authoritative LGD names; write nothing")
+    ap.add_argument("--regions", action="store_true",
+                    help="generate regions_native.json (district/mandal/state names) instead")
     args = ap.parse_args()
 
     if args.state in ("all", "both"):
@@ -278,6 +356,11 @@ def main():
             print(pad("OVERALL", 16) + pad("", 5) + pad(TN, 8)
                   + pad(o_exact, 9) + ("%.1f%%" % (100 * TACC / TN)))
         print("\nCompare with the rule engine: node scraper/translit_eval.mjs")
+        return
+
+    if args.regions:
+        for slug in slugs:
+            build_regions(slug, STATES[slug], args.beam)
         return
 
     for slug in slugs:

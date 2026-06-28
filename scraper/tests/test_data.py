@@ -225,6 +225,30 @@ def test_neural_native_names(state):
             f"neural name {native!r} ({code}) not in {lang} script"
 
 
+def test_region_native_names(state):
+    """The optional region layer (regions_native.json) carries native district/mandal
+    names (+ the state name). Coverage may be partial, but every entry present must key
+    a real district/mandal and be in the state's script."""
+    path = ROOT / state["slug"] / "web" / "data" / "regions_native.json"
+    if not path.exists():
+        return
+    rn = json.loads(path.read_text(encoding="utf-8"))
+    lang = state["meta"].get("native_lang")
+    lo, hi = SCRIPT_RANGES[lang]
+
+    def in_script(s):
+        return any(lo <= ord(c) <= hi for c in s)
+
+    if rn.get("state"):
+        assert in_script(rn["state"]), f"state name {rn['state']!r} not in {lang} script"
+    for tier in ("districts", "mandals"):
+        valid = {str(r["c"]) for r in state["regions"][tier]}
+        for code, native in rn.get(tier, {}).items():
+            assert code in valid, f"{tier} native for unknown code {code}"
+            assert native.strip() and in_script(native), \
+                f"{tier} native {native!r} ({code}) not in {lang} script"
+
+
 # --------------------------------------------------------------------------- #
 # GeoJSON boundaries
 # --------------------------------------------------------------------------- #
