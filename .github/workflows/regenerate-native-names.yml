@@ -13,7 +13,7 @@ name: Regenerate native names (IndicXlit)
 
 on:
   schedule:
-    - cron: "0 0 * * 0"   # weekly — Sundays 00:00 UTC
+    - cron: "0 0 * * 0" # weekly — Sundays 00:00 UTC
   workflow_dispatch:
     inputs:
       state:
@@ -24,8 +24,8 @@ on:
         default: "4"
 
 permissions:
-  contents: write          # push the data branch
-  pull-requests: write     # open the PR
+  contents: write # push the data branch
+  pull-requests: write # open the PR
 
 concurrency:
   group: regenerate-native-names
@@ -42,7 +42,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.10"   # fairseq/hydra predate 3.11's stricter dataclass rule
+          python-version: "3.10" # fairseq/hydra predate 3.11's stricter dataclass rule
 
       - name: Install IndicXlit stack (PyTorch + fairseq, offline model)
         run: |

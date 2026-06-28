@@ -27,6 +27,7 @@ Run
 ---
     python scraper/enrich_native_names.py                # all states -> names_translit.json
     python scraper/enrich_native_names.py --state ka     # one state (ap|tg|ka|tn)
+    python scraper/enrich_native_names.py --regions      # district/mandal/state -> regions_native.json
     python scraper/enrich_native_names.py --eval         # score vs LGD gold, write nothing
 
 `--eval` is the HONEST, non-circular quality metric: it transliterates the villages
@@ -38,6 +39,7 @@ scored against itself). Compare it to the rule engine via
 A persistent cache (scraper/.cache/indicxlit_cache.json, git-ignored) makes reruns
 incremental: only never-seen names hit the model.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -46,21 +48,30 @@ import os
 import re
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent          # scraper/
-ROOT = HERE.parent                              # Village Finder/
+HERE = Path(__file__).resolve().parent  # scraper/
+ROOT = HERE.parent  # Village Finder/
 # Cache location; override with $INDICXLIT_CACHE so several state runs can execute
 # in parallel without clobbering one shared file (e.g. one cache per language).
 CACHE_FILE = Path(os.environ.get("INDICXLIT_CACHE", str(HERE / ".cache" / "indicxlit_cache.json")))
 
 # slug -> language script (mirrors pipeline.STATES). IndicXlit supports te/kn/ta.
 STATES = {
-    "andhra_pradesh": "te", "telangana": "te",
-    "karnataka": "kn", "tamil_nadu": "ta",
+    "andhra_pradesh": "te",
+    "telangana": "te",
+    "karnataka": "kn",
+    "tamil_nadu": "ta",
 }
-ALIAS = {"ap": "andhra_pradesh", "andhra": "andhra_pradesh",
-         "tg": "telangana", "ts": "telangana",
-         "ka": "karnataka", "kar": "karnataka",
-         "tn": "tamil_nadu", "tamilnadu": "tamil_nadu", "tamil": "tamil_nadu"}
+ALIAS = {
+    "ap": "andhra_pradesh",
+    "andhra": "andhra_pradesh",
+    "tg": "telangana",
+    "ts": "telangana",
+    "ka": "karnataka",
+    "kar": "karnataka",
+    "tn": "tamil_nadu",
+    "tamilnadu": "tamil_nadu",
+    "tamil": "tamil_nadu",
+}
 
 # Curated state names in their own script (prominent, so not left to the model).
 STATE_NATIVE = {
@@ -72,8 +83,10 @@ STATE_NATIVE = {
 
 # Unicode block per script — used to keep only genuine native-script output.
 SCRIPT_RANGE = {
-    "te": (0x0C00, 0x0C7F), "kn": (0x0C80, 0x0CFF),
-    "ta": (0x0B80, 0x0BFF), "hi": (0x0900, 0x097F),
+    "te": (0x0C00, 0x0C7F),
+    "kn": (0x0C80, 0x0CFF),
+    "ta": (0x0B80, 0x0BFF),
+    "hi": (0x0900, 0x097F),
 }
 
 
@@ -172,7 +185,9 @@ def build_state(slug: str, lang: str, beam: int, cache: dict) -> None:
     web_data = ROOT / slug / "web" / "data"
     villages = json.loads((web_data / "villages.json").read_text(encoding="utf-8"))["rows"]
     names_path = web_data / "names.json"
-    authoritative = json.loads(names_path.read_text(encoding="utf-8")) if names_path.exists() else {}
+    authoritative = (
+        json.loads(names_path.read_text(encoding="utf-8")) if names_path.exists() else {}
+    )
 
     todo = [(str(r[2]), r[0]) for r in villages if str(r[2]) not in authoritative]
     mapping = transliterate(lang, [en for _, en in todo], beam, cache)
@@ -184,10 +199,13 @@ def build_state(slug: str, lang: str, beam: int, cache: dict) -> None:
             out[code] = nat
 
     (web_data / "names_translit.json").write_text(
-        json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+    )
     covered = len(authoritative) + len(out)
-    print(f"[{slug}] neural {len(out)}/{len(todo)} -> names_translit.json "
-          f"(+{len(authoritative)} authoritative = {covered}/{len(villages)} villages)")
+    print(
+        f"[{slug}] neural {len(out)}/{len(todo)} -> names_translit.json "
+        f"(+{len(authoritative)} authoritative = {covered}/{len(villages)} villages)"
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -222,14 +240,14 @@ def build_regions(slug: str, lang: str, beam: int) -> None:
     auth = _load_json(web_data / "names.json")
     neural = _load_json(web_data / "names_translit.json")
 
-    v_native = {}                                   # normalised english village name -> native
+    v_native = {}  # normalised english village name -> native
     for r in villages:
         nat = auth.get(str(r[2])) or neural.get(str(r[2]))
         if nat:
             v_native.setdefault(_norm(r[0]), nat)
 
     out = {"state": STATE_NATIVE.get(slug, ""), "districts": {}, "mandals": {}}
-    todo = []                                       # (tier, code, english) needing the model
+    todo = []  # (tier, code, english) needing the model
     for tier in ("districts", "mandals"):
         for r in reg[tier]:
             code, en = str(r["c"]), r["n"]
@@ -247,11 +265,14 @@ def build_regions(slug: str, lang: str, beam: int) -> None:
                 out[tier][code] = nat
 
     (web_data / "regions_native.json").write_text(
-        json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+    )
     total = len(reg["districts"]) + len(reg["mandals"])
     have = len(out["districts"]) + len(out["mandals"])
-    print(f"[{slug}] regions_native {have}/{total} regions + state "
-          f"({'model' if engine else 'from village data only'})")
+    print(
+        f"[{slug}] regions_native {have}/{total} regions + state "
+        f"({'model' if engine else 'from village data only'})"
+    )
 
 
 def _load_json(path: Path) -> dict:
@@ -286,10 +307,13 @@ def evaluate(slug: str, lang: str, beam: int, cache: dict):
     gold = json.loads(names_path.read_text(encoding="utf-8"))
     if not gold:
         return None
-    by_code = {str(r[2]): r[0]
-               for r in json.loads((web_data / "villages.json").read_text(encoding="utf-8"))["rows"]}
-    pairs = [(by_code[c], native) for c, native in gold.items()
-             if c in by_code and "(" not in by_code[c]]
+    by_code = {
+        str(r[2]): r[0]
+        for r in json.loads((web_data / "villages.json").read_text(encoding="utf-8"))["rows"]
+    }
+    pairs = [
+        (by_code[c], native) for c, native in gold.items() if c in by_code and "(" not in by_code[c]
+    ]
     mapping = transliterate(lang, [en for en, _ in pairs], beam, cache)
 
     n = exact = 0
@@ -305,21 +329,26 @@ def evaluate(slug: str, lang: str, beam: int, cache: dict):
         acc += 1 - _lev(got, g) / max(len(g), len(got))
     if not n:
         return None
-    return {"slug": slug, "lang": lang, "n": n,
-            "exact": 100 * exact / n, "charAcc": 100 * acc / n}
+    return {"slug": slug, "lang": lang, "n": n, "exact": 100 * exact / n, "charAcc": 100 * acc / n}
 
 
 # --------------------------------------------------------------------------- #
 def main():
     ap = argparse.ArgumentParser(
-        description="Neural (IndicXlit) native village names — generate or evaluate")
-    ap.add_argument("--state", default="all",
-                    help="all | ap | tg | ka | tn  (default: all)")
+        description="Neural (IndicXlit) native village names — generate or evaluate"
+    )
+    ap.add_argument("--state", default="all", help="all | ap | tg | ka | tn  (default: all)")
     ap.add_argument("--beam", type=int, default=4, help="IndicXlit beam width (default 4)")
-    ap.add_argument("--eval", action="store_true",
-                    help="score the model against authoritative LGD names; write nothing")
-    ap.add_argument("--regions", action="store_true",
-                    help="generate regions_native.json (district/mandal/state names) instead")
+    ap.add_argument(
+        "--eval",
+        action="store_true",
+        help="score the model against authoritative LGD names; write nothing",
+    )
+    ap.add_argument(
+        "--regions",
+        action="store_true",
+        help="generate regions_native.json (district/mandal/state names) instead",
+    )
     args = ap.parse_args()
 
     if args.state in ("all", "both"):
@@ -343,18 +372,31 @@ def main():
                 TN += r["n"]
                 TE += r["exact"] * r["n"] / 100
                 TACC += r["charAcc"] * r["n"] / 100
+
         def pad(s, w):
             return str(s).ljust(w)
-        print("\n" + pad("state", 16) + pad("lang", 5) + pad("pairs", 8)
-              + pad("exact", 9) + "charAcc")
+
+        print(
+            "\n" + pad("state", 16) + pad("lang", 5) + pad("pairs", 8) + pad("exact", 9) + "charAcc"
+        )
         for r in rows:
             exact = "%.1f%%" % r["exact"]
-            print(pad(r["slug"], 16) + pad(r["lang"], 5) + pad(r["n"], 8)
-                  + pad(exact, 9) + ("%.1f%%" % r["charAcc"]))
+            print(
+                pad(r["slug"], 16)
+                + pad(r["lang"], 5)
+                + pad(r["n"], 8)
+                + pad(exact, 9)
+                + ("%.1f%%" % r["charAcc"])
+            )
         if TN:
             o_exact = "%.1f%%" % (100 * TE / TN)
-            print(pad("OVERALL", 16) + pad("", 5) + pad(TN, 8)
-                  + pad(o_exact, 9) + ("%.1f%%" % (100 * TACC / TN)))
+            print(
+                pad("OVERALL", 16)
+                + pad("", 5)
+                + pad(TN, 8)
+                + pad(o_exact, 9)
+                + ("%.1f%%" % (100 * TACC / TN))
+            )
         print("\nCompare with the rule engine: node scraper/translit_eval.mjs")
         return
 

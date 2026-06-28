@@ -13,6 +13,7 @@ release attaches downloadable datasets — see [Releases][releases].
 ## [Unreleased]
 
 ### Added
+
 - **Native district, sub-district and state names** — when the state's own language is
   selected, district/taluk/mandal names and the state name now render in native script
   (`web/data/regions_native.json`) instead of going through the rule engine. LGD has no
@@ -29,11 +30,11 @@ release attaches downloadable datasets — see [Releases][releases].
   Measured against LGD's own gold spellings, character accuracy / exact-match jumps
   well past the rule engine:
 
-  | State | rule engine | **neural** |
-  |---|---|---|
+  | State               | rule engine   | **neural**        |
+  | ------------------- | ------------- | ----------------- |
   | Andhra Pradesh (te) | 76.1% / 11.4% | **88.4% / 43.3%** |
-  | Karnataka (kn) | 82.5% / 16.9% | **91.3% / 47.5%** |
-  | Tamil Nadu (ta) | 69.3% / 3.4% | **81.8% / 21.6%** |
+  | Karnataka (kn)      | 82.5% / 16.9% | **91.3% / 47.5%** |
+  | Tamil Nadu (ta)     | 69.3% / 3.4%  | **81.8% / 21.6%** |
 
   The model is produced offline by a new tool, `scraper/enrich_native_names.py`, whose
   output is committed; the heavy dependency lives in `scraper/requirements-translit.txt`
@@ -44,12 +45,14 @@ release attaches downloadable datasets — see [Releases][releases].
 ## [1.2.2] — 2026-06-26
 
 ### Fixed
+
 - Transliteration: a doubled nasal (`nn`/`mm`) now geminates (న్న / మ్మ) instead of
   becoming an anusvara + consonant (Dimma → దిమ్మ, Chennai → చెన్నై).
 
 ## [1.2.1] — 2026-06-26
 
 ### Changed
+
 - **Morpheme-aware transliteration** — the engine now renders common place-name
   suffixes (`-pur`, `-palli`, `-puram`, `-gaon`, `-pettai`, …) from their canonical
   spelling and nasalises stem-final `n`/`m` before them, rather than going letter-by-
@@ -59,12 +62,13 @@ release attaches downloadable datasets — see [Releases][releases].
 - **Native name in every CSV row** — the `<state>_villages.csv` exports now fill
   `Village (Native)` for every village (the authoritative LGD spelling where
   published, otherwise transliteration in the state's script), with a `Native
-  Source` column recording which. Generated via the shared UI engine
+Source` column recording which. Generated via the shared UI engine
   (`scraper/translit_cli.mjs`), so the CSV and the map agree.
 
 ## [1.2.0] — 2026-06-26
 
 ### Added
+
 - **Tamil Nadu** (LGD state `33`) — 38 districts, 317 taluks and 18,681 villages,
   with pincodes, district/taluk boundary maps and best-effort village coordinates.
 - **Tamil (தமிழ்)** added to the language selector, with Tamil-script
@@ -81,6 +85,7 @@ release attaches downloadable datasets — see [Releases][releases].
 ## [1.1.0] — 2026-06-26
 
 ### Added
+
 - **Karnataka** (LGD state `29`) — 31 districts, 240 taluks and 30,771 villages,
   with pincodes, district/taluk boundary maps and best-effort village coordinates.
 - Per-state sub-district term: Karnataka shows **Taluk**, Andhra Pradesh and
@@ -89,24 +94,28 @@ release attaches downloadable datasets — see [Releases][releases].
   transliteration of place names.
 
 ### Fixed
+
 - Transliteration: a word-initial `n`/`m` no longer produces an invalid leading
   anusvara (e.g. "Mysuru").
 
 ## [1.0.2] — 2026-06-26
 
 ### Added
+
 - **Multilingual UI** — English, Telugu, Hindi and Urdu (Urdu right-to-left),
   with best-effort transliteration of place names; the canonical English name is
   kept for hover and search.
 - **Pull-request auto-labeller** — labels PRs by the paths they change.
 
 ### Changed
+
 - Districts and mandals are now listed **A → Z** (previously by village count).
 - Map zoom controls moved to the **top-right** so they clear the sidebar toggle.
 
 ## [1.0.1] — 2026-06-26
 
 ### Added
+
 - **Pincodes** for ~99.9% of villages (from LGD `pincode_villages`) — shown in
   lists and pins, and searchable.
 - **Best-effort village coordinates** (~16%) matched via GeoNames and validated
@@ -116,6 +125,7 @@ release attaches downloadable datasets — see [Releases][releases].
 ## [1.0.0] — 2026-06-26
 
 ### Added
+
 - Initial release: interactive village maps + search for **Andhra Pradesh** and
   **Telangana**, organised by District → Mandal → Village.
 - Data pipeline that builds each state from the **Local Government Directory

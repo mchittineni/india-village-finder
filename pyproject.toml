@@ -1,0 +1,7 @@
+# Python tooling configuration for the data pipeline (scraper/).
+# Formatting is done with Black; see scraper/requirements-dev.txt.
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+# Black already skips .venv, __pycache__, etc. by default.

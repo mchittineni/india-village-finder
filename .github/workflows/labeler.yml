@@ -16,7 +16,7 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
   schedule:
-    - cron: "0 4 * * *"   # daily 04:00 UTC — catch open PRs missing labels
+    - cron: "0 4 * * *" # daily 04:00 UTC — catch open PRs missing labels
   workflow_dispatch:
 
 permissions:

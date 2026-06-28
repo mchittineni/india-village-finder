@@ -30,36 +30,53 @@ const I = globalThis.window.VF_I18N;
 
 // (slug, language the state's native names are written in)
 const STATES = [
-  ["andhra_pradesh", "te"], ["telangana", "te"],
-  ["karnataka", "kn"], ["tamil_nadu", "ta"],
+  ["andhra_pradesh", "te"],
+  ["telangana", "te"],
+  ["karnataka", "kn"],
+  ["tamil_nadu", "ta"]
 ];
 // Overall floors, set a few points below current so a routine LGD data refresh
 // doesn't trip CI but a real engine regression does.
 const FLOOR = { charAcc: 66.0, exact: 3.0 };
 
 function lev(a, b) {
-  const m = a.length, n = b.length;
+  const m = a.length,
+    n = b.length;
   const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
   for (let j = 0; j <= n; j++) d[0][j] = j;
   for (let i = 1; i <= m; i++)
     for (let j = 1; j <= n; j++)
-      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      d[i][j] = Math.min(
+        d[i - 1][j] + 1,
+        d[i][j - 1] + 1,
+        d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
   return d[m][n];
 }
 // Parentheticals in LGD names are translated (e.g. "(South)" → "(தெற்கு)"), not
 // transliterable, so we compare the core name.
-const clean = (s) => (s || "").replace(/\(.*?\)/g, "").replace(/\s+/g, " ").trim();
+const clean = (s) =>
+  (s || "")
+    .replace(/\(.*?\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
-let TN = 0, TE = 0, TACC = 0;
+let TN = 0,
+  TE = 0,
+  TACC = 0;
 const rows = [];
 for (const [slug, lang] of STATES) {
   let names, vrows;
   try {
     names = JSON.parse(readFileSync(join(ROOT, slug, "web", "data", "names.json")));
     vrows = JSON.parse(readFileSync(join(ROOT, slug, "web", "data", "villages.json"))).rows;
-  } catch { continue; }
+  } catch {
+    continue;
+  }
   const byCode = new Map(vrows.map((r) => [String(r[2]), r[0]]));
-  let n = 0, exact = 0, acc = 0;
+  let n = 0,
+    exact = 0,
+    acc = 0;
   for (const [code, native] of Object.entries(names)) {
     const en = byCode.get(code);
     if (!en || en.includes("(")) continue;
@@ -71,22 +88,36 @@ for (const [slug, lang] of STATES) {
     acc += 1 - lev(got, gold) / Math.max(gold.length, got.length);
   }
   if (!n) continue;
-  rows.push({ slug, lang, n, exact: 100 * exact / n, charAcc: 100 * acc / n });
-  TN += n; TE += exact; TACC += acc;
+  rows.push({ slug, lang, n, exact: (100 * exact) / n, charAcc: (100 * acc) / n });
+  TN += n;
+  TE += exact;
+  TACC += acc;
 }
 
 const pad = (s, w) => String(s).padEnd(w);
 console.log(`${pad("state", 16)}${pad("lang", 5)}${pad("pairs", 8)}${pad("exact", 9)}charAcc`);
 for (const r of rows)
-  console.log(`${pad(r.slug, 16)}${pad(r.lang, 5)}${pad(r.n, 8)}${pad(r.exact.toFixed(1) + "%", 9)}${r.charAcc.toFixed(1)}%`);
-const oExact = TN ? 100 * TE / TN : 0, oAcc = TN ? 100 * TACC / TN : 0;
-console.log(`${pad("OVERALL", 16)}${pad("", 5)}${pad(TN, 8)}${pad(oExact.toFixed(1) + "%", 9)}${oAcc.toFixed(1)}%`);
+  console.log(
+    `${pad(r.slug, 16)}${pad(r.lang, 5)}${pad(r.n, 8)}${pad(r.exact.toFixed(1) + "%", 9)}${r.charAcc.toFixed(1)}%`
+  );
+const oExact = TN ? (100 * TE) / TN : 0,
+  oAcc = TN ? (100 * TACC) / TN : 0;
+console.log(
+  `${pad("OVERALL", 16)}${pad("", 5)}${pad(TN, 8)}${pad(oExact.toFixed(1) + "%", 9)}${oAcc.toFixed(1)}%`
+);
 
 if (process.argv.includes("--check")) {
-  if (!TN) { console.error("FAIL: no gold pairs found (names.json missing?)"); process.exit(1); }
-  if (oAcc < FLOOR.charAcc || oExact < FLOOR.exact) {
-    console.error(`FAIL: below floor (charAcc ${oAcc.toFixed(1)}% < ${FLOOR.charAcc}% or exact ${oExact.toFixed(1)}% < ${FLOOR.exact}%)`);
+  if (!TN) {
+    console.error("FAIL: no gold pairs found (names.json missing?)");
     process.exit(1);
   }
-  console.log(`OK: charAcc ${oAcc.toFixed(1)}% ≥ ${FLOOR.charAcc}%, exact ${oExact.toFixed(1)}% ≥ ${FLOOR.exact}%`);
+  if (oAcc < FLOOR.charAcc || oExact < FLOOR.exact) {
+    console.error(
+      `FAIL: below floor (charAcc ${oAcc.toFixed(1)}% < ${FLOOR.charAcc}% or exact ${oExact.toFixed(1)}% < ${FLOOR.exact}%)`
+    );
+    process.exit(1);
+  }
+  console.log(
+    `OK: charAcc ${oAcc.toFixed(1)}% ≥ ${FLOOR.charAcc}%, exact ${oExact.toFixed(1)}% ≥ ${FLOOR.exact}%`
+  );
 }

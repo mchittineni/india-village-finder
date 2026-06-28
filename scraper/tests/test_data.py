@@ -12,6 +12,7 @@ For each state we check the per-state web payload:
     <state>/web/data/districts.geojson, mandals.geojson  map polygons
     <state>/data/<state>_villages.csv flat export
 """
+
 import csv
 import io
 import json
@@ -36,8 +37,10 @@ GEO_COVERAGE_MIN = 0.80  # >=80% of regions should have a matching polygon
 
 # Unicode block per language script, for validating native-script output.
 SCRIPT_RANGES = {
-    "te": (0x0C00, 0x0C7F), "kn": (0x0C80, 0x0CFF),
-    "ta": (0x0B80, 0x0BFF), "hi": (0x0900, 0x097F),
+    "te": (0x0C00, 0x0C7F),
+    "kn": (0x0C80, 0x0CFF),
+    "ta": (0x0B80, 0x0BFF),
+    "hi": (0x0900, 0x097F),
 }
 
 
@@ -49,7 +52,10 @@ def load(slug, name):
 def state(request):
     slug, code, name, vrange = request.param
     return {
-        "slug": slug, "code": code, "name": name, "vrange": vrange,
+        "slug": slug,
+        "code": code,
+        "name": name,
+        "vrange": vrange,
         "regions": load(slug, "regions.json"),
         "villages": load(slug, "villages.json"),
         "meta": load(slug, "meta.json"),
@@ -112,8 +118,9 @@ def test_village_rows_structure(state):
         assert isinstance(name, str) and name.strip()
         assert 0 <= mi < n_m, "village references invalid mandal index"
         assert cat in (0, 1)
-        assert pin == "" or (isinstance(pin, str) and pin.isdigit() and len(pin) == 6), \
-            f"bad pincode {pin!r}"
+        assert pin == "" or (
+            isinstance(pin, str) and pin.isdigit() and len(pin) == 6
+        ), f"bad pincode {pin!r}"
         codes.add(code)
     assert len(codes) == len(v["rows"]), "duplicate village codes"
 
@@ -139,8 +146,9 @@ def test_coords_valid(state):
         assert code in village_codes, f"coords for unknown village {code}"
         assert isinstance(ll, list) and len(ll) == 2
         lat, lng = ll
-        assert min_lat <= lat <= max_lat and min_lon <= lng <= max_lon, \
-            f"coord {ll} outside AP/TG bbox"
+        assert (
+            min_lat <= lat <= max_lat and min_lon <= lng <= max_lon
+        ), f"coord {ll} outside AP/TG bbox"
     if "with_coords" in state["meta"]["counts"]:
         assert state["meta"]["counts"]["with_coords"] == len(coords)
 
@@ -178,9 +186,19 @@ def test_csv_matches_villages(state):
     path = ROOT / state["slug"] / "data" / f"{state['slug']}_villages.csv"
     rows = list(csv.DictReader(io.StringIO(path.read_text(encoding="utf-8"))))
     assert len(rows) == len(state["villages"]["rows"]), "CSV row count != villages.json"
-    expected_cols = {"State", "District", "District Code", "Mandal", "Mandal Code",
-                     "Village", "Village (Native)", "Native Source", "Village Code",
-                     "Category", "Status"}
+    expected_cols = {
+        "State",
+        "District",
+        "District Code",
+        "Mandal",
+        "Mandal Code",
+        "Village",
+        "Village (Native)",
+        "Native Source",
+        "Village Code",
+        "Category",
+        "Status",
+    }
     assert expected_cols.issubset(rows[0].keys())
     assert all(r["State"] == state["name"] for r in rows)
     csv_codes = {int(r["Village Code"]) for r in rows}
@@ -197,8 +215,9 @@ def test_csv_native_names_populated(state):
     assert filled / len(rows) >= 0.95, f"{state['slug']}: only {filled}/{len(rows)} native names"
     assert all(r["Native Source"] in ("LGD", "transliterated", "") for r in rows)
     # a native name must declare its source, and vice versa
-    assert all(bool(r["Village (Native)"].strip()) == bool(r["Native Source"].strip())
-               for r in rows)
+    assert all(
+        bool(r["Village (Native)"].strip()) == bool(r["Native Source"].strip()) for r in rows
+    )
 
 
 def test_neural_native_names(state):
@@ -221,8 +240,9 @@ def test_neural_native_names(state):
         assert code in village_codes, f"neural name for unknown village {code}"
         assert code not in auth, f"neural name overlaps authoritative for {code}"
         assert native.strip(), f"empty neural name for {code}"
-        assert any(lo <= ord(c) <= hi for c in native), \
-            f"neural name {native!r} ({code}) not in {lang} script"
+        assert any(
+            lo <= ord(c) <= hi for c in native
+        ), f"neural name {native!r} ({code}) not in {lang} script"
 
 
 def test_region_native_names(state):
@@ -245,8 +265,9 @@ def test_region_native_names(state):
         valid = {str(r["c"]) for r in state["regions"][tier]}
         for code, native in rn.get(tier, {}).items():
             assert code in valid, f"{tier} native for unknown code {code}"
-            assert native.strip() and in_script(native), \
-                f"{tier} native {native!r} ({code}) not in {lang} script"
+            assert native.strip() and in_script(
+                native
+            ), f"{tier} native {native!r} ({code}) not in {lang} script"
 
 
 # --------------------------------------------------------------------------- #
@@ -275,7 +296,9 @@ def test_district_geojson_valid_and_joins(state):
     poly_codes = set()
     for f in gj["features"]:
         p = f["properties"]
-        assert isinstance(p.get("c"), int) and p["c"] > 0 and p.get("n"), "missing/invalid polygon code"
+        assert (
+            isinstance(p.get("c"), int) and p["c"] > 0 and p.get("n")
+        ), "missing/invalid polygon code"
         assert f["geometry"]["type"] in ("Polygon", "MultiPolygon")
         assert _coords_in_bbox(f["geometry"]), "district polygon outside AP/TG bbox"
         poly_codes.add(p["c"])
@@ -296,7 +319,9 @@ def test_mandal_geojson_valid_and_joins(state):
     poly_codes = set()
     for f in gj["features"]:
         p = f["properties"]
-        assert isinstance(p.get("c"), int) and p["c"] > 0 and p.get("n"), "missing/invalid polygon code"
+        assert (
+            isinstance(p.get("c"), int) and p["c"] > 0 and p.get("n")
+        ), "missing/invalid polygon code"
         assert f["geometry"]["type"] in ("Polygon", "MultiPolygon")
         poly_codes.add(p["c"])
     coverage = len(poly_codes & region_codes) / len(region_codes)
@@ -311,7 +336,7 @@ def test_mandal_geojson_valid_and_joins(state):
 def test_village_codes_disjoint_across_states():
     """LGD village codes are globally unique, so no two states may overlap."""
     import itertools
-    codes = {slug: {row[2] for row in load(slug, "villages.json")["rows"]}
-             for slug, *_ in STATES}
+
+    codes = {slug: {row[2] for row in load(slug, "villages.json")["rows"]} for slug, *_ in STATES}
     for a, b in itertools.combinations(codes, 2):
         assert codes[a].isdisjoint(codes[b]), f"village codes overlap between {a} and {b}"

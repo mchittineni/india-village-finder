@@ -1,0 +1,56 @@
+name: API docs
+
+# Build the project's API reference (JSDoc for the web app + pdoc for the Python
+# pipeline) and upload it as a downloadable artifact. Kept separate from the site
+# deploy so it never interferes with GitHub Pages.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scraper/web_template/**"
+      - "scraper/*.py"
+      - "jsdoc.json"
+      - "package.json"
+      - "docs/**"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install tooling
+        run: |
+          npm install
+          python -m pip install -r scraper/requirements-dev.txt
+
+      - name: Build API reference (JSDoc + pdoc)
+        run: npm run docs
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-docs
+          path: docs/api
+          if-no-files-found: error

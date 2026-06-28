@@ -1,0 +1,4 @@
+# Bulk reformat with Prettier + Black (no behaviour change).
+# Configure locally with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub honours this file automatically.
+bacf4d6b5b558fcf9e5330ae0cc9db0107fa71e8  style: apply Prettier + Black across the whole project

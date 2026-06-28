@@ -9,6 +9,7 @@ VF_VERSION environment variable.
 
 Run from the repository root:  python scraper/release_notes.py
 """
+
 import json
 import os
 from pathlib import Path
@@ -26,8 +27,11 @@ def main():
 
     version = os.environ.get("VF_VERSION", "").strip()
     source_date = metas[0][1].get("source_date", "")
-    title = (f"## 🗺️ Village data {version} — {source_date}"
-             if version else f"## 🗺️ Village data — {source_date}")
+    title = (
+        f"## 🗺️ Village data {version} — {source_date}"
+        if version
+        else f"## 🗺️ Village data — {source_date}"
+    )
 
     names = [m["state"] for _, m in metas]
     header = "| | " + " | ".join(names) + " |"
@@ -38,21 +42,37 @@ def main():
 
     artifacts = ["| File | Contents |", "|---|---|"]
     for slug, m in metas:
-        artifacts.append(f"| `{slug}_villages.csv` | {m['state']} — flat village list (one row per village, with LGD codes) |")
+        artifacts.append(
+            f"| `{slug}_villages.csv` | {m['state']} — flat village list (one row per village, with LGD codes) |"
+        )
     for slug, m in metas:
-        artifacts.append(f"| `{slug}_data.zip` | {m['state']} — full dataset (regions/villages/meta JSON + boundary GeoJSON + CSV) |")
+        artifacts.append(
+            f"| `{slug}_data.zip` | {m['state']} — full dataset (regions/villages/meta JSON + boundary GeoJSON + CSV) |"
+        )
     artifacts.append("| `village_data_all.zip` | everything, all states |")
 
-    notes = "\n".join([
-        title, "",
-        f"Datasets sourced from the **Local Government Directory (LGD)** dump dated **{source_date}**.", "",
-        header, align, row("Districts", "districts"), row("Mandals", "mandals"), row("Villages", "villages"), "",
-        "### Artifacts", *artifacts, "",
-        "**Live site:** https://mchittineni.github.io/india-village-finder/", "",
-        "---",
-        "Data © Government of India, used under **GODL-India** — see `DATA_LICENSE.md` for the",
-        "required attribution. Verify anything official against https://lgdirectory.gov.in.",
-    ])
+    notes = "\n".join(
+        [
+            title,
+            "",
+            f"Datasets sourced from the **Local Government Directory (LGD)** dump dated **{source_date}**.",
+            "",
+            header,
+            align,
+            row("Districts", "districts"),
+            row("Mandals", "mandals"),
+            row("Villages", "villages"),
+            "",
+            "### Artifacts",
+            *artifacts,
+            "",
+            "**Live site:** https://mchittineni.github.io/india-village-finder/",
+            "",
+            "---",
+            "Data © Government of India, used under **GODL-India** — see `DATA_LICENSE.md` for the",
+            "required attribution. Verify anything official against https://lgdirectory.gov.in.",
+        ]
+    )
     (ROOT / "release_notes.md").write_text(notes, encoding="utf-8")
     print(f"source_date={source_date}")
 

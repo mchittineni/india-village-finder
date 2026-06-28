@@ -1,0 +1,23 @@
+{
+  "tags": {
+    "allowUnknownTags": true
+  },
+  "source": {
+    "include": ["scraper/web_template"],
+    "includePattern": ".+\\.js$",
+    "excludePattern": "(node_modules/|docs/)"
+  },
+  "plugins": ["plugins/markdown"],
+  "opts": {
+    "destination": "docs/api/js",
+    "recurse": true,
+    "readme": "docs/jsdoc-intro.md",
+    "template": "node_modules/docdash"
+  },
+  "docdash": {
+    "search": true,
+    "collapse": true,
+    "typedefs": true,
+    "sectionOrder": ["Modules", "Classes", "Namespaces", "Global"]
+  }
+}

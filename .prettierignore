@@ -1,0 +1,22 @@
+# Dependencies & generated documentation (build artifacts)
+node_modules/
+docs/api/
+package-lock.json
+**/.pytest_cache/
+
+# Generated data — huge, machine-written JSON / CSV / GeoJSON. Never reformat:
+# reflowing minified JSON would explode the diff and the file size.
+*/data/
+*/web/data/
+**/*.geojson
+**/*.csv
+
+# The per-state web apps are copied verbatim from scraper/web_template/ (the single
+# source of truth). Format the template instead, then re-copy to the states.
+andhra_pradesh/web/
+telangana/web/
+karnataka/web/
+tamil_nadu/web/
+
+# Python is formatted by Black, not Prettier.
+*.py
