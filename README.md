@@ -69,10 +69,14 @@ Karnataka's and Tamil Nadu's sub-districts are **Taluks**; AP/Telangana's are **
   letter). It's still approximate — the canonical English name is always kept on hover
   and used for search — but its fidelity is **measured against LGD's official names**
   (`scraper/translit_eval.mjs`) and guarded in CI.
-- **Authoritative native names** — where LGD publishes a village's name in the state's
-  own script, that official name is shown instead of transliteration when that language
-  is selected (e.g. Telangana villages in Telugu, Tamil Nadu villages in Tamil). Coverage
-  follows LGD (Telangana ~99%, Tamil Nadu/AP partial), with transliteration as fallback.
+- **Native-script names for every village** — when the state's own language is selected,
+  each village shows its native name resolved as **authoritative LGD spelling →
+  neural transliteration → rule-based transliteration**. Where LGD publishes the official
+  spelling (e.g. most Telangana villages) it wins; everywhere else a trained neural model
+  (**AI4Bharat IndicXlit**, committed offline as `names_translit.json`) fills the gap, so
+  **every village carries a native name**. District, sub-district and state names render in
+  native script too (`regions_native.json`). The canonical English name is always kept on
+  hover and used for search.
 - **Districts, mandals and villages listed A → Z** for predictable scanning.
 - **Pincodes** for ~99.9% of villages (from LGD), shown in lists, search and pins.
 - **Village locations** where we can confidently place them (matched via GeoNames and
@@ -97,22 +101,30 @@ Karnataka's and Tamil Nadu's sub-districts are **Taluks**; AP/Telangana's are **
 ├── index.html               # landing page → links to all four state maps
 ├── andhra_pradesh/          # self-contained Andhra Pradesh deliverable
 │   ├── data/                #   andhra_pradesh_villages.csv (one row per village)
-│   └── web/                 #   the map app (index.html, app.js, i18n.js, styles.css, config.js)
-│       └── data/            #   regions.json, villages.json, names.json, meta.json, *.geojson
+│   └── web/                 #   the map app (index.html, app.js, i18n.js, nearby.js, styles.css, config.js)
+│       └── data/            #   regions, villages, meta, coords, names, names_translit,
+│                            #   regions_native (.json) + districts/mandals (.geojson)
 ├── telangana/               # identical structure, for Telangana
 ├── karnataka/               # identical structure, for Karnataka (sub-districts = Taluks)
 ├── tamil_nadu/              # identical structure, for Tamil Nadu (sub-districts = Taluks)
 ├── scraper/                 # SHARED tooling — one code path builds all states
 │   ├── pipeline.py          #   LGD dump → per-state village data (JSON + CSV)
 │   ├── build_boundaries.py  #   LGD polygons → simplified per-state map shapes
+│   ├── enrich_coords.py     #   best-effort precise village coordinates (GeoNames)
+│   ├── enrich_native_names.py #  offline neural native names (IndicXlit; villages + regions)
 │   ├── lgd_client.py        #   live LGD client, used to verify the dump
 │   ├── changelog.py         #   writes the "what changed" summary for refresh PRs
+│   ├── release_notes.py     #   release notes + version bump for the auto-release
+│   ├── translit_cli.mjs     #   transliteration bridge so the CSV uses the UI engine
+│   ├── translit_eval.mjs    #   scores transliteration vs LGD gold (CI guard)
 │   ├── tests/               #   data-validity tests (run on every PR)
 │   ├── web_template/        #   single source of truth for the UI (copied per state)
-│   └── requirements*.txt
+│   └── requirements*.txt    #   runtime · -dev (pytest) · -translit (offline IndicXlit)
 └── .github/workflows/
     ├── update-data.yml      #   weekly/monthly refresh → opens a reviewed PR
+    ├── regenerate-native-names.yml # weekly/on-demand neural names → reviewed PR
     ├── ci.yml               #   runs the data-validity tests on every PR
+    ├── release.yml          #   publishes a versioned Release with downloadable data
     └── deploy-pages.yml     #   publishes the site to GitHub Pages
 ```
 
@@ -130,7 +142,8 @@ differs by an LGD state code (Andhra Pradesh = `28`, Telangana = `36`, Karnataka
 | Live cross-check | LGD's real-time portal | Every build compares its district & mandal counts against the **live** LGD site, so a stale mirror is caught. The result is saved in each `web/data/meta.json`. |
 | Map shapes | [`ramSeraph/indian_admin_boundaries`](https://github.com/ramSeraph/indian_admin_boundaries) | Current (2016/2022) LGD boundary polygons, joined to the village data by LGD code. |
 | Pincodes | **LGD** `pincode_villages` mapping | Joined to villages by LGD village code (~99.9% coverage). |
-| Native village names | **LGD** `Village Name (In Local)` column | The state's *own official* spelling. Kept only when it's genuinely in the state's script (blank/Latin entries are dropped), so a shipped native name is authoritative — preferred over transliteration. Coverage follows LGD. |
+| Native village names (authoritative) | **LGD** `Village Name (In Local)` column | The state's *own official* spelling. Kept only when it's genuinely in the state's script (blank/Latin entries are dropped), so a shipped native name is authoritative — preferred over everything else. Coverage follows LGD. |
+| Native names (neural fallback) | **AI4Bharat IndicXlit**, generated offline | A trained English→Indic model fills every village/region LGD leaves blank (`names_translit.json`, `regions_native.json`). Clearly *approximate* but markedly better than the rule engine; measured against LGD gold via `enrich_native_names.py --eval`. Committed as plain JSON, so CI and the browser never load PyTorch. |
 | Village coordinates | [GeoNames](https://www.geonames.org/) (name match, sub-district-validated) | Best-effort *approximate* points; only kept when close to the village's mandal/taluk, so coverage is partial (~8–17%). |
 | Nearby civic services | [OpenStreetMap](https://www.openstreetmap.org/copyright) via [Overpass](https://overpass-api.de/) | Live, on-demand lookup of hospitals/offices/police near a pinned village (ODbL). |
 
@@ -159,7 +172,7 @@ python3 -m venv .venv
 ./.venv/bin/python -m pytest tests -v
 ```
 
-Handy flags: `--state ap|tg|ka|both`, `--offline` (reuse downloads), `--no-verify`.
+Handy flags: `--state ap|tg|ka|tn|both`, `--offline` (reuse downloads), `--no-verify`.
 
 **Preview the website locally:**
 
@@ -234,8 +247,8 @@ See **[`CHANGELOG.md`](CHANGELOG.md)** for what changed in each release.
 - [ ] **More states** — the pipeline is state-code driven, so [adding one](CONTRIBUTING.md) is small.
 - [ ] **Public read-only API** for village / pincode lookup.
 - [ ] **Better coordinate coverage** for villages.
-- [x] **Native-script village names** from LGD where published (preferred over transliteration);
-  extending authoritative names to districts/sub-districts is still open.
+- [x] **Native-script names everywhere** — authoritative LGD spellings where published, a
+  neural model (IndicXlit) for the rest, covering villages *and* districts/sub-districts/state.
 - [ ] **Accessibility pass** — keyboard, screen-reader and contrast.
 
 Have an idea? [Open a feature request](https://github.com/mchittineni/india-village-finder/issues/new?template=feature_request.yml).

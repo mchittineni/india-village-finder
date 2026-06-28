@@ -1,7 +1,8 @@
 /* =====================================================================
-   AP & Telangana Village Finder — map application
+   Village Finder — map application (one build, any state)
    Single-state app: config.js (window.VF_CONFIG) selects the state.
-   Data: data/{regions,villages,meta}.json + data/{districts,mandals}.geojson
+   Data: data/{regions,villages,meta,coords,names,names_translit,regions_native}.json
+         + data/{districts,mandals}.geojson
    UI text + place-name transliteration: i18n.js (window.VF_I18N)
    ===================================================================== */
 (function () {
@@ -219,8 +220,6 @@
     else showDistrictView(false);
     if (inSearch) runSearch($("#search").value);
   }
-
-  function setBranding() { applyI18n(); }
 
   function buildSwitch() {
     var box = $("#state-switch");

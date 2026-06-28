@@ -27,6 +27,7 @@ Run
 ---
     python scraper/enrich_native_names.py                # all states -> names_translit.json
     python scraper/enrich_native_names.py --state ka     # one state (ap|tg|ka|tn)
+    python scraper/enrich_native_names.py --regions      # district/mandal/state -> regions_native.json
     python scraper/enrich_native_names.py --eval         # score vs LGD gold, write nothing
 
 `--eval` is the HONEST, non-circular quality metric: it transliterates the villages
