@@ -5,38 +5,38 @@
 data:
   - changed-files:
       - any-glob-to-any-file:
-          - '**/data/**'
-          - '**/*.csv'
-          - '**/*.geojson'
-          - '**/coords.json'
+          - "**/data/**"
+          - "**/*.csv"
+          - "**/*.geojson"
+          - "**/coords.json"
 
 documentation:
   - changed-files:
       - any-glob-to-any-file:
-          - '**/*.md'
-          - 'LICENSE'
-          - 'DATA_LICENSE.md'
+          - "**/*.md"
+          - "LICENSE"
+          - "DATA_LICENSE.md"
 
 web:
   - changed-files:
       - any-glob-to-any-file:
-          - 'scraper/web_template/**'
-          - '**/web/*.html'
-          - '**/web/*.css'
-          - '**/web/*.js'
+          - "scraper/web_template/**"
+          - "**/web/*.html"
+          - "**/web/*.css"
+          - "**/web/*.js"
 
 scraper:
   - changed-files:
       - any-glob-to-any-file:
-          - 'scraper/*.py'
-          - 'scraper/requirements*.txt'
+          - "scraper/*.py"
+          - "scraper/requirements*.txt"
 
 tests:
   - changed-files:
       - any-glob-to-any-file:
-          - 'scraper/tests/**'
+          - "scraper/tests/**"
 
 ci:
   - changed-files:
       - any-glob-to-any-file:
-          - '.github/**'
+          - ".github/**"

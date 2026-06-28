@@ -9,10 +9,10 @@ reports seriously.
 The deployed site always tracks the latest commit on `main`. Only `main` is
 supported; please report issues against the current version.
 
-| Version | Supported |
-|---------|-----------|
-| `main` (latest) | ✅ |
-| older tags/releases | ❌ |
+| Version             | Supported |
+| ------------------- | --------- |
+| `main` (latest)     | ✅        |
+| older tags/releases | ❌        |
 
 ## Reporting a vulnerability
 

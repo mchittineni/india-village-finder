@@ -16,6 +16,7 @@ Needs the mandal polygons (run build_boundaries.py first). Run from the repo roo
     python scraper/enrich_coords.py            (both states)
     python scraper/enrich_coords.py --state ap
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,8 +39,8 @@ GEONAMES_URL = "https://download.geonames.org/export/dump/IN.zip"
 # GeoNames noise from other states. Karnataka reaches the west coast (~74°E) and
 # Tamil Nadu reaches Kanyakumari (~8°N), so the box is wider than AP/TG alone; the
 # per-village mandal-proximity check still gates matches.
-BBOX = (74.0, 7.5, 86.5, 20.5)             # min_lon, min_lat, max_lon, max_lat
-MATCH_DEG = 0.20                            # ~22 km: keep a name match only this close to its mandal
+BBOX = (74.0, 7.5, 86.5, 20.5)  # min_lon, min_lat, max_lon, max_lat
+MATCH_DEG = 0.20  # ~22 km: keep a name match only this close to its mandal
 
 
 def norm(s: str) -> str:
@@ -62,7 +63,7 @@ def load_geonames() -> dict[str, list[tuple[float, float]]]:
     with zipfile.ZipFile(zpath) as z:
         for line in z.read("IN.txt").decode("utf-8").splitlines():
             f = line.split("\t")
-            if len(f) < 15 or f[6] != "P":          # feature class P = populated place
+            if len(f) < 15 or f[6] != "P":  # feature class P = populated place
                 continue
             try:
                 lat, lng = float(f[4]), float(f[5])
@@ -82,14 +83,16 @@ def polygon_centroid(geom) -> tuple[float, float] | None:
 
     def walk(c):
         if c and isinstance(c[0], (int, float)):
-            xs.append(c[0]); ys.append(c[1])
+            xs.append(c[0])
+            ys.append(c[1])
         else:
             for x in c:
                 walk(x)
+
     walk(geom.get("coordinates", []))
     if not xs:
         return None
-    return (sum(ys) / len(ys), sum(xs) / len(xs))   # (lat, lng)
+    return (sum(ys) / len(ys), sum(xs) / len(xs))  # (lat, lng)
 
 
 def enrich(state_code: int, geo_idx) -> dict:
@@ -118,7 +121,7 @@ def enrich(state_code: int, geo_idx) -> dict:
             continue
         clat, clng = cen
         best, bestd = None, 1e9
-        for (lat, lng) in cands:
+        for lat, lng in cands:
             d = math.hypot(lat - clat, lng - clng)
             if d < bestd:
                 best, bestd = (lat, lng), d

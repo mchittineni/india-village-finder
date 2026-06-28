@@ -31,11 +31,11 @@ This is an open-source project that simplifies searching for Indian geographical
 administrative locations. Instead of manually browsing government websites, users can
 instantly search for:
 
-* 🇮🇳 States
-* 🏙️ Districts
-* 🏡 Mandals / Taluks / Tehsils
-* 🌾 Villages
-* 📮 PIN Codes
+- 🇮🇳 States
+- 🏙️ Districts
+- 🏡 Mandals / Taluks / Tehsils
+- 🌾 Villages
+- 📮 PIN Codes
 
 The project is designed for developers, researchers, government services, logistics
 platforms, and citizens who need quick and accurate location information through a
@@ -45,21 +45,21 @@ modern web interface or API.
 > **Telangana**, **Karnataka** and **Tamil Nadu** (District → Mandal/Taluk → Village).
 > More states and a public API are on the roadmap.
 
-|  | Andhra Pradesh | Telangana | Karnataka | Tamil Nadu |
-|---|---:|---:|---:|---:|
-| Districts | 28 | 33 | 31 | 38 |
-| Mandals / Taluks | 688 | 621 | 240 | 317 |
-| **Villages** | **17,957** | **11,308** | **30,771** | **18,681** |
+|                  | Andhra Pradesh |  Telangana |  Karnataka | Tamil Nadu |
+| ---------------- | -------------: | ---------: | ---------: | ---------: |
+| Districts        |             28 |         33 |         31 |         38 |
+| Mandals / Taluks |            688 |        621 |        240 |        317 |
+| **Villages**     |     **17,957** | **11,308** | **30,771** | **18,681** |
 
-*(Counts come from the latest LGD dump; the automated pipeline keeps them current.
-Karnataka's and Tamil Nadu's sub-districts are **Taluks**; AP/Telangana's are **Mandals**.)*
+_(Counts come from the latest LGD dump; the automated pipeline keeps them current.
+Karnataka's and Tamil Nadu's sub-districts are **Taluks**; AP/Telangana's are **Mandals**.)_
 
 ---
 
 ## What you get
 
 - **A visual map** for each state — districts shaded by how many villages they
-  contain (a *choropleth*). Click a district to zoom into its mandals; click a
+  contain (a _choropleth_). Click a district to zoom into its mandals; click a
   mandal to list its villages; click a village to pin it.
 - **Instant search** across every village, mandal and district — or by **pincode**.
 - **Multilingual UI** — switch the interface between **English, Telugu, Kannada, Tamil,
@@ -136,16 +136,16 @@ differs by an LGD state code (Andhra Pradesh = `28`, Telangana = `36`, Karnataka
 
 ## Where the data comes from
 
-| Layer | Source | Why it's trustworthy |
-|---|---|---|
-| Districts, mandals, villages | **LGD** (`lgdirectory.gov.in`), Ministry of Panchayati Raj | The official Indian government registry of administrative areas. We read it from a **captcha-free [daily mirror](https://github.com/ramSeraph/opendata)** of the LGD dump. |
-| Live cross-check | LGD's real-time portal | Every build compares its district & mandal counts against the **live** LGD site, so a stale mirror is caught. The result is saved in each `web/data/meta.json`. |
-| Map shapes | [`ramSeraph/indian_admin_boundaries`](https://github.com/ramSeraph/indian_admin_boundaries) | Current (2016/2022) LGD boundary polygons, joined to the village data by LGD code. |
-| Pincodes | **LGD** `pincode_villages` mapping | Joined to villages by LGD village code (~99.9% coverage). |
-| Native village names (authoritative) | **LGD** `Village Name (In Local)` column | The state's *own official* spelling. Kept only when it's genuinely in the state's script (blank/Latin entries are dropped), so a shipped native name is authoritative — preferred over everything else. Coverage follows LGD. |
-| Native names (neural fallback) | **AI4Bharat IndicXlit**, generated offline | A trained English→Indic model fills every village/region LGD leaves blank (`names_translit.json`, `regions_native.json`). Clearly *approximate* but markedly better than the rule engine; measured against LGD gold via `enrich_native_names.py --eval`. Committed as plain JSON, so CI and the browser never load PyTorch. |
-| Village coordinates | [GeoNames](https://www.geonames.org/) (name match, sub-district-validated) | Best-effort *approximate* points; only kept when close to the village's mandal/taluk, so coverage is partial (~8–17%). |
-| Nearby civic services | [OpenStreetMap](https://www.openstreetmap.org/copyright) via [Overpass](https://overpass-api.de/) | Live, on-demand lookup of hospitals/offices/police near a pinned village (ODbL). |
+| Layer                                | Source                                                                                            | Why it's trustworthy                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Districts, mandals, villages         | **LGD** (`lgdirectory.gov.in`), Ministry of Panchayati Raj                                        | The official Indian government registry of administrative areas. We read it from a **captcha-free [daily mirror](https://github.com/ramSeraph/opendata)** of the LGD dump.                                                                                                                                                  |
+| Live cross-check                     | LGD's real-time portal                                                                            | Every build compares its district & mandal counts against the **live** LGD site, so a stale mirror is caught. The result is saved in each `web/data/meta.json`.                                                                                                                                                             |
+| Map shapes                           | [`ramSeraph/indian_admin_boundaries`](https://github.com/ramSeraph/indian_admin_boundaries)       | Current (2016/2022) LGD boundary polygons, joined to the village data by LGD code.                                                                                                                                                                                                                                          |
+| Pincodes                             | **LGD** `pincode_villages` mapping                                                                | Joined to villages by LGD village code (~99.9% coverage).                                                                                                                                                                                                                                                                   |
+| Native village names (authoritative) | **LGD** `Village Name (In Local)` column                                                          | The state's _own official_ spelling. Kept only when it's genuinely in the state's script (blank/Latin entries are dropped), so a shipped native name is authoritative — preferred over everything else. Coverage follows LGD.                                                                                               |
+| Native names (neural fallback)       | **AI4Bharat IndicXlit**, generated offline                                                        | A trained English→Indic model fills every village/region LGD leaves blank (`names_translit.json`, `regions_native.json`). Clearly _approximate_ but markedly better than the rule engine; measured against LGD gold via `enrich_native_names.py --eval`. Committed as plain JSON, so CI and the browser never load PyTorch. |
+| Village coordinates                  | [GeoNames](https://www.geonames.org/) (name match, sub-district-validated)                        | Best-effort _approximate_ points; only kept when close to the village's mandal/taluk, so coverage is partial (~8–17%).                                                                                                                                                                                                      |
+| Nearby civic services                | [OpenStreetMap](https://www.openstreetmap.org/copyright) via [Overpass](https://overpass-api.de/) | Live, on-demand lookup of hospitals/offices/police near a pinned village (ODbL).                                                                                                                                                                                                                                            |
 
 > ℹ️ Government data can lag recent changes. For example, the brand-new AP districts
 > **Markapuram** and **Polavaram** appear in the lists and search but don't yet have
@@ -248,7 +248,7 @@ See **[`CHANGELOG.md`](CHANGELOG.md)** for what changed in each release.
 - [ ] **Public read-only API** for village / pincode lookup.
 - [ ] **Better coordinate coverage** for villages.
 - [x] **Native-script names everywhere** — authoritative LGD spellings where published, a
-  neural model (IndicXlit) for the rest, covering villages *and* districts/sub-districts/state.
+      neural model (IndicXlit) for the rest, covering villages _and_ districts/sub-districts/state.
 - [ ] **Accessibility pass** — keyboard, screen-reader and contrast.
 
 Have an idea? [Open a feature request](https://github.com/mchittineni/india-village-finder/issues/new?template=feature_request.yml).

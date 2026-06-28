@@ -2,8 +2,8 @@ name: Update village data
 
 on:
   schedule:
-    - cron: "0 2 * * 1"   # weekly  — Mondays 02:00 UTC: refresh village data
-    - cron: "0 3 1 * *"   # monthly — 1st 03:00 UTC: data + boundaries
+    - cron: "0 2 * * 1" # weekly  — Mondays 02:00 UTC: refresh village data
+    - cron: "0 3 1 * *" # monthly — 1st 03:00 UTC: data + boundaries
   workflow_dispatch:
     inputs:
       refresh_boundaries:
@@ -12,9 +12,9 @@ on:
         default: false
 
 permissions:
-  contents: write          # push the data branch
-  pull-requests: write     # open the PR + request reviewers
-  statuses: write          # report the validation status check on the PR
+  contents: write # push the data branch
+  pull-requests: write # open the PR + request reviewers
+  statuses: write # report the validation status check on the PR
 
 concurrency:
   group: update-village-data

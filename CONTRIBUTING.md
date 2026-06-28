@@ -11,7 +11,7 @@ Directory (LGD)**. If something is wrong or missing:
 
 - Open a **[Data correction issue](../../issues/new?template=data_correction.yml)** — tell us
   the state, district, mandal, village, and what's wrong vs. what it should be.
-- For errors in the *source* records, please also report them to
+- For errors in the _source_ records, please also report them to
   [lgdirectory.gov.in](https://lgdirectory.gov.in) so they're fixed upstream for everyone.
 
 We don't hand-edit data files (they're regenerated automatically) — instead we fix the

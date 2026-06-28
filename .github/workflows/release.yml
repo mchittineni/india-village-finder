@@ -39,7 +39,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0          # need tags + history to compute the next version
+          fetch-depth: 0 # need tags + history to compute the next version
 
       - name: Setup Python
         uses: actions/setup-python@v6

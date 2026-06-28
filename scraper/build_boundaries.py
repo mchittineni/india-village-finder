@@ -24,6 +24,7 @@ Run:  python build_boundaries.py            (both states)
       python build_boundaries.py --state ap
       python build_boundaries.py --offline  (reuse cached .7z downloads)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -54,14 +55,17 @@ LEVELS = {
         "url": f"{BASE}/districts/LGD_Districts.geojsonl.7z",
         "archive": "LGD_Districts.geojsonl.7z",
         "jsonl": "LGD_Districts.geojsonl",
-        "code": "dist_lgd", "name": "dtname",
+        "code": "dist_lgd",
+        "name": "dtname",
         "simplify": "12%",
     },
     "mandals": {
         "url": f"{BASE}/subdistricts/LGD_Subdistricts.geojsonl.7z",
         "archive": "LGD_Subdistricts.geojsonl.7z",
         "jsonl": "LGD_Subdistricts.geojsonl",
-        "code": "subdt_lgd", "name": "sdtname", "parent": "dist_lgd",
+        "code": "subdt_lgd",
+        "name": "sdtname",
+        "parent": "dist_lgd",
         "simplify": "9%",
     },
 }
@@ -130,9 +134,20 @@ def simplify(fc: dict, percent: str, out_path: Path) -> bool:
         with tempfile.NamedTemporaryFile("w", suffix=".geojson", delete=False) as tf:
             json.dump(fc, tf)
             tmp = tf.name
-        cmd = ["npx", "--yes", "mapshaper", tmp,
-               "-simplify", percent, "keep-shapes", "-clean",
-               "-o", "format=geojson", "precision=0.0001", str(out_path)]
+        cmd = [
+            "npx",
+            "--yes",
+            "mapshaper",
+            tmp,
+            "-simplify",
+            percent,
+            "keep-shapes",
+            "-clean",
+            "-o",
+            "format=geojson",
+            "precision=0.0001",
+            str(out_path),
+        ]
         subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=600)
         return True
     except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
@@ -148,9 +163,11 @@ def build(state_code: int, offline: bool):
     slug = STATES[state_code]
     web_data = ROOT / slug / "web" / "data"
     web_data.mkdir(parents=True, exist_ok=True)
-    meta = {"generated_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "source": "github.com/ramSeraph/indian_admin_boundaries (LGD admin polygons)",
-            "levels": {}}
+    meta = {
+        "generated_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "source": "github.com/ramSeraph/indian_admin_boundaries (LGD admin polygons)",
+        "levels": {},
+    }
     print(f"\n=== {slug} (state {state_code}) ===")
     for lvl_name, lvl in LEVELS.items():
         jsonl = ensure_jsonl(lvl, offline)
@@ -158,10 +175,15 @@ def build(state_code: int, offline: bool):
         out = web_data / f"{lvl_name}.geojson"
         simplified = simplify(fc, lvl["simplify"], out)
         size_kb = out.stat().st_size / 1024
-        print(f"  {lvl_name}: {len(fc['features'])} polygons -> {out.name} "
-              f"({size_kb:.0f} KB, {'simplified' if simplified else 'raw'})")
-        meta["levels"][lvl_name] = {"features": len(fc["features"]),
-                                    "simplified": simplified, "size_kb": round(size_kb)}
+        print(
+            f"  {lvl_name}: {len(fc['features'])} polygons -> {out.name} "
+            f"({size_kb:.0f} KB, {'simplified' if simplified else 'raw'})"
+        )
+        meta["levels"][lvl_name] = {
+            "features": len(fc["features"]),
+            "simplified": simplified,
+            "size_kb": round(size_kb),
+        }
     (web_data / "boundaries_meta.json").write_text(json.dumps(meta, indent=2))
 
 

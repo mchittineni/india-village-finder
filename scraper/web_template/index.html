@@ -1,95 +1,159 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AP &amp; Telangana Village Finder — Visual Map</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231f6feb' d='M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z'/%3E%3Ccircle cx='12' cy='9' r='2.6' fill='white'/%3E%3C/svg%3E" />
-  <meta name="description" content="Interactive map and search for every village in Andhra Pradesh and Telangana, with district and mandal hierarchy. Data from the Local Government Directory (LGD)." />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AP &amp; Telangana Village Finder — Visual Map</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231f6feb' d='M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z'/%3E%3Ccircle cx='12' cy='9' r='2.6' fill='white'/%3E%3C/svg%3E"
+    />
+    <meta
+      name="description"
+      content="Interactive map and search for every village in Andhra Pradesh and Telangana, with district and mandal hierarchy. Data from the Local Government Directory (LGD)."
+    />
 
-  <link rel="preconnect" href="https://unpkg.com" />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
-  <script src="i18n.js"></script>
-  <script src="nearby.js"></script>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div id="app">
-    <!-- Sidebar -->
-    <aside id="sidebar">
-      <header class="side-head">
-        <a class="brand" id="brand-home" href="../../index.html" title="Home — all states" aria-label="Home — all states">
-          <span class="brand-mark" aria-hidden="true">◴</span>
-          <div>
-            <h1>Village Finder</h1>
-            <p class="brand-sub">Andhra Pradesh &amp; Telangana</p>
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+    <script src="i18n.js"></script>
+    <script src="nearby.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Sidebar -->
+      <aside id="sidebar">
+        <header class="side-head">
+          <a
+            class="brand"
+            id="brand-home"
+            href="../../index.html"
+            title="Home — all states"
+            aria-label="Home — all states"
+          >
+            <span class="brand-mark" aria-hidden="true">◴</span>
+            <div>
+              <h1>Village Finder</h1>
+              <p class="brand-sub">Andhra Pradesh &amp; Telangana</p>
+            </div>
+          </a>
+          <div class="head-tools">
+            <label id="lang-wrap" class="lang-wrap" title="Language">
+              <svg
+                class="lang-ico"
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7" />
+                <path
+                  d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                />
+              </svg>
+              <select id="lang-select" aria-label="Language"></select>
+            </label>
+            <button id="collapse-btn" class="icon-btn" title="Hide panel" aria-label="Hide panel">
+              ‹
+            </button>
           </div>
-        </a>
-        <div class="head-tools">
-          <label id="lang-wrap" class="lang-wrap" title="Language">
-            <svg class="lang-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/>
-              <path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"
-                    stroke="currentColor" stroke-width="1.7"/>
-            </svg>
-            <select id="lang-select" aria-label="Language"></select>
-          </label>
-          <button id="collapse-btn" class="icon-btn" title="Hide panel" aria-label="Hide panel">‹</button>
+        </header>
+
+        <div class="search-wrap">
+          <svg class="search-ico" viewBox="0 0 24 24" width="18" height="18" fill="none">
+            <path
+              d="M15.8 15.8 21 21M18 10.5A7.5 7.5 0 1 1 3 10.5a7.5 7.5 0 0 1 15 0Z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <input
+            id="search"
+            type="search"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Search any village, mandal or district…"
+          />
+          <button id="clear-search" class="icon-btn hidden" title="Clear" aria-label="Clear search">
+            ×
+          </button>
         </div>
-      </header>
 
-      <div class="search-wrap">
-        <svg class="search-ico" viewBox="0 0 24 24" width="18" height="18" fill="none">
-          <path d="M15.8 15.8 21 21M18 10.5A7.5 7.5 0 1 1 3 10.5a7.5 7.5 0 0 1 15 0Z"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <input id="search" type="search" autocomplete="off" spellcheck="false"
-               placeholder="Search any village, mandal or district…" />
-        <button id="clear-search" class="icon-btn hidden" title="Clear" aria-label="Clear search">×</button>
-      </div>
-
-      <div id="state-switch" class="seg" role="group" aria-label="Choose state">
-        <!-- populated from config.js: current state + sibling links -->
-      </div>
-
-      <nav id="breadcrumb" class="crumbs" aria-label="Breadcrumb">
-        <button data-level="root" class="crumb active">All districts</button>
-      </nav>
-
-      <div id="panel" class="panel"><!-- dynamic --></div>
-
-      <footer class="side-foot">
-        <div id="freshness" class="fresh">Loading data…</div>
-        <div class="foot-links">
-          <a id="src-link" href="https://lgdirectory.gov.in" target="_blank" rel="noopener">Data: LGD</a>
-          <a id="issue-link" href="https://github.com/mchittineni/india-village-finder/issues/new/choose" target="_blank" rel="noopener">Report an issue</a>
-          <a id="source-link" href="https://github.com/mchittineni/india-village-finder" target="_blank" rel="noopener">Source</a>
+        <div id="state-switch" class="seg" role="group" aria-label="Choose state">
+          <!-- populated from config.js: current state + sibling links -->
         </div>
-      </footer>
-    </aside>
 
-    <!-- Map -->
-    <main id="map-wrap">
-      <div id="map"></div>
+        <nav id="breadcrumb" class="crumbs" aria-label="Breadcrumb">
+          <button data-level="root" class="crumb active">All districts</button>
+        </nav>
 
-      <button id="show-sidebar" class="icon-btn floating hidden" title="Show panel" aria-label="Show panel">›</button>
+        <div id="panel" class="panel"><!-- dynamic --></div>
 
-      <div id="legend" class="legend card">
-        <div class="legend-title">Villages per area</div>
-        <div id="legend-scale" class="legend-scale"></div>
-      </div>
+        <footer class="side-foot">
+          <div id="freshness" class="fresh">Loading data…</div>
+          <div class="foot-links">
+            <a id="src-link" href="https://lgdirectory.gov.in" target="_blank" rel="noopener"
+              >Data: LGD</a
+            >
+            <a
+              id="issue-link"
+              href="https://github.com/mchittineni/india-village-finder/issues/new/choose"
+              target="_blank"
+              rel="noopener"
+              >Report an issue</a
+            >
+            <a
+              id="source-link"
+              href="https://github.com/mchittineni/india-village-finder"
+              target="_blank"
+              rel="noopener"
+              >Source</a
+            >
+          </div>
+        </footer>
+      </aside>
 
-      <div id="toast" class="toast hidden"></div>
-      <div id="map-loading" class="map-loading">Loading map…</div>
-    </main>
-  </div>
+      <!-- Map -->
+      <main id="map-wrap">
+        <div id="map"></div>
 
-  <script src="config.js"></script>
-  <script src="app.js"></script>
-</body>
+        <button
+          id="show-sidebar"
+          class="icon-btn floating hidden"
+          title="Show panel"
+          aria-label="Show panel"
+        >
+          ›
+        </button>
+
+        <div id="legend" class="legend card">
+          <div class="legend-title">Villages per area</div>
+          <div id="legend-scale" class="legend-scale"></div>
+        </div>
+
+        <div id="toast" class="toast hidden"></div>
+        <div id="map-loading" class="map-loading">Loading map…</div>
+      </main>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>

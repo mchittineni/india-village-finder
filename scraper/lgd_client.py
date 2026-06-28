@@ -118,9 +118,7 @@ class LGDClient:
         # getVillageList(subDistrictCode) is the single-signature method that the
         # public page uses; the *bySubDistrictCode variants are overloaded and
         # cannot be invoked by name over DWR.
-        return self._dwr(
-            "lgdDwrVillageService", "getVillageList", sub_district_code
-        )
+        return self._dwr("lgdDwrVillageService", "getVillageList", sub_district_code)
 
 
 # --------------------------------------------------------------------------
@@ -188,6 +186,7 @@ def _jsobj_to_python(js: str) -> list[dict[str, Any]]:
     out = re.sub(r"new Date\(\s*\)", "null", out)
     # Quote unquoted object keys:  {districtCode:745}  ->  {"districtCode":745}
     out = re.sub(r"([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:", r'\1"\2":', out)
+
     # Convert single-quoted string values to double-quoted (escape inner ")
     def _sq(match: re.Match) -> str:
         inner = match.group(1).replace('"', '\\"')

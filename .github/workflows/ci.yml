@@ -9,10 +9,9 @@ on:
 
 jobs:
   data-validation:
-
     name: data-validation
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
@@ -24,7 +23,7 @@ jobs:
 
       - name: Install test dependencies
         run: pip install -r scraper/requirements-dev.txt
-        
+
       - name: Validate data (pytest)
         run: python -m pytest scraper/tests -v
 

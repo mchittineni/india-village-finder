@@ -35,6 +35,7 @@ Run:  python pipeline.py                  (both states, auto-detect latest dump)
       python pipeline.py --offline        (reuse already-downloaded raw CSVs)
       python pipeline.py --no-verify      (skip the live LGD cross-check)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -53,13 +54,15 @@ try:
 except ImportError:  # pragma: no cover
     py7zr = None
 
-HERE = Path(__file__).resolve().parent          # scraper/
-ROOT = HERE.parent                              # Village Finder/
+HERE = Path(__file__).resolve().parent  # scraper/
+ROOT = HERE.parent  # Village Finder/
 RAW = HERE / ".cache" / "raw"
 TEMPLATE = HERE / "web_template"
 
 RELEASES_API = "https://api.github.com/repos/ramSeraph/opendata/releases?per_page=100"
-ASSET_RE = re.compile(r"^(pincode_villages|villages|subdistricts|districts)\.(\d{2}[A-Za-z]{3}\d{4})\.csv\.7z$")
+ASSET_RE = re.compile(
+    r"^(pincode_villages|villages|subdistricts|districts)\.(\d{2}[A-Za-z]{3}\d{4})\.csv\.7z$"
+)
 REQUIRED_KINDS = {"villages", "subdistricts", "districts"}  # pincode_villages is optional
 
 # One config block per state. `slug` is the folder name. `division` is the local
@@ -69,23 +72,47 @@ REQUIRED_KINDS = {"villages", "subdistricts", "districts"}  # pincode_villages i
 # authoritative name (preferred over machine transliteration when that language is
 # selected).
 STATES = {
-    28: {"name": "Andhra Pradesh", "slug": "andhra_pradesh", "lang": "te",
-         "accent": "#1f6feb", "accentSoft": "#eaf2ff", "division": "mandal"},
-    36: {"name": "Telangana", "slug": "telangana", "lang": "te",
-         "accent": "#0f9d58", "accentSoft": "#e3f6ec", "division": "mandal"},
-    29: {"name": "Karnataka", "slug": "karnataka", "lang": "kn",
-         "accent": "#d97706", "accentSoft": "#fdeccf", "division": "taluk"},
-    33: {"name": "Tamil Nadu", "slug": "tamil_nadu", "lang": "ta",
-         "accent": "#dc2626", "accentSoft": "#fdeaea", "division": "taluk"},
+    28: {
+        "name": "Andhra Pradesh",
+        "slug": "andhra_pradesh",
+        "lang": "te",
+        "accent": "#1f6feb",
+        "accentSoft": "#eaf2ff",
+        "division": "mandal",
+    },
+    36: {
+        "name": "Telangana",
+        "slug": "telangana",
+        "lang": "te",
+        "accent": "#0f9d58",
+        "accentSoft": "#e3f6ec",
+        "division": "mandal",
+    },
+    29: {
+        "name": "Karnataka",
+        "slug": "karnataka",
+        "lang": "kn",
+        "accent": "#d97706",
+        "accentSoft": "#fdeccf",
+        "division": "taluk",
+    },
+    33: {
+        "name": "Tamil Nadu",
+        "slug": "tamil_nadu",
+        "lang": "ta",
+        "accent": "#dc2626",
+        "accentSoft": "#fdeaea",
+        "division": "taluk",
+    },
 }
 
 # Unicode block per language script — used to validate that an LGD "local" name is
 # actually in the expected script (some states' local column is blank or Latin).
 SCRIPT_RANGE = {
-    "te": (0x0C00, 0x0C7F),   # Telugu
-    "kn": (0x0C80, 0x0CFF),   # Kannada
-    "ta": (0x0B80, 0x0BFF),   # Tamil
-    "hi": (0x0900, 0x097F),   # Devanagari
+    "te": (0x0C00, 0x0C7F),  # Telugu
+    "kn": (0x0C80, 0x0CFF),  # Kannada
+    "ta": (0x0B80, 0x0BFF),  # Tamil
+    "hi": (0x0900, 0x097F),  # Devanagari
 }
 
 
@@ -109,18 +136,36 @@ def transliterate_batch(lang: str, names: list[str]) -> dict[str, str]:
         proc = subprocess.run(
             ["node", str(HERE / "translit_cli.mjs")],
             input=json.dumps({"lang": lang, "names": names}),
-            capture_output=True, text=True, timeout=180, check=True,
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=True,
         )
         out = json.loads(proc.stdout)
         return {n: out[i] for i, n in enumerate(names) if i < len(out)}
     except Exception as e:  # pragma: no cover - environment dependent
-        print(f"[warn] transliteration unavailable ({type(e).__name__}); "
-              f"native CSV names limited to LGD-published ones")
+        print(
+            f"[warn] transliteration unavailable ({type(e).__name__}); "
+            f"native CSV names limited to LGD-published ones"
+        )
         return {}
-ALIAS = {"ap": 28, "andhra_pradesh": 28, "andhra": 28,
-         "tg": 36, "ts": 36, "telangana": 36,
-         "ka": 29, "kar": 29, "karnataka": 29,
-         "tn": 33, "tamil_nadu": 33, "tamilnadu": 33, "tamil": 33}
+
+
+ALIAS = {
+    "ap": 28,
+    "andhra_pradesh": 28,
+    "andhra": 28,
+    "tg": 36,
+    "ts": 36,
+    "telangana": 36,
+    "ka": 29,
+    "kar": 29,
+    "karnataka": 29,
+    "tn": 33,
+    "tamil_nadu": 33,
+    "tamilnadu": 33,
+    "tamil": 33,
+}
 
 csv.field_size_limit(10_000_000)
 
@@ -213,8 +258,11 @@ def load_state(paths: dict[str, Path], state_code: int):
         for row in rd:
             if int(row[c_state]) == state_code:
                 code = int(row[c_scode])
-                mandals[code] = {"code": code, "name": row[c_sname].strip(),
-                                 "district_code": int(row[c_dcode])}
+                mandals[code] = {
+                    "code": code,
+                    "name": row[c_sname].strip(),
+                    "district_code": int(row[c_dcode]),
+                }
 
     with open(paths["villages"], newline="", encoding="utf-8") as fh:
         rd = csv.DictReader(fh)
@@ -230,10 +278,16 @@ def load_state(paths: dict[str, Path], state_code: int):
             c_vlocal = None
         for row in rd:
             if int(row[c_state]) == state_code:
-                villages.append({"code": int(row[c_vcode]), "name": row[c_vname].strip(),
-                                 "local": (row[c_vlocal].strip() if c_vlocal else ""),
-                                 "mandal_code": int(row[c_scode]),
-                                 "category": row[c_cat].strip(), "status": row[c_status].strip()})
+                villages.append(
+                    {
+                        "code": int(row[c_vcode]),
+                        "name": row[c_vname].strip(),
+                        "local": (row[c_vlocal].strip() if c_vlocal else ""),
+                        "mandal_code": int(row[c_scode]),
+                        "category": row[c_cat].strip(),
+                        "status": row[c_status].strip(),
+                    }
+                )
 
     # village -> pincode (optional LGD mapping; joins by village code)
     pincodes = {}
@@ -260,19 +314,27 @@ def verify_live(state_code, districts, mandals) -> dict:
     result = {"ran": True, "ok": None, "checks": [], "error": None}
     try:
         from lgd_client import LGDClient
+
         c = LGDClient()
         live = c.districts(state_code)
         ok = len(live) == len(districts)
-        result["checks"].append({"check": "district count", "live": len(live),
-                                 "dump": len(districts), "pass": ok})
+        result["checks"].append(
+            {"check": "district count", "live": len(live), "dump": len(districts), "pass": ok}
+        )
         if live:
             d0 = live[0]
             live_m = len(c.sub_districts(d0["districtCode"]))
             dump_m = sum(1 for m in mandals.values() if m["district_code"] == d0["districtCode"])
             p = live_m == dump_m
             ok = ok and p
-            result["checks"].append({"check": f"mandals in {d0['districtNameEnglish']}",
-                                     "live": live_m, "dump": dump_m, "pass": p})
+            result["checks"].append(
+                {
+                    "check": f"mandals in {d0['districtNameEnglish']}",
+                    "live": live_m,
+                    "dump": dump_m,
+                    "pass": p,
+                }
+            )
         result["ok"] = ok
     except Exception as e:
         result["ok"] = None
@@ -296,14 +358,16 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
 
     d_sorted = sorted(districts.values(), key=lambda d: d["name"])
     d_index = {d["code"]: i for i, d in enumerate(d_sorted)}
-    m_sorted = sorted((m for m in mandals.values() if m["district_code"] in d_index),
-                      key=lambda m: (d_index[m["district_code"]], m["name"]))
+    m_sorted = sorted(
+        (m for m in mandals.values() if m["district_code"] in d_index),
+        key=lambda m: (d_index[m["district_code"]], m["name"]),
+    )
     m_index = {m["code"]: i for i, m in enumerate(m_sorted)}
 
     d_counts = [0] * len(d_sorted)
     m_counts = [0] * len(m_sorted)
     rows, dropped = [], 0
-    names_local = {}                       # villageCode -> authoritative native name
+    names_local = {}  # villageCode -> authoritative native name
     state_lang = cfg.get("lang")
     for v in villages:
         mi = m_index.get(v["mandal_code"])
@@ -324,38 +388,61 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     with_pincode = sum(1 for r in rows if r[4])
 
     regions = {
-        "state": cfg["name"], "state_code": state_code,
-        "districts": [{"i": i, "n": d["name"], "c": d["code"], "vc": d_counts[i]}
-                      for i, d in enumerate(d_sorted)],
-        "mandals": [{"i": i, "n": m["name"], "c": m["code"],
-                     "d": d_index[m["district_code"]], "vc": m_counts[i]}
-                    for i, m in enumerate(m_sorted)],
+        "state": cfg["name"],
+        "state_code": state_code,
+        "districts": [
+            {"i": i, "n": d["name"], "c": d["code"], "vc": d_counts[i]}
+            for i, d in enumerate(d_sorted)
+        ],
+        "mandals": [
+            {
+                "i": i,
+                "n": m["name"],
+                "c": m["code"],
+                "d": d_index[m["district_code"]],
+                "vc": m_counts[i],
+            }
+            for i, m in enumerate(m_sorted)
+        ],
     }
     villages_doc = {"columns": ["name", "mandal", "code", "cat", "pin"], "rows": rows}
     meta = {
-        "state": cfg["name"], "state_code": state_code,
+        "state": cfg["name"],
+        "state_code": state_code,
         "generated_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
         "source_mirror": "github.com/ramSeraph/opendata (LGD daily dump)",
         "source_date": source_date,
-        "counts": {"districts": len(d_sorted), "mandals": len(m_sorted), "villages": len(rows),
-                   "with_pincode": with_pincode, "with_local_names": len(names_local)},
+        "counts": {
+            "districts": len(d_sorted),
+            "mandals": len(m_sorted),
+            "villages": len(rows),
+            "with_pincode": with_pincode,
+            "with_local_names": len(names_local),
+        },
         "native_lang": state_lang,
         "dropped_villages_without_mandal": dropped,
         "verification": verify,
     }
 
-    (web_data / "regions.json").write_text(json.dumps(regions, ensure_ascii=False, separators=(",", ":")))
-    (web_data / "villages.json").write_text(json.dumps(villages_doc, ensure_ascii=False, separators=(",", ":")))
-    (web_data / "names.json").write_text(json.dumps(names_local, ensure_ascii=False, separators=(",", ":")))
+    (web_data / "regions.json").write_text(
+        json.dumps(regions, ensure_ascii=False, separators=(",", ":"))
+    )
+    (web_data / "villages.json").write_text(
+        json.dumps(villages_doc, ensure_ascii=False, separators=(",", ":"))
+    )
+    (web_data / "names.json").write_text(
+        json.dumps(names_local, ensure_ascii=False, separators=(",", ":"))
+    )
     (web_data / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
 
     # flat CSV export. Every village gets a name in the state's script: the
     # authoritative LGD spelling where published, else a best-effort
     # transliteration (same engine as the UI). "Native Source" records which.
     writable = [v for v in villages if m_index.get(v["mandal_code"]) is not None]
-    needs_translit = sorted({v["name"] for v in writable
-                             if not in_script(v.get("local", ""), state_lang)})
+    needs_translit = sorted(
+        {v["name"] for v in writable if not in_script(v.get("local", ""), state_lang)}
+    )
     translit = transliterate_batch(state_lang, needs_translit)
     # Prefer the committed NEURAL native names (web/data/names_translit.json, produced
     # offline by enrich_native_names.py) over the rule engine, so the CSV agrees with
@@ -368,11 +455,26 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
             neural_native = json.loads(nt_path.read_text(encoding="utf-8"))
         except Exception:
             neural_native = {}
-    with open(state_dir / "data" / f"{cfg['slug']}_villages.csv", "w", newline="", encoding="utf-8") as fh:
+    with open(
+        state_dir / "data" / f"{cfg['slug']}_villages.csv", "w", newline="", encoding="utf-8"
+    ) as fh:
         w = csv.writer(fh)
-        w.writerow(["State", "District", "District Code", "Mandal", "Mandal Code",
-                    "Village", "Village (Native)", "Native Source", "Village Code",
-                    "Pincode", "Category", "Status"])
+        w.writerow(
+            [
+                "State",
+                "District",
+                "District Code",
+                "Mandal",
+                "Mandal Code",
+                "Village",
+                "Village (Native)",
+                "Native Source",
+                "Village Code",
+                "Pincode",
+                "Category",
+                "Status",
+            ]
+        )
         for v in sorted(writable, key=lambda x: x["name"]):
             m = m_sorted[m_index[v["mandal_code"]]]
             d = districts[m["district_code"]]
@@ -382,9 +484,22 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
             else:
                 native = neural_native.get(str(v["code"])) or translit.get(v["name"], "")
                 source = "transliterated" if native else ""
-            w.writerow([cfg["name"], d["name"], d["code"], m["name"], m["code"],
-                        v["name"], native, source, v["code"],
-                        v.get("pincode", ""), v["category"], v["status"]])
+            w.writerow(
+                [
+                    cfg["name"],
+                    d["name"],
+                    d["code"],
+                    m["name"],
+                    m["code"],
+                    v["name"],
+                    native,
+                    source,
+                    v["code"],
+                    v.get("pincode", ""),
+                    v["category"],
+                    v["status"],
+                ]
+            )
 
     _build_web(state_code, cfg, web, meta)
     return meta
@@ -396,17 +511,27 @@ def _build_web(state_code, cfg, web: Path, meta):
         src = TEMPLATE / fname
         if src.exists():
             shutil.copyfile(src, web / fname)
-    siblings = [{"name": c["name"], "slug": c["slug"], "url": f"../../{c['slug']}/web/index.html"}
-                for sc, c in STATES.items() if sc != state_code]
+    siblings = [
+        {"name": c["name"], "slug": c["slug"], "url": f"../../{c['slug']}/web/index.html"}
+        for sc, c in STATES.items()
+        if sc != state_code
+    ]
     config = {
-        "state": cfg["name"], "stateCode": state_code, "slug": cfg["slug"],
-        "accent": cfg["accent"], "accentSoft": cfg["accentSoft"],
+        "state": cfg["name"],
+        "stateCode": state_code,
+        "slug": cfg["slug"],
+        "accent": cfg["accent"],
+        "accentSoft": cfg["accentSoft"],
         "division": cfg.get("division", "mandal"),
         "nativeLang": cfg.get("lang"),
         "siblings": siblings,
-        "source": {"name": "Local Government Directory (LGD)", "url": "https://lgdirectory.gov.in",
-                   "mirror": "https://github.com/ramSeraph/opendata"},
-        "sourceDate": meta["source_date"], "generatedAt": meta["generated_at"],
+        "source": {
+            "name": "Local Government Directory (LGD)",
+            "url": "https://lgdirectory.gov.in",
+            "mirror": "https://github.com/ramSeraph/opendata",
+        },
+        "sourceDate": meta["source_date"],
+        "generatedAt": meta["generated_at"],
         "counts": meta["counts"],
     }
     (web / "config.js").write_text(
@@ -417,7 +542,9 @@ def _build_web(state_code, cfg, web: Path, meta):
 
 # ---------------------------------------------------------------------------
 def main():
-    ap = argparse.ArgumentParser(description="Build AP/Telangana/Karnataka/Tamil Nadu village datasets + web apps")
+    ap = argparse.ArgumentParser(
+        description="Build AP/Telangana/Karnataka/Tamil Nadu village datasets + web apps"
+    )
     ap.add_argument("--state", choices=["ap", "tg", "ka", "tn", "both"], default="both")
     ap.add_argument("--offline", action="store_true", help="reuse already-extracted raw CSVs")
     ap.add_argument("--no-verify", action="store_true", help="skip live LGD cross-check")
@@ -431,21 +558,27 @@ def main():
         cfg = STATES[sc]
         print(f"\n=== {cfg['name']} (state {sc}) ===")
         districts, mandals, villages = load_state(paths, sc)
-        print(f"[filter] districts={len(districts)} mandals={len(mandals)} villages={len(villages)}")
+        print(
+            f"[filter] districts={len(districts)} mandals={len(mandals)} villages={len(villages)}"
+        )
 
         verify = {"ran": False, "ok": None, "checks": [], "error": "skipped"}
         if not args.no_verify:
             print("[verify] cross-checking against live LGD portal ...")
             verify = verify_live(sc, districts, mandals)
             for c in verify["checks"]:
-                print(f"    {c['check']}: live={c['live']} dump={c['dump']} "
-                      f"{'OK' if c['pass'] else 'MISMATCH'}")
+                print(
+                    f"    {c['check']}: live={c['live']} dump={c['dump']} "
+                    f"{'OK' if c['pass'] else 'MISMATCH'}"
+                )
             if verify["error"]:
                 print(f"    (verification skipped: {verify['error']})")
 
         meta = build_state(sc, cfg, districts, mandals, villages, source_date, verify)
-        print(f"[done] {cfg['slug']}/  ->  {meta['counts']['villages']} villages, "
-              f"{meta['counts']['districts']} districts, {meta['counts']['mandals']} mandals")
+        print(
+            f"[done] {cfg['slug']}/  ->  {meta['counts']['villages']} villages, "
+            f"{meta['counts']['districts']} districts, {meta['counts']['mandals']} mandals"
+        )
 
 
 def _source_date(paths):
