@@ -54,6 +54,24 @@ try:
 except ImportError:  # pragma: no cover
     py7zr = None
 
+
+def _safe_extractall(z, dest: Path) -> None:
+    """Extract a py7zr archive, rejecting any member whose path escapes ``dest``.
+
+    The .7z dumps come from a third-party community mirror, so a tampered or
+    malicious archive could carry members like ``../../../etc/passwd`` and
+    overwrite files outside ``dest``. Validate every member resolves inside
+    ``dest`` before extracting (zip-slip / CWE-22).
+    """
+    root = dest.resolve()
+    for member in z.getnames():
+        if not (root / member).resolve().is_relative_to(root):
+            raise RuntimeError(
+                f"refusing to extract unsafe archive member outside {root}: {member!r}"
+            )
+    z.extractall(dest)
+
+
 HERE = Path(__file__).resolve().parent  # scraper/
 ROOT = HERE.parent  # Village Finder/
 RAW = HERE / ".cache" / "raw"
@@ -220,7 +238,7 @@ def download_and_extract(offline: bool) -> dict[str, Path]:
                     for chunk in resp.iter_content(1 << 16):
                         fh.write(chunk)
         with py7zr.SevenZipFile(archive, "r") as z:
-            z.extractall(RAW)
+            _safe_extractall(z, RAW)
         paths[kind] = sorted(RAW.glob(f"{kind}.*.csv"))[-1]
     return paths
 

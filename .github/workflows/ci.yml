@@ -7,6 +7,11 @@ on:
 
   workflow_dispatch:
 
+# Least-privilege default token: this workflow runs untrusted fork-PR code
+# (pytest + node eval on the PR checkout) and only needs to read the repo.
+permissions:
+  contents: read
+
 jobs:
   data-validation:
     name: data-validation

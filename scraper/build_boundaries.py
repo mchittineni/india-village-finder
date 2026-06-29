@@ -42,6 +42,24 @@ try:
 except ImportError:  # pragma: no cover
     py7zr = None
 
+
+def _safe_extractall(z, dest: Path) -> None:
+    """Extract a py7zr archive, rejecting any member whose path escapes ``dest``.
+
+    The boundary .7z archives come from a third-party community mirror, so a
+    tampered or malicious archive could carry members like ``../../../etc/passwd``
+    and overwrite files outside ``dest``. Validate every member resolves inside
+    ``dest`` before extracting (zip-slip / CWE-22).
+    """
+    root = dest.resolve()
+    for member in z.getnames():
+        if not (root / member).resolve().is_relative_to(root):
+            raise RuntimeError(
+                f"refusing to extract unsafe archive member outside {root}: {member!r}"
+            )
+    z.extractall(dest)
+
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 RAW = HERE / ".cache" / "raw"
@@ -90,7 +108,7 @@ def ensure_jsonl(level: dict, offline: bool) -> Path:
         raise RuntimeError("py7zr required to extract boundary archives")
     print(f"  extracting {level['archive']} ...")
     with py7zr.SevenZipFile(archive, "r") as z:
-        z.extractall(RAW)
+        _safe_extractall(z, RAW)
     return jsonl
 
 
