@@ -1,17 +1,19 @@
 name: API docs
 
-# Build the project's API reference (JSDoc for the web app + pdoc for the Python
-# pipeline) and upload it as a downloadable artifact. Kept separate from the site
-# deploy so it never interferes with GitHub Pages.
+# Validate that the API reference still builds (JSDoc for the web app + pdoc for
+# the Python pipeline) on pull requests, and upload it as a downloadable preview
+# artifact. The live docs are published to GitHub Pages under /docs/api/ by
+# deploy-pages.yml on main — this workflow only build-checks, it never deploys.
 
 on:
-  push:
+  pull_request:
     branches: [main]
     paths:
       - "scraper/web_template/**"
       - "scraper/*.py"
       - "jsdoc.json"
       - "package.json"
+      - "scripts/**"
       - "docs/**"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
@@ -31,9 +33,9 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -49,7 +51,7 @@ jobs:
         run: npm run docs
 
       - name: Upload docs artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: api-docs
           path: docs/api
