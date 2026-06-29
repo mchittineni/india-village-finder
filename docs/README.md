@@ -8,9 +8,14 @@ API reference documentation for the whole project, generated from in-code doc co
 - **Data pipeline (Python)** — [pdoc](https://pdoc.dev/) renders the module docstrings of
   the `scraper/*.py` scripts.
 
-Both outputs are written under `docs/api/` (git-ignored — they're build artifacts) and
-are also built in CI by [`.github/workflows/docs.yml`](../.github/workflows/docs.yml),
-which uploads the rendered site as a downloadable artifact on every run.
+Both outputs are written under `docs/api/` (git-ignored — they're build artifacts),
+alongside a small `index.html` landing page that links them. They are published to
+GitHub Pages as a subpath of the app —
+**<https://mchittineni.github.io/india-village-finder/docs/api/>** — by
+[`.github/workflows/deploy-pages.yml`](../.github/workflows/deploy-pages.yml) on every
+push to `main`. [`.github/workflows/docs.yml`](../.github/workflows/docs.yml)
+build-checks the same reference on pull requests and uploads it as a downloadable
+preview artifact.
 
 ## Build it locally
 
@@ -25,14 +30,15 @@ npm install                                  # JSDoc + docdash theme + Prettier
 # (activate the venv, or install pdoc globally). CI installs it on the runner.
 source scraper/.venv/bin/activate
 
-# generate both references into docs/api/{js,python}
-npm run docs            # = docs:js + docs:py
+# generate both references into docs/api/{js,python} + the landing index.html
+npm run docs            # = docs:js + docs:py + docs:index
 npm run docs:js         # JavaScript only  -> docs/api/js
 npm run docs:py         # Python only      -> docs/api/python
+npm run docs:index      # landing page     -> docs/api/index.html
 npm run docs:clean      # remove docs/api
 ```
 
-Open `docs/api/js/index.html` or `docs/api/python/index.html` in a browser.
+Open `docs/api/index.html` in a browser — it links to both the JS and Python references.
 
 ## Formatting
 

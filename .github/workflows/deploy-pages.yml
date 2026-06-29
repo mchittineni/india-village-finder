@@ -1,5 +1,9 @@
 name: Deploy to GitHub Pages
 
+# Publishes the site to GitHub Pages: the per-state apps at the root, plus the
+# generated API reference (JSDoc + pdoc) under /docs/api/. A repo has a single
+# Pages site, so the docs ride along as a subpath rather than a second site.
+
 on:
   push:
     branches: [main]
@@ -25,6 +29,29 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install docs tooling
+        run: |
+          npm install
+          python -m pip install -r scraper/requirements-dev.txt
+
+      - name: Build API reference (JSDoc + pdoc)
+        run: npm run docs
+
+      - name: Trim build-only files from the publish root
+        run: |
+          rm -rf node_modules package-lock.json
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6

@@ -10,9 +10,10 @@
     "url": "https://github.com/mchittineni/india-village-finder.git"
   },
   "scripts": {
-    "docs": "npm run docs:js && npm run docs:py",
+    "docs": "npm run docs:js && npm run docs:py && npm run docs:index",
     "docs:js": "jsdoc -c jsdoc.json",
     "docs:py": "python3 -m pdoc scraper/pipeline.py scraper/lgd_client.py scraper/build_boundaries.py scraper/enrich_coords.py scraper/enrich_native_names.py scraper/changelog.py scraper/release_notes.py -o docs/api/python",
+    "docs:index": "node scripts/docs-index.mjs",
     "docs:clean": "rm -rf docs/api",
     "format": "prettier --write . && black scraper",
     "format:check": "prettier --check . && black --check scraper"
