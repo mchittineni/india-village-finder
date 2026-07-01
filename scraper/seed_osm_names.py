@@ -37,6 +37,15 @@ ENDPOINTS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
 ]
+# Overpass etiquette requires an identifying User-Agent; the default
+# python-requests UA is rejected outright (HTTP 406) by overpass-api.de.
+HTTP_HEADERS = {
+    "User-Agent": (
+        "india-village-finder/1.0 "
+        "(+https://github.com/mchittineni/india-village-finder; OSM native-name seeding)"
+    ),
+    "Accept": "application/json",
+}
 SCRIPT_RANGE = {
     "te": (0x0C00, 0x0C7F),
     "kn": (0x0C80, 0x0CFF),
@@ -76,15 +85,18 @@ def parse_elements(elements: list[dict], lang: str) -> dict[str, str]:
     return out
 
 
-def fetch_overpass(query: str, session: requests.Session, retries: int = 4) -> list[dict]:
+def fetch_overpass(query: str, session: requests.Session, retries: int = 6) -> list[dict]:
     """POST a query to Overpass, trying each endpoint with backoff. Returns the
-    ``elements`` list; raises on total failure."""
+    ``elements`` list; raises on total failure.
+
+    429 means the endpoint is rate-limiting us — honour its ``Retry-After`` header
+    (Overpass sets it) rather than hammering with short waits."""
     last: Exception | None = None
-    delay = 5.0
+    delay = 15.0
     for attempt in range(retries):
         endpoint = ENDPOINTS[attempt % len(ENDPOINTS)]
         try:
-            resp = session.post(endpoint, data={"data": query}, timeout=600)
+            resp = session.post(endpoint, data={"data": query}, headers=HTTP_HEADERS, timeout=600)
             if resp.status_code in (429, 502, 503, 504):
                 raise requests.HTTPError(f"HTTP {resp.status_code}", response=resp)
             resp.raise_for_status()
@@ -93,9 +105,17 @@ def fetch_overpass(query: str, session: requests.Session, retries: int = 4) -> l
             last = e
             if attempt == retries - 1:
                 break
-            print(f"  [retry] {endpoint}: {e} — waiting {delay:.0f}s")
-            time.sleep(delay)
-            delay = min(delay * 2, 120.0)
+            wait = delay
+            resp = getattr(e, "response", None)
+            if resp is not None:
+                try:
+                    wait = max(wait, float(resp.headers.get("Retry-After", 0)))
+                except (TypeError, ValueError):
+                    pass
+            wait = min(wait, 180.0)
+            print(f"  [retry] {endpoint}: {e} — waiting {wait:.0f}s")
+            time.sleep(wait)
+            delay = min(delay * 2, 180.0)
     raise RuntimeError(f"Overpass unreachable: {last}")
 
 
@@ -110,12 +130,14 @@ def seed(state_codes, out_path: Path = OSM_NAMES_FILE) -> dict:
             merged = {}
 
     with requests.Session() as s:
-        for code in state_codes:
+        for i, code in enumerate(state_codes):
             cfg = STATES[code]
             lang, iso = cfg["lang"], cfg.get("iso")
             if not iso:
                 print(f"[skip] {cfg['slug']}: no ISO code in registry")
                 continue
+            if i:  # courtesy pause between whole-state queries (Overpass etiquette)
+                time.sleep(30)
             print(f"[osm] {cfg['slug']} ({iso}) name:{lang} ...")
             elements = fetch_overpass(build_query(iso, lang), s)
             found = parse_elements(elements, lang)
