@@ -35,13 +35,18 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
+      # Bind dispatch inputs to env and reference them as shell vars, never
+      # interpolate ${{ inputs.* }} directly into a run: script (that substitutes
+      # textually before the shell parses it — a value with `$(...)`/`;` would run).
       SLUG: ${{ inputs.slug }}
+      PMTILES_URL: ${{ inputs.pmtiles_url }}
+      SOURCE_LAYER: ${{ inputs.source_layer }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
 
@@ -51,7 +56,7 @@ jobs:
       - name: Download cadastral PMTiles
         run: |
           mkdir -p scraper/.cache/cadastrals
-          curl -fSL --retry 3 -o scraper/.cache/cadastrals/cad.pmtiles "${{ inputs.pmtiles_url }}"
+          curl -fSL --retry 3 -o scraper/.cache/cadastrals/cad.pmtiles "$PMTILES_URL"
           head -c 7 scraper/.cache/cadastrals/cad.pmtiles | grep -q PMTiles \
             || { echo "::error::Not a PMTiles archive"; exit 1; }
 
@@ -60,7 +65,7 @@ jobs:
           python scraper/build_parcels_index.py \
             --slug "$SLUG" \
             --pmtiles scraper/.cache/cadastrals/cad.pmtiles \
-            --source-layer "${{ inputs.source_layer }}"
+            --source-layer "$SOURCE_LAYER"
 
       - name: Open PR if the outputs changed
         run: |
