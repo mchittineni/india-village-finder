@@ -633,6 +633,12 @@
     }).addTo(map);
     map.createPane("regions");
     map.getPane("regions").style.zIndex = 410;
+    // The cadastral canvas needs its own pane ABOVE the region choropleth (410),
+    // otherwise the ~0.85-opacity district/mandal fills paint over the parcels
+    // and hide them. Below the marker pane (600) so village pins stay on top.
+    map.createPane("cadastre");
+    map.getPane("cadastre").style.zIndex = 420;
+    map.getPane("cadastre").style.pointerEvents = "none";
     initCadastre();
   }
 
@@ -654,6 +660,10 @@
       maplibregl.addProtocol("pmtiles", initCadastre._proto.tile);
     }
     var accent = CFG.accent || "#1f6feb";
+    // maplibre-gl-leaflet renders one zoom level behind Leaflet (256 vs 512 px
+    // tiles), so a GL layer minzoom of N shows at Leaflet zoom N+1. Subtract 1 so
+    // parcels actually appear at the configured Leaflet minZoom.
+    var mz = (C.minZoom || 11) - 1;
     // Dev/testing override: `?cad=<url>` points the parcel layer at an alternate
     // tile host (e.g. a local same-origin file, or a CORS mirror under test)
     // without editing the generated config. Falls back to the configured URL.
@@ -663,7 +673,9 @@
       if (override) url = override;
     } catch (e) {}
     cadLayer = L.maplibreGL({
-      // Leaflet keeps pointer control; we query the GL map manually on click.
+      // Draw into the dedicated high pane (above the region choropleth); Leaflet
+      // keeps pointer control and we query the GL map manually on click.
+      pane: "cadastre",
       interactive: false,
       attribution: C.attribution || "",
       style: {
@@ -677,16 +689,33 @@
             type: "fill",
             source: "cad",
             "source-layer": C.sourceLayer,
-            minzoom: C.minZoom || 14,
-            paint: { "fill-color": accent, "fill-opacity": 0.08 }
+            // Rendered wherever lines are (very faint) so click-to-identify works
+            // at any parcel zoom; too light to muddy the map.
+            minzoom: mz,
+            paint: { "fill-color": accent, "fill-opacity": 0.04 }
           },
           {
             id: "cad-line",
             type: "line",
             source: "cad",
             "source-layer": C.sourceLayer,
-            minzoom: C.minZoom || 14,
-            paint: { "line-color": accent, "line-opacity": 0.5, "line-width": 0.6 }
+            minzoom: mz,
+            // Dark neutral outline so parcels read on any state accent / basemap.
+            paint: {
+              "line-color": "#3f3f46",
+              "line-opacity": 0.85,
+              "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.2, 16, 1.1]
+            }
+          },
+          {
+            // Highlight layer for the currently selected village's parcels.
+            id: "cad-sel",
+            type: "line",
+            source: "cad",
+            "source-layer": C.sourceLayer,
+            minzoom: mz,
+            filter: ["boolean", false], // nothing until a village is picked
+            paint: { "line-color": accent, "line-opacity": 1, "line-width": 2 }
           }
         ]
       }
@@ -734,8 +763,21 @@
     });
 
     map.on("zoomend", function () {
+      updateRegionDim();
       if (cadOn && map.getZoom() < (CFG.cadastre.minZoom || 14)) toast(t("parcels_zoom_hint"));
     });
+  }
+
+  /**
+   * Fade the region choropleth back while parcels are shown at parcel zoom, so
+   * the land-parcel outlines aren't washed out by the district/mandal fills.
+   * @returns {void}
+   */
+  function updateRegionDim() {
+    var pane = map.getPane("regions");
+    if (!pane) return;
+    var dim = cadOn && cadLayer && map.getZoom() >= (CFG.cadastre.minZoom || 14);
+    pane.style.opacity = dim ? "0.15" : "";
   }
 
   /**
@@ -748,6 +790,7 @@
     if (cadOn) {
       cadLayer.addTo(map);
     } else {
+      clearParcelHighlight();
       if (map.hasLayer(cadLayer)) map.removeLayer(cadLayer);
       if (cadPopup) map.closePopup(cadPopup);
     }
@@ -758,6 +801,7 @@
     try {
       localStorage.setItem("vf_parcels", cadOn ? "1" : "0");
     } catch (e) {}
+    updateRegionDim();
     if (cadOn && map.getZoom() < (CFG.cadastre.minZoom || 14)) toast(t("parcels_zoom_hint"));
   }
 
@@ -802,6 +846,116 @@
       .setLatLng(latlng)
       .setContent(wrap)
       .openOn(map);
+  }
+
+  var CAD_HIDE_FILTER = ["boolean", false]; // matches nothing
+
+  /**
+   * Drill into a single village's land parcels: enable the layer, move to the
+   * village and highlight its plots. Only 16% of villages have a point coord, so
+   * we locate the village from the cadastral data itself — highlight by name,
+   * bring the mandal into view so its parcels render, then fit tight to the
+   * highlighted parcels. All parcels stay visible (a name miss never blanks the
+   * map); the selected village's outline is emphasised.
+   * @param {VillageRow} row  The village record.
+   * @param {Mandal} m  The parent mandal.
+   * @param {Object} [center]  Leaflet LatLng of the village (from coords), if known.
+   * @returns {void}
+   */
+  function showVillageParcels(row, m, center) {
+    if (!cadLayer) return;
+    if (!cadOn) setParcels(true);
+    highlightVillageParcels(row);
+    if (center) {
+      // Known coordinate: go straight there, then still fit to the parcels.
+      map.setView(center, Math.max(CFG.cadastre.minZoom || 11, 16), { animate: true });
+    } else {
+      // Unknown coordinate (most villages): show the whole mandal so its parcels
+      // render, then fitToVillageParcels tightens onto this village's plots.
+      var lyr = mLayerByCode[m.c];
+      if (lyr) map.fitBounds(lyr.getBounds(), { padding: [20, 20] });
+    }
+    fitToVillageParcels(row, 0);
+  }
+
+  /**
+   * After the highlight is applied, query the rendered highlighted parcels and
+   * fit the map tightly to them — this pinpoints the village precisely even with
+   * no point coordinate. Retries a few times while tiles stream in; toasts if the
+   * village has no matching parcels (missing cadastre or a name-spelling drift).
+   * @param {VillageRow} row  The village record.
+   * @param {number} tries  Current attempt count.
+   * @returns {void}
+   */
+  function fitToVillageParcels(row, tries) {
+    var gl = cadLayer && cadLayer.getMaplibreMap && cadLayer.getMaplibreMap();
+    if (!gl) return;
+    var run = function () {
+      var feats = gl.getLayer("cad-sel") ? gl.queryRenderedFeatures({ layers: ["cad-sel"] }) : [];
+      if (feats && feats.length) {
+        var b = L.latLngBounds([]);
+        feats.forEach(function (f) {
+          eachCoord(f.geometry, function (lng, lat) {
+            b.extend([lat, lng]);
+          });
+        });
+        if (b.isValid()) map.fitBounds(b, { padding: [40, 40], maxZoom: 17 });
+      } else if (tries < 6) {
+        setTimeout(function () {
+          fitToVillageParcels(row, tries + 1);
+        }, 450);
+      } else {
+        toast(t("parcels_none", { name: vname(row) }));
+      }
+    };
+    if (gl.isStyleLoaded()) run();
+    else gl.once("idle", run);
+  }
+
+  /**
+   * Walk every [lng, lat] position in a GeoJSON geometry.
+   * @param {Object} geom  GeoJSON geometry.
+   * @param {function(number, number):void} fn  Called with (lng, lat).
+   * @returns {void}
+   */
+  function eachCoord(geom, fn) {
+    if (!geom) return;
+    (function walk(c) {
+      if (typeof c[0] === "number") fn(c[0], c[1]);
+      else for (var i = 0; i < c.length; i++) walk(c[i]);
+    })(geom.coordinates || []);
+  }
+
+  /**
+   * Set the cadastral highlight filter to the given village, matching its LGD
+   * name against `v_name` case-insensitively and tolerating the (U)/(R) urban/
+   * rural suffixes the parcel data appends.
+   * @param {VillageRow} row  The village record (row[0] = English name).
+   * @returns {void}
+   */
+  function highlightVillageParcels(row) {
+    var gl = cadLayer && cadLayer.getMaplibreMap && cadLayer.getMaplibreMap();
+    if (!gl) return;
+    var n = (row[0] || "").toLowerCase();
+    var filter = [
+      "in",
+      ["downcase", ["get", "v_name"]],
+      ["literal", [n, n + " (u)", n + " (r)"]]
+    ];
+    var apply = function () {
+      if (gl.getLayer("cad-sel")) gl.setFilter("cad-sel", filter);
+    };
+    if (gl.isStyleLoaded()) apply();
+    else gl.once("load", apply);
+  }
+
+  /**
+   * Clear the cadastral highlight (no village emphasised).
+   * @returns {void}
+   */
+  function clearParcelHighlight() {
+    var gl = cadLayer && cadLayer.getMaplibreMap && cadLayer.getMaplibreMap();
+    if (gl && gl.getLayer && gl.getLayer("cad-sel")) gl.setFilter("cad-sel", CAD_HIDE_FILTER);
   }
 
   /**
@@ -1333,6 +1487,13 @@
       esc(note) +
       "</div>";
 
+    // Land parcels — zoom into this village and render its cadastral plots.
+    var parcelBtn;
+    if (CFG.cadastre && cadLayer) {
+      parcelBtn = el("button", "vpop-nb-btn vpop-parcels-btn", esc(t("show_parcels")));
+      wrap.appendChild(parcelBtn);
+    }
+
     // Nearby civic services — live OpenStreetMap lookup, fetched on demand.
     var nbBtn, nbBox;
     if (window.VF_NEARBY) {
@@ -1343,6 +1504,11 @@
     }
 
     marker.bindPopup(wrap, { className: "village-popup", maxWidth: 280 }).openPopup();
+    if (parcelBtn) {
+      parcelBtn.onclick = function () {
+        showVillageParcels(row, m, coords[row[2]] ? center : null);
+      };
+    }
     if (nbBtn) {
       nbBtn.onclick = function () {
         loadNearby(nbBtn, nbBox, center.lat, center.lng);

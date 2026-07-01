@@ -10,7 +10,7 @@ window.VF_CONFIG = {
   "cadastre": {
     "url": "https://github.com/ramSeraph/indian_cadastrals/releases/download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles",
     "sourceLayer": "APSAC_AP_Cadastrals",
-    "minZoom": 14,
+    "minZoom": 11,
     "tileMaxZoom": 13,
     "attribution": "Cadastre &copy; <a href=\"https://apsac.ap.gov.in/\" target=\"_blank\" rel=\"noopener\">APSAC</a> (CC0) via <a href=\"https://github.com/ramSeraph/indian_cadastrals\" target=\"_blank\" rel=\"noopener\">datameet/ramSeraph</a>"
   },

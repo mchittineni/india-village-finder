@@ -109,7 +109,11 @@ STATES = {
                 "download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles"
             ),
             "sourceLayer": "APSAC_AP_Cadastrals",  # vector layer id inside the PMTiles
-            "minZoom": 14,  # Leaflet zoom at which parcels appear
+            "minZoom": 11,  # Leaflet zoom at which parcels appear (low enough that a
+            # whole mandal fits in view, so a selected village's parcels can be
+            # located and fitted even when the village has no point coordinate).
+            # NB: maplibre-gl-leaflet renders one zoom behind Leaflet, so the GL
+            # layer minzoom is minZoom-1 (handled in app.js initCadastre).
             "tileMaxZoom": 13,  # PMTiles maxzoom (overzoomed above this)
             "attribution": (
                 'Cadastre &copy; <a href="https://apsac.ap.gov.in/" target="_blank" '

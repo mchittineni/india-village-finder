@@ -942,3 +942,7 @@ button.nb-retry:hover {
 .village-popup .cad-pop .vpop-code {
   font-variant-numeric: tabular-nums;
 }
+.vpop-parcels-btn {
+  border-color: var(--brand, #1f6feb);
+  color: var(--brand, #1f6feb);
+}
