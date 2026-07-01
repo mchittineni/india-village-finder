@@ -138,8 +138,8 @@ differs by an LGD state code (Andhra Pradesh = `28`, Telangana = `36`, Karnataka
 
 | Layer                                | Source                                                                                            | Why it's trustworthy                                                                                                                                                                                                                                                                                                        |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Districts, mandals, villages         | **LGD** (`lgdirectory.gov.in`), Ministry of Panchayati Raj                                        | The official Indian government registry of administrative areas. We read it from a **captcha-free [daily mirror](https://github.com/ramSeraph/opendata)** of the LGD dump.                                                                                                                                                  |
-| Live cross-check                     | LGD's real-time portal                                                                            | Every build compares its district & mandal counts against the **live** LGD site, so a stale mirror is caught. The result is saved in each `web/data/meta.json`.                                                                                                                                                             |
+| Districts, mandals, villages         | **LGD** (`lgdirectory.gov.in`), Ministry of Panchayati Raj                                        | The official Indian government registry of administrative areas. We read it directly from the **[data.gov.in](https://data.gov.in/) open-data API** (captcha-free, refreshed ~daily) — no third-party mirror.                                                                                                               |
+| Live cross-check                     | LGD's real-time portal                                                                            | Every build compares its district & mandal counts against the **live** LGD site, so stale data is caught. The result is saved in each `web/data/meta.json`.                                                                                                                                                                 |
 | Map shapes                           | [`ramSeraph/indian_admin_boundaries`](https://github.com/ramSeraph/indian_admin_boundaries)       | Current (2016/2022) LGD boundary polygons, joined to the village data by LGD code.                                                                                                                                                                                                                                          |
 | Pincodes                             | **LGD** `pincode_villages` mapping                                                                | Joined to villages by LGD village code (~99.9% coverage).                                                                                                                                                                                                                                                                   |
 | Native village names (authoritative) | **LGD** `Village Name (In Local)` column                                                          | The state's _own official_ spelling. Kept only when it's genuinely in the state's script (blank/Latin entries are dropped), so a shipped native name is authoritative — preferred over everything else. Coverage follows LGD.                                                                                               |
@@ -291,11 +291,11 @@ If you use this project in research or a product, please cite it — see
 ## Acknowledgements
 
 - **[Local Government Directory (LGD)](https://lgdirectory.gov.in)** — Ministry of
-  Panchayati Raj, Government of India — the authoritative registry of administrative areas.
-- **[@ramSeraph](https://github.com/ramSeraph)** — the captcha-free
-  [LGD mirror](https://github.com/ramSeraph/opendata) and the
-  [admin-boundary polygons](https://github.com/ramSeraph/indian_admin_boundaries) this
-  project builds on.
+  Panchayati Raj, Government of India — the authoritative registry of administrative areas,
+  read via the **[data.gov.in](https://data.gov.in/) open-data API**.
+- **[@ramSeraph](https://github.com/ramSeraph)** — the
+  [admin-boundary polygons](https://github.com/ramSeraph/indian_admin_boundaries) and
+  [cadastral data](https://github.com/ramSeraph/indian_cadastrals) this project builds on.
 - **[GeoNames](https://www.geonames.org/)** — populated-place coordinates.
 - **[OpenStreetMap](https://www.openstreetmap.org/copyright)** contributors (ODbL),
   queried via the [Overpass API](https://overpass-api.de/) for nearby civic services.

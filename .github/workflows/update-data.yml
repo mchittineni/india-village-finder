@@ -40,9 +40,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r scraper/requirements-dev.txt
 
-      # Pulls LGD data straight from the data.gov.in official API (pipeline.py
-      # defaults to --source datagov). DATA_GOV_KEY is a free registered key
-      # (repo secret); without it the public sample key caps pages at 10 rows.
+      # Pulls LGD data straight from the data.gov.in official API. DATA_GOV_KEY
+      # is a free registered key (repo secret); without it the public sample key
+      # caps pages at 10 rows.
       - name: Refresh village data (all states)
         env:
           DATA_GOV_KEY: ${{ secrets.DATA_GOV_KEY }}

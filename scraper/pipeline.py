@@ -18,11 +18,10 @@ Project layout (shared tooling, self-contained per-state outputs)
 
 Data flow
 ---------
-1. FETCH  the latest LGD (Local Government Directory) village data. By default
-   (`--source datagov`) straight from the official Open Government Data platform
-   API (data.gov.in) — no captcha, refreshed ~daily; see scraper/lgd_datagov.py.
-   `--source ramseraph` falls back to the community `ramSeraph/opendata` mirror
-   (.7z CSV dumps). Either way, four CSVs land in scraper/.cache/raw/.
+1. FETCH  the latest LGD (Local Government Directory) village data straight from
+   the official Open Government Data platform API (data.gov.in) — no captcha,
+   refreshed ~daily; see scraper/lgd_datagov.py. Four CSVs land in
+   scraper/.cache/raw/.
 2. For EACH state (Andhra Pradesh = 28, Telangana = 36):
      FILTER  rows to that state.
      VERIFY  district/mandal counts against the LIVE LGD portal (non-fatal).
@@ -32,12 +31,11 @@ Data flow
 
 Run:  python pipeline.py                  (both states, data.gov.in API)
       python pipeline.py --state ap       (only Andhra Pradesh)
-      python pipeline.py --source ramseraph  (use the ramSeraph mirror instead)
       python pipeline.py --offline        (reuse already-fetched raw CSVs)
       python pipeline.py --no-verify      (skip the live LGD cross-check)
 
-A free data.gov.in API key in $DATA_GOV_KEY is recommended for --source datagov
-(the public sample key caps responses at 10 rows). Register at https://data.gov.in/.
+A free data.gov.in API key in $DATA_GOV_KEY is required for real runs (the public
+sample key caps responses at 10 rows). Register at https://data.gov.in/.
 """
 
 from __future__ import annotations
@@ -51,41 +49,12 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import requests
-
-try:
-    import py7zr
-except ImportError:  # pragma: no cover
-    py7zr = None
-
-
-def _safe_extractall(z, dest: Path) -> None:
-    """Extract a py7zr archive, rejecting any member whose path escapes ``dest``.
-
-    The .7z dumps come from a third-party community mirror, so a tampered or
-    malicious archive could carry members like ``../../../etc/passwd`` and
-    overwrite files outside ``dest``. Validate every member resolves inside
-    ``dest`` before extracting (zip-slip / CWE-22).
-    """
-    root = dest.resolve()
-    for member in z.getnames():
-        if not (root / member).resolve().is_relative_to(root):
-            raise RuntimeError(
-                f"refusing to extract unsafe archive member outside {root}: {member!r}"
-            )
-    z.extractall(dest)
-
+from lgd_datagov import fetch_datagov
 
 HERE = Path(__file__).resolve().parent  # scraper/
 ROOT = HERE.parent  # Village Finder/
 RAW = HERE / ".cache" / "raw"
 TEMPLATE = HERE / "web_template"
-
-RELEASES_API = "https://api.github.com/repos/ramSeraph/opendata/releases?per_page=100"
-ASSET_RE = re.compile(
-    r"^(pincode_villages|villages|subdistricts|districts)\.(\d{2}[A-Za-z]{3}\d{4})\.csv\.7z$"
-)
-REQUIRED_KINDS = {"villages", "subdistricts", "districts"}  # pincode_villages is optional
 
 # One config block per state. `slug` is the folder name. `division` is the local
 # name for a sub-district (Mandal in AP/Telangana, Taluk in Karnataka/Tamil Nadu) —
@@ -218,58 +187,8 @@ csv.field_size_limit(10_000_000)
 
 
 # ---------------------------------------------------------------------------
-# 1. Download latest national LGD dump (shared)
+# 1. Fetch LGD data (data.gov.in official API — see scraper/lgd_datagov.py)
 # ---------------------------------------------------------------------------
-def find_latest_assets() -> tuple[dict[str, str], str]:
-    r = requests.get(RELEASES_API, timeout=60, headers={"Accept": "application/vnd.github+json"})
-    r.raise_for_status()
-    best: dict[str, tuple[dt.date, str]] = {}
-    for rel in r.json():
-        for a in rel.get("assets", []):
-            m = ASSET_RE.match(a["name"])
-            if not m:
-                continue
-            kind, datestr = m.group(1), m.group(2)
-            d = dt.datetime.strptime(datestr, "%d%b%Y").date()
-            if kind not in best or d > best[kind][0]:
-                best[kind] = (d, a["browser_download_url"])
-    if set(best) < REQUIRED_KINDS:
-        raise RuntimeError(f"Could not find all LGD assets; found {set(best)}")
-    date = max(best[k][0] for k in REQUIRED_KINDS).strftime("%d%b%Y")
-    return {k: v[1] for k, v in best.items()}, date
-
-
-def download_and_extract(offline: bool) -> dict[str, Path]:
-    RAW.mkdir(parents=True, exist_ok=True)
-    paths: dict[str, Path] = {}
-    if offline:
-        for kind in ("districts", "subdistricts", "villages", "pincode_villages"):
-            found = sorted(RAW.glob(f"{kind}.*.csv"))
-            if found:
-                paths[kind] = found[-1]
-            elif kind in REQUIRED_KINDS:
-                raise RuntimeError(f"--offline but no extracted {kind} CSV in {RAW}")
-        print(f"[offline] using {', '.join(p.name for p in paths.values())}")
-        return paths
-
-    if py7zr is None:
-        raise RuntimeError("py7zr is required to extract the .7z dumps (pip install py7zr)")
-
-    assets, date = find_latest_assets()
-    print(f"[download] latest LGD dump: {date}")
-    for kind, url in assets.items():
-        archive = RAW / url.split("/")[-1]
-        if not archive.exists():
-            print(f"  fetching {kind} ...")
-            with requests.get(url, stream=True, timeout=300) as resp:
-                resp.raise_for_status()
-                with open(archive, "wb") as fh:
-                    for chunk in resp.iter_content(1 << 16):
-                        fh.write(chunk)
-        with py7zr.SevenZipFile(archive, "r") as z:
-            _safe_extractall(z, RAW)
-        paths[kind] = sorted(RAW.glob(f"{kind}.*.csv"))[-1]
-    return paths
 
 
 # ---------------------------------------------------------------------------
@@ -468,7 +387,7 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         "state_code": state_code,
         "generated_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
-        "source_mirror": "github.com/ramSeraph/opendata (LGD daily dump)",
+        "source_mirror": "data.gov.in (Open Government Data platform, LGD API)",
         "source_date": source_date,
         "counts": {
             "districts": len(d_sorted),
@@ -606,21 +525,10 @@ def main():
     ap.add_argument("--state", choices=["ap", "tg", "ka", "tn", "both"], default="both")
     ap.add_argument("--offline", action="store_true", help="reuse already-extracted raw CSVs")
     ap.add_argument("--no-verify", action="store_true", help="skip live LGD cross-check")
-    ap.add_argument(
-        "--source",
-        choices=["datagov", "ramseraph"],
-        default="datagov",
-        help="LGD data source: data.gov.in official API (default) or the ramSeraph mirror",
-    )
     args = ap.parse_args()
 
     targets = list(STATES) if args.state == "both" else [ALIAS[args.state]]
-    if args.source == "datagov":
-        from lgd_datagov import fetch_datagov
-
-        paths = fetch_datagov(targets, RAW, args.offline)
-    else:
-        paths = download_and_extract(args.offline)
+    paths = fetch_datagov(targets, RAW, args.offline)
     source_date = _source_date(paths)
 
     for sc in targets:
