@@ -103,6 +103,22 @@ ALIAS: dict[str, int] = {
     "tamil": 33,
 }
 
+# All-state boundary vector tiles (tiles/boundaries.pmtiles, built by
+# build_boundary_tiles.py). When `enabled`, the web apps stream district/mandal
+# polygons from this archive instead of downloading whole GeoJSON files —
+# constant payload per view however many states exist. Served same-origin by
+# GitHub Pages (range requests work there), so no external host is needed.
+# Flip `enabled` to True and re-run pipeline.py to switch the apps over; until
+# then the GeoJSON path is untouched (testable per-session via ?bt=1).
+BOUNDARY_TILES: dict = {
+    "enabled": False,
+    "url": "../../tiles/boundaries.pmtiles",
+    "districtsLayer": "districts",
+    "mandalsLayer": "mandals",
+    "minZoom": 4,
+    "tileMaxZoom": 12,
+}
+
 # Convenience lookups derived from the registry (never hand-maintained).
 SLUG_BY_CODE: dict[int, str] = {code: s["slug"] for code, s in STATES.items()}
 CODE_BY_SLUG: dict[str, int] = {s["slug"]: code for code, s in STATES.items()}

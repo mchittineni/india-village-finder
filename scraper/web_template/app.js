@@ -330,6 +330,14 @@
     cadToggleBtn = null; // the "land parcels" toggle control button
   var dLayerByCode = {},
     mLayerByCode = {};
+  // Vector-tile boundary mode (see initBoundaryTiles): btLayer is the GL overlay,
+  // btBounds the per-region bbox lookup that replaces layer.getBounds(), btTipEl
+  // a reusable hover tooltip. BT_CFG null -> classic GeoJSON boundaries.
+  var BT_CFG = btConfig();
+  var btLayer = null,
+    btBounds = null,
+    btTipEl = null,
+    btHoverCode = null;
   var view = { level: "state", d: null, m: null }; // d,m = region objects
 
   init();
@@ -345,11 +353,15 @@
     buildSwitch();
     applyI18n();
     try {
+      var EMPTY_FC = { type: "FeatureCollection", features: [] };
       var res = await Promise.all([
         fetchJSON("regions.json"),
         fetchJSON("villages.json"),
-        fetchJSON("districts.geojson"),
-        fetchJSON("mandals.geojson"),
+        // Vector-tile mode streams boundaries from the shared PMTiles archive, so
+        // the whole-state GeoJSON downloads (the largest payloads) are skipped;
+        // boundary_bounds.json supplies the per-region bboxes getBounds() gave us.
+        BT_CFG ? Promise.resolve(EMPTY_FC) : fetchJSON("districts.geojson"),
+        BT_CFG ? Promise.resolve(EMPTY_FC) : fetchJSON("mandals.geojson"),
         fetchJSON("meta.json").catch(function () {
           return null;
         }),
@@ -378,7 +390,14 @@
           ? fetchJSON("village_points.json").catch(function () {
               return {};
             })
-          : Promise.resolve({})
+          : Promise.resolve({}),
+        // Vector-tile mode only: {d: {code: bbox}, m: {code: bbox}} with bbox as
+        // [minLat,minLng,maxLat,maxLng] — used for fitBounds/centroids.
+        BT_CFG
+          ? fetchJSON("boundary_bounds.json").catch(function () {
+              return null;
+            })
+          : Promise.resolve(null)
       ]);
       regions = res[0];
       villages = res[1];
@@ -391,6 +410,14 @@
       regionNative = res[8] || {};
       parcelIndex = res[9] || {};
       villagePoints = res[10] || {};
+      btBounds = res[11];
+      if (BT_CFG && !btBounds) {
+        // Bounds index missing — vector-tile mode can't fit/zoom without it, so
+        // fall back to the classic GeoJSON boundaries (fetched late, one-off).
+        BT_CFG = null;
+        geoD = await fetchJSON("districts.geojson");
+        geoM = await fetchJSON("mandals.geojson");
+      }
     } catch (e) {
       $("#map-loading").textContent = "Could not load data: " + e.message;
       return;
@@ -658,6 +685,7 @@
     map.getPane("cadastre").style.zIndex = 420;
     map.getPane("cadastre").style.pointerEvents = "none";
     initCadastre();
+    initBoundaryTiles();
   }
 
   /**
@@ -846,9 +874,7 @@
   function showParcel(props, latlng) {
     props = props || {};
     var survey = props.parcel_num || "";
-    var place = [props.v_name, props.m_name, props.d_name]
-      .filter(Boolean)
-      .join(" · ");
+    var place = [props.v_name, props.m_name, props.d_name].filter(Boolean).join(" · ");
     var area = props.shape_area ? Math.round(Number(props.shape_area)) : null;
     var wrap = el("div", "vpop cad-pop");
     wrap.setAttribute("dir", I18N.dirOf(LANG));
@@ -916,7 +942,8 @@
       // No index entry and no coordinate: show the mandal so its parcels render,
       // then tighten onto this village's plots (best-effort name match).
       var lyr = mLayerByCode[m.c];
-      if (lyr) map.fitBounds(lyr.getBounds(), { padding: [20, 20] });
+      var mfb = lyr ? lyr.getBounds() : btBoundsOf("m", m.c);
+      if (mfb) map.fitBounds(mfb, { padding: [20, 20] });
       fitToVillageParcels(row, 0);
     }
     refreshParcelList(row, 0);
@@ -964,8 +991,7 @@
     parcelRows.sort(function (a, b) {
       return a.survey.localeCompare(b.survey, undefined, { numeric: true });
     });
-    $("#pl-sub").textContent =
-      vname(row) + " · " + t("n_parcels", { n: fmt(parcelRows.length) });
+    $("#pl-sub").textContent = vname(row) + " · " + t("n_parcels", { n: fmt(parcelRows.length) });
     var input = $("#pl-search");
     if (input) input.value = "";
     renderParcelList("");
@@ -1086,11 +1112,7 @@
     var gl = cadLayer && cadLayer.getMaplibreMap && cadLayer.getMaplibreMap();
     if (!gl) return;
     var n = (row[0] || "").toLowerCase();
-    var filter = [
-      "in",
-      ["downcase", ["get", "v_name"]],
-      ["literal", [n, n + " (u)", n + " (r)"]]
-    ];
+    var filter = ["in", ["downcase", ["get", "v_name"]], ["literal", [n, n + " (u)", n + " (r)"]]];
     var apply = function () {
       if (gl.getLayer("cad-sel")) gl.setFilter("cad-sel", filter);
     };
@@ -1158,6 +1180,374 @@
     }
     dLayerByCode = {};
     mLayerByCode = {};
+    if (BT_CFG) btReset();
+  }
+
+  // ---- vector-tile boundaries (optional, replaces the GeoJSON layers) ---
+  /**
+   * Resolve the boundary-tiles config: the `?bt=` dev override (1 = default
+   * same-origin archive, 0 = force off, else a URL) beats the generated
+   * config. Returns null — meaning "use classic GeoJSON boundaries" — when
+   * neither is present or the GL libraries failed to load.
+   * @returns {?Object} Boundary-tiles config, or null.
+   */
+  function btConfig() {
+    var qs = null;
+    try {
+      qs = new URLSearchParams(location.search).get("bt");
+    } catch (e) {}
+    if (qs === "0") return null;
+    var cfg = qs
+      ? { url: qs === "1" ? "../../tiles/boundaries.pmtiles" : qs }
+      : CFG.boundaryTiles || null;
+    if (!cfg) return null;
+    if (!window.maplibregl || !window.pmtiles || !L.maplibreGL) return null;
+    return {
+      url: cfg.url,
+      districtsLayer: cfg.districtsLayer || "districts",
+      mandalsLayer: cfg.mandalsLayer || "mandals"
+    };
+  }
+
+  /**
+   * Create the GL boundary overlay in the "regions" pane: district + mandal
+   * fills/outlines streamed from the shared PMTiles archive, filtered to this
+   * state. Choropleth colours are data-driven from regions.json at runtime, so
+   * the tiles carry geometry only. Interactions stay on the Leaflet map (same
+   * pattern as the cadastre): clicks/hover query the GL map by point.
+   * @returns {void}
+   */
+  function initBoundaryTiles() {
+    if (!BT_CFG) return;
+    if (!initCadastre._proto) {
+      initCadastre._proto = new pmtiles.Protocol();
+      maplibregl.addProtocol("pmtiles", initCadastre._proto.tile);
+    }
+    var ST = ["==", ["get", "state"], CFG.slug];
+    btLayer = L.maplibreGL({
+      pane: "regions",
+      interactive: false,
+      attribution: "",
+      style: {
+        version: 8,
+        sources: { bt: { type: "vector", url: "pmtiles://" + BT_CFG.url } },
+        layers: [
+          {
+            id: "bt-d-fill",
+            type: "fill",
+            source: "bt",
+            "source-layer": BT_CFG.districtsLayer,
+            filter: ST,
+            paint: {
+              "fill-color": btMatchColor(regions.districts, dBreaks),
+              "fill-opacity": 0.85
+            }
+          },
+          {
+            id: "bt-d-line",
+            type: "line",
+            source: "bt",
+            "source-layer": BT_CFG.districtsLayer,
+            filter: ST,
+            paint: { "line-color": "#ffffff", "line-width": 1.2 }
+          },
+          {
+            id: "bt-d-hover",
+            type: "line",
+            source: "bt",
+            "source-layer": BT_CFG.districtsLayer,
+            filter: ["all", ST, ["==", ["get", "c"], -1]],
+            paint: { "line-color": "#334155", "line-width": 2.4 }
+          },
+          {
+            id: "bt-m-fill",
+            type: "fill",
+            source: "bt",
+            "source-layer": BT_CFG.mandalsLayer,
+            layout: { visibility: "none" },
+            filter: ST,
+            paint: { "fill-color": RAMP[0], "fill-opacity": 0.82 }
+          },
+          {
+            id: "bt-m-line",
+            type: "line",
+            source: "bt",
+            "source-layer": BT_CFG.mandalsLayer,
+            layout: { visibility: "none" },
+            filter: ST,
+            paint: { "line-color": "#ffffff", "line-width": 1 }
+          },
+          {
+            id: "bt-m-hover",
+            type: "line",
+            source: "bt",
+            "source-layer": BT_CFG.mandalsLayer,
+            layout: { visibility: "none" },
+            filter: ["all", ST, ["==", ["get", "c"], -1]],
+            paint: { "line-color": "#334155", "line-width": 2.4 }
+          },
+          {
+            id: "bt-m-sel",
+            type: "line",
+            source: "bt",
+            "source-layer": BT_CFG.mandalsLayer,
+            layout: { visibility: "none" },
+            filter: ["all", ST, ["==", ["get", "c"], -1]],
+            paint: { "line-color": "#0f172a", "line-width": 2.6 }
+          }
+        ]
+      }
+    }).addTo(map);
+    map.on("click", btOnClick);
+    map.on("mousemove", btOnMove);
+    map.on("mouseout", btClearHover);
+  }
+
+  /**
+   * Run `fn(gl)` against the boundary GL map once its style is usable.
+   * @param {Function} fn  Receives the MapLibre map.
+   * @returns {void}
+   */
+  function btGL(fn) {
+    if (!btLayer) return;
+    var gl = btLayer.getMaplibreMap && btLayer.getMaplibreMap();
+    if (!gl) return;
+    if (gl.isStyleLoaded()) fn(gl);
+    else
+      gl.once("idle", function () {
+        fn(gl);
+      });
+  }
+
+  /**
+   * Build a data-driven fill-color: LGD code -> choropleth colour, so tiles
+   * stay geometry-only and daily count changes never require a tile rebuild.
+   * @param {Array<{c:number,vc:number}>} list  Regions with codes + counts.
+   * @param {number[]} breaks  Quantile breaks.
+   * @returns {Array} MapLibre match expression.
+   */
+  function btMatchColor(list, breaks) {
+    var expr = ["match", ["get", "c"]];
+    list.forEach(function (r) {
+      expr.push(r.c, colorFor(r.vc, breaks));
+    });
+    expr.push(RAMP[0]); // fallback for codes the data doesn't know
+    return expr;
+  }
+
+  /**
+   * bbox -> LatLngBounds for a region from boundary_bounds.json.
+   * @param {"d"|"m"} kind  District or mandal lookup.
+   * @param {number} code  LGD code.
+   * @returns {?Object} L.LatLngBounds, or null when unknown.
+   */
+  function btBoundsOf(kind, code) {
+    var b = btBounds && btBounds[kind] && btBounds[kind][code];
+    return b ? L.latLngBounds([b[0], b[1]], [b[2], b[3]]) : null;
+  }
+
+  /**
+   * Union bounds across a list of region objects (by their bbox entries).
+   * @param {"d"|"m"} kind  Lookup table to use.
+   * @param {Array<{c:number}>} list  Regions.
+   * @returns {?Object} Combined L.LatLngBounds, or null if none found.
+   */
+  function btUnionBounds(kind, list) {
+    var out = null;
+    list.forEach(function (r) {
+      var b = btBoundsOf(kind, r.c);
+      if (b) out = out ? out.extend(b) : L.latLngBounds(b.getSouthWest(), b.getNorthEast());
+    });
+    return out;
+  }
+
+  /**
+   * State view: show district layers, hide mandal layers, clear highlights.
+   * @returns {void}
+   */
+  function btShowState() {
+    btGL(function (gl) {
+      var ST = ["==", ["get", "state"], CFG.slug];
+      ["bt-d-fill", "bt-d-line", "bt-d-hover"].forEach(function (id) {
+        gl.setLayoutProperty(id, "visibility", "visible");
+      });
+      ["bt-m-fill", "bt-m-line", "bt-m-hover", "bt-m-sel"].forEach(function (id) {
+        gl.setLayoutProperty(id, "visibility", "none");
+      });
+      gl.setFilter("bt-d-hover", ["all", ST, ["==", ["get", "c"], -1]]);
+      gl.setPaintProperty("bt-d-fill", "fill-color", btMatchColor(regions.districts, dBreaks));
+    });
+  }
+
+  /**
+   * District view: hide district layers (mirroring the Leaflet path, which
+   * removes them), show this district's mandals with their own choropleth.
+   * @param {District} d  Selected district.
+   * @param {number[]} breaks  Quantile breaks for its mandals.
+   * @returns {void}
+   */
+  function btShowDistrict(d, breaks) {
+    btGL(function (gl) {
+      var ST = ["==", ["get", "state"], CFG.slug];
+      var IN_D = ["all", ST, ["==", ["get", "d"], d.c]];
+      ["bt-d-fill", "bt-d-line", "bt-d-hover"].forEach(function (id) {
+        gl.setLayoutProperty(id, "visibility", "none");
+      });
+      ["bt-m-fill", "bt-m-line", "bt-m-hover", "bt-m-sel"].forEach(function (id) {
+        gl.setLayoutProperty(id, "visibility", "visible");
+      });
+      gl.setFilter("bt-m-fill", IN_D);
+      gl.setFilter("bt-m-line", IN_D);
+      gl.setFilter("bt-m-hover", ["all", IN_D, ["==", ["get", "c"], -1]]);
+      gl.setFilter("bt-m-sel", ["all", IN_D, ["==", ["get", "c"], -1]]);
+      var mList = regions.mandals.filter(function (m) {
+        return m.d === d.i;
+      });
+      gl.setPaintProperty("bt-m-fill", "fill-color", btMatchColor(mList, breaks));
+      gl.setPaintProperty("bt-m-fill", "fill-opacity", 0.82);
+    });
+  }
+
+  /**
+   * Emphasise the selected mandal and fade its siblings (GL analogue of the
+   * per-layer setStyle loop in finishMandal).
+   * @param {Mandal} m  Selected mandal.
+   * @returns {void}
+   */
+  function btHighlightMandal(m) {
+    btGL(function (gl) {
+      var ST = ["==", ["get", "state"], CFG.slug];
+      var IN_D = ["all", ST, ["==", ["get", "d"], regions.districts[m.d].c]];
+      gl.setFilter("bt-m-sel", ["all", IN_D, ["==", ["get", "c"], m.c]]);
+      gl.setPaintProperty("bt-m-fill", "fill-opacity", [
+        "case",
+        ["==", ["get", "c"], m.c],
+        0.9,
+        0.35
+      ]);
+    });
+  }
+
+  /**
+   * Clear hover/selection state (called from clearLayers on view changes).
+   * @returns {void}
+   */
+  function btReset() {
+    btClearHover();
+    btGL(function (gl) {
+      var ST = ["==", ["get", "state"], CFG.slug];
+      gl.setFilter("bt-m-sel", ["all", ST, ["==", ["get", "c"], -1]]);
+    });
+  }
+
+  /**
+   * Top boundary feature under a Leaflet mouse event: the layer that matches
+   * the current drill level (mandals when inside a district, else districts).
+   * @param {Object} e  Leaflet mouse event.
+   * @returns {?{kind:string, props:Object}} Hit info, or null.
+   */
+  function btPick(e) {
+    if (!btLayer) return null;
+    var gl = btLayer.getMaplibreMap && btLayer.getMaplibreMap();
+    if (!gl || !gl.isStyleLoaded()) return null;
+    var pt = gl.project([e.latlng.lng, e.latlng.lat]);
+    var id = view.level === "state" ? "bt-d-fill" : "bt-m-fill";
+    if (!gl.getLayer(id)) return null;
+    var hits = gl.queryRenderedFeatures(pt, { layers: [id] });
+    if (!hits.length) return null;
+    return { kind: id === "bt-d-fill" ? "d" : "m", props: hits[0].properties || {} };
+  }
+
+  /**
+   * Whether a rendered land parcel sits under the event point — parcel clicks
+   * are handled by wireCadastre and must win over boundary drill-down.
+   * @param {Object} e  Leaflet mouse event.
+   * @returns {boolean} True when a parcel is hit.
+   */
+  function btParcelAt(e) {
+    if (!cadOn || !cadLayer) return false;
+    var gl = cadLayer.getMaplibreMap && cadLayer.getMaplibreMap();
+    if (!gl || !gl.getLayer("cad-fill")) return false;
+    var pt = gl.project([e.latlng.lng, e.latlng.lat]);
+    return gl.queryRenderedFeatures(pt, { layers: ["cad-fill"] }).length > 0;
+  }
+
+  /**
+   * Map click in vector-tile mode: drill into the district/mandal under the
+   * cursor, mirroring the Leaflet layers' click handlers.
+   * @param {Object} e  Leaflet mouse event.
+   * @returns {void}
+   */
+  function btOnClick(e) {
+    if (!BT_CFG || btParcelAt(e)) return;
+    var hit = btPick(e);
+    if (!hit) return;
+    if (hit.kind === "d") {
+      var d = dByCode[hit.props.c];
+      if (d) selectDistrict(d);
+    } else {
+      var m = mByCode[hit.props.c];
+      if (m) selectMandal(m);
+    }
+  }
+
+  /**
+   * Map mousemove in vector-tile mode: hover-highlight the region under the
+   * cursor and show the same name/count tooltip the Leaflet layers bind.
+   * @param {Object} e  Leaflet mouse event.
+   * @returns {void}
+   */
+  function btOnMove(e) {
+    if (!BT_CFG) return;
+    var hit = btPick(e);
+    if (!hit) {
+      btClearHover();
+      return;
+    }
+    var code = hit.props.c;
+    btGL(function (gl) {
+      var ST = ["==", ["get", "state"], CFG.slug];
+      if (hit.kind === "d") {
+        gl.setFilter("bt-d-hover", ["all", ST, ["==", ["get", "c"], code]]);
+      } else {
+        gl.setFilter("bt-m-hover", ["all", ST, ["==", ["get", "c"], code]]);
+      }
+    });
+    var html;
+    if (hit.kind === "d") {
+      var d = dByCode[code];
+      html = tip(rn(code, hit.props.n, "districts"), d ? t("n_villages", { n: fmt(d.vc) }) : "");
+    } else {
+      var m = mByCode[code];
+      html = tip(rn(code, hit.props.n, "mandals"), m ? t("n_villages", { n: fmt(m.vc) }) : "");
+    }
+    if (!btTipEl) {
+      btTipEl = L.tooltip({ className: "region-tip", direction: "top", sticky: true });
+    }
+    btTipEl.setLatLng(e.latlng).setContent(html);
+    if (!map.hasLayer(btTipEl)) btTipEl.addTo(map);
+    if (btHoverCode !== hit.kind + code) {
+      btHoverCode = hit.kind + code;
+      map.getContainer().style.cursor = "pointer";
+    }
+  }
+
+  /**
+   * Remove the hover highlight + tooltip (mouse left all regions or the map).
+   * @returns {void}
+   */
+  function btClearHover() {
+    if (!BT_CFG) return;
+    if (btTipEl && map.hasLayer(btTipEl)) map.removeLayer(btTipEl);
+    if (btHoverCode !== null) {
+      btHoverCode = null;
+      map.getContainer().style.cursor = "";
+      btGL(function (gl) {
+        var ST = ["==", ["get", "state"], CFG.slug];
+        gl.setFilter("bt-d-hover", ["all", ST, ["==", ["get", "c"], -1]]);
+        gl.setFilter("bt-m-hover", ["all", ST, ["==", ["get", "c"], -1]]);
+      });
+    }
   }
 
   // ---- DISTRICT (state) view ------------------------------------------
@@ -1170,6 +1560,18 @@
   function showDistrictView(fit) {
     view = { level: "state", d: null, m: null };
     clearLayers();
+    if (BT_CFG) {
+      btShowState();
+      if (fit) {
+        var sb = btUnionBounds("d", regions.districts);
+        if (sb) map.fitBounds(sb, { padding: [20, 20] });
+      }
+      renderBreadcrumb();
+      renderStatePanel();
+      renderLegend(dBreaks, t("villages_per_district"));
+      $("#map-loading").classList.add("hidden");
+      return;
+    }
     dLayer = L.geoJSON(geoD, {
       style: styleDistrict,
       onEachFeature: function (f, layer) {
@@ -1227,6 +1629,23 @@
         }),
       RAMP.length
     );
+    if (BT_CFG) {
+      btShowDistrict(d, breaks);
+      var mList = regions.mandals.filter(function (m) {
+        return m.d === d.i;
+      });
+      var db = btUnionBounds("m", mList) || btBoundsOf("d", d.c);
+      if (db) {
+        map.fitBounds(db, { padding: [30, 30] });
+      } else {
+        toast(t("boundary_missing", { name: rdist(d) }));
+      }
+      renderBreadcrumb();
+      renderDistrictPanel(d);
+      renderLegend(breaks, t("villages_per_" + DIV));
+      if (opts.then) opts.then();
+      return;
+    }
     mLayer = L.geoJSON(
       { type: "FeatureCollection", features: feats },
       {
@@ -1301,6 +1720,14 @@
     if (marker) {
       map.removeLayer(marker);
       marker = null;
+    }
+    if (BT_CFG) {
+      btHighlightMandal(m);
+      var mb = btBoundsOf("m", m.c);
+      if (mb) map.fitBounds(mb, { padding: [60, 60], maxZoom: 12 });
+      renderBreadcrumb();
+      renderMandalPanel(m, highlightCode);
+      return;
     }
     // de-emphasise siblings, highlight selected mandal
     Object.keys(mLayerByCode).forEach(function (c) {
@@ -1574,11 +2001,8 @@
     // then the mandal centroid the boundary layer gives us at runtime.
     var cadPt = villagePoints[row[2]];
     var precise = cadPt || coords[row[2]];
-    var center = precise
-      ? L.latLng(precise[0], precise[1])
-      : lyr
-        ? lyr.getBounds().getCenter()
-        : null;
+    var mvb = lyr ? lyr.getBounds() : btBoundsOf("m", m.c);
+    var center = precise ? L.latLng(precise[0], precise[1]) : mvb ? mvb.getCenter() : null;
     if (!center) {
       toast(t("loc_missing", { name: vname(row) }));
       return;
