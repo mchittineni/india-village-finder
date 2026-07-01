@@ -55,21 +55,22 @@ except ImportError:  # pragma: no cover
     py7zr = None
 
 
-def _safe_extractall(z, dest: Path) -> None:
-    """Extract a py7zr archive, rejecting any member whose path escapes ``dest``.
+def _safe_extract(z, dest: Path, targets: list[str]) -> None:
+    """Extract only ``targets`` from a py7zr archive into ``dest``.
 
     The .7z dumps come from a third-party community mirror, so a tampered or
     malicious archive could carry members like ``../../../etc/passwd`` and
-    overwrite files outside ``dest``. Validate every member resolves inside
-    ``dest`` before extracting (zip-slip / CWE-22).
+    overwrite files outside ``dest``. Validate every requested member resolves
+    inside ``dest`` before extracting (zip-slip / CWE-22). Monthly bundles hold
+    ~30 daily CSVs, so we only pull the one day we actually need.
     """
     root = dest.resolve()
-    for member in z.getnames():
+    for member in targets:
         if not (root / member).resolve().is_relative_to(root):
             raise RuntimeError(
                 f"refusing to extract unsafe archive member outside {root}: {member!r}"
             )
-    z.extractall(dest)
+    z.extract(path=dest, targets=targets)
 
 
 HERE = Path(__file__).resolve().parent  # scraper/
@@ -78,8 +79,18 @@ RAW = HERE / ".cache" / "raw"
 TEMPLATE = HERE / "web_template"
 
 RELEASES_API = "https://api.github.com/repos/ramSeraph/opendata/releases?per_page=100"
+# The upstream mirror publishes LGD dumps in two shapes:
+#   * daily snapshot   -> "<kind>.DDMonYYYY.csv.7z"  (one CSV inside)
+#   * monthly bundle   -> "<kind>.MonYYYY.7z"        (one daily CSV per day inside)
+# districts/subdistricts/pincode_villages are only published as monthly bundles now;
+# villages is available in both. Match either so we always find the latest of each.
 ASSET_RE = re.compile(
-    r"^(pincode_villages|villages|subdistricts|districts)\.(\d{2}[A-Za-z]{3}\d{4})\.csv\.7z$"
+    r"^(pincode_villages|villages|subdistricts|districts)\."
+    r"(?:(\d{2}[A-Za-z]{3}\d{4})\.csv|([A-Za-z]{3}\d{4}))\.7z$"
+)
+# A single extracted daily CSV, e.g. "districts.30Jun2026.csv".
+CSV_RE = re.compile(
+    r"^(pincode_villages|villages|subdistricts|districts)\.(\d{2}[A-Za-z]{3}\d{4})\.csv$"
 )
 REQUIRED_KINDS = {"villages", "subdistricts", "districts"}  # pincode_villages is optional
 
@@ -191,6 +202,21 @@ csv.field_size_limit(10_000_000)
 # ---------------------------------------------------------------------------
 # 1. Download latest national LGD dump (shared)
 # ---------------------------------------------------------------------------
+def _latest_member(names: list[str]) -> str | None:
+    """Return the newest ``<kind>.DDMonYYYY.csv`` from a list of names (archive
+    members or files on disk), picked by parsed date rather than string sort so
+    cross-month names like Mar/Jun compare correctly."""
+    best: tuple[dt.date, str] | None = None
+    for n in names:
+        m = CSV_RE.match(Path(n).name)
+        if not m:
+            continue
+        d = dt.datetime.strptime(m.group(2), "%d%b%Y").date()
+        if best is None or d > best[0]:
+            best = (d, n)
+    return best[1] if best else None
+
+
 def find_latest_assets() -> tuple[dict[str, str], str]:
     r = requests.get(RELEASES_API, timeout=60, headers={"Accept": "application/vnd.github+json"})
     r.raise_for_status()
@@ -200,13 +226,18 @@ def find_latest_assets() -> tuple[dict[str, str], str]:
             m = ASSET_RE.match(a["name"])
             if not m:
                 continue
-            kind, datestr = m.group(1), m.group(2)
-            d = dt.datetime.strptime(datestr, "%d%b%Y").date()
+            kind = m.group(1)
+            # group(2) = daily "DDMonYYYY", group(3) = monthly "MonYYYY".
+            d = (
+                dt.datetime.strptime(m.group(2), "%d%b%Y").date()
+                if m.group(2)
+                else dt.datetime.strptime(m.group(3), "%b%Y").date()
+            )
             if kind not in best or d > best[kind][0]:
                 best[kind] = (d, a["browser_download_url"])
     if set(best) < REQUIRED_KINDS:
         raise RuntimeError(f"Could not find all LGD assets; found {set(best)}")
-    date = max(best[k][0] for k in REQUIRED_KINDS).strftime("%d%b%Y")
+    date = max(best[k][0] for k in REQUIRED_KINDS).strftime("%b%Y")
     return {k: v[1] for k, v in best.items()}, date
 
 
@@ -215,9 +246,9 @@ def download_and_extract(offline: bool) -> dict[str, Path]:
     paths: dict[str, Path] = {}
     if offline:
         for kind in ("districts", "subdistricts", "villages", "pincode_villages"):
-            found = sorted(RAW.glob(f"{kind}.*.csv"))
-            if found:
-                paths[kind] = found[-1]
+            member = _latest_member([p.name for p in RAW.glob(f"{kind}.*.csv")])
+            if member is not None:
+                paths[kind] = RAW / member
             elif kind in REQUIRED_KINDS:
                 raise RuntimeError(f"--offline but no extracted {kind} CSV in {RAW}")
         print(f"[offline] using {', '.join(p.name for p in paths.values())}")
@@ -238,8 +269,11 @@ def download_and_extract(offline: bool) -> dict[str, Path]:
                     for chunk in resp.iter_content(1 << 16):
                         fh.write(chunk)
         with py7zr.SevenZipFile(archive, "r") as z:
-            _safe_extractall(z, RAW)
-        paths[kind] = sorted(RAW.glob(f"{kind}.*.csv"))[-1]
+            member = _latest_member(z.getnames())
+            if member is None:
+                raise RuntimeError(f"no dated {kind} CSV inside {archive.name}")
+            _safe_extract(z, RAW, [member])
+        paths[kind] = RAW / member
     return paths
 
 
