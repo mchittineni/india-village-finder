@@ -1,0 +1,6 @@
+{
+  "_comment": "Manual native-name overrides — highest priority, they beat OSM crowd data and the IndicXlit model. Keyed {lang: {english_name_lowercased: native_script_name}}. Add entries you have verified against an authoritative source (LGD, census, the local administration). Example: \"te\": { \"visakhapatnam\": \"<verified Telugu spelling>\" }. Kept intentionally empty so no unverified spellings ship; edit and commit as corrections are confirmed.",
+  "te": {},
+  "kn": {},
+  "ta": {}
+}

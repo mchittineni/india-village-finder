@@ -1,0 +1,62 @@
+name: seed-osm-names
+
+# Harvests human-verified native place names (name:te / name:kn / name:ta) from
+# OpenStreetMap via Overpass and commits them to scraper/osm_names.json, which the
+# pipeline prefers over the neural transliterator. Overpass is public + rate-limited,
+# so this runs on demand / monthly here rather than on a laptop. Opens a PR; the
+# next data refresh applies the names to each state's names.json + CSV.
+
+on:
+  schedule:
+    - cron: "0 5 1 * *" # monthly — 1st, 05:00 UTC
+  workflow_dispatch:
+    inputs:
+      state:
+        description: "State(s) to harvest: all | ap | tg | ka | tn"
+        default: all
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: seed-osm-names
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    # Bind the dispatch input to env; never interpolate ${{ inputs.* }} into run:.
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OSM_STATE: ${{ inputs.state || 'all' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Harvest native names from OpenStreetMap
+        run: python scraper/seed_osm_names.py --state "$OSM_STATE"
+
+      - name: Open PR if osm_names.json changed
+        run: |
+          if git diff --quiet -- scraper/osm_names.json; then
+            echo "No change to scraper/osm_names.json"; exit 0
+          fi
+          branch="chore/osm-names-${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add scraper/osm_names.json
+          git commit -m "chore(data): refresh OSM-sourced native place names"
+          git push -u origin "$branch"
+          gh pr create --fill \
+            --title "chore(data): refresh OSM native place names" \
+            --body "Human-verified native names harvested from OpenStreetMap (\`name:te\`/\`name:kn\`/\`name:ta\`) by the seed-osm-names workflow. The next data refresh applies them to each state's \`names.json\` and CSV, preferred over the neural transliterator. Data © OpenStreetMap contributors (ODbL)."

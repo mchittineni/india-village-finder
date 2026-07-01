@@ -48,30 +48,19 @@ import os
 import re
 from pathlib import Path
 
+from config import ALIAS as _CODE_ALIAS  # shared per-state registry
+from config import LANG_BY_SLUG, SLUG_BY_CODE, load_name_seeds
+
 HERE = Path(__file__).resolve().parent  # scraper/
 ROOT = HERE.parent  # Village Finder/
 # Cache location; override with $INDICXLIT_CACHE so several state runs can execute
 # in parallel without clobbering one shared file (e.g. one cache per language).
 CACHE_FILE = Path(os.environ.get("INDICXLIT_CACHE", str(HERE / ".cache" / "indicxlit_cache.json")))
 
-# slug -> language script (mirrors pipeline.STATES). IndicXlit supports te/kn/ta.
-STATES = {
-    "andhra_pradesh": "te",
-    "telangana": "te",
-    "karnataka": "kn",
-    "tamil_nadu": "ta",
-}
-ALIAS = {
-    "ap": "andhra_pradesh",
-    "andhra": "andhra_pradesh",
-    "tg": "telangana",
-    "ts": "telangana",
-    "ka": "karnataka",
-    "kar": "karnataka",
-    "tn": "tamil_nadu",
-    "tamilnadu": "tamil_nadu",
-    "tamil": "tamil_nadu",
-}
+# slug -> language script, and alias -> slug, both from the shared registry
+# (scraper/config.py). IndicXlit supports te/kn/ta.
+STATES = LANG_BY_SLUG
+ALIAS = {alias: SLUG_BY_CODE[code] for alias, code in _CODE_ALIAS.items()}
 
 # Curated state names in their own script (prominent, so not left to the model).
 STATE_NATIVE = {
@@ -163,10 +152,13 @@ def _xlit_name(engine, lang: str, name: str) -> str:
 
 
 def transliterate(lang: str, names, beam: int, cache: dict) -> dict:
-    """Return {english_name: native}. Only names absent from the cache hit the model;
-    the cache is persisted as we go so a long run is resumable."""
+    """Return {english_name: native}. Human-verified seeds (manual overrides + OSM
+    name:<lang> tags) win outright; only names with neither a seed nor a cache entry
+    hit the model. The cache is persisted as we go so a long run is resumable.
+    When every name is seeded, the heavy IndicXlit model never loads."""
     uniq = sorted({n.strip() for n in names if n.strip()})
-    missing = [n for n in uniq if f"{lang}:{n.lower()}" not in cache]
+    seeds = load_name_seeds(lang)
+    missing = [n for n in uniq if n.lower() not in seeds and f"{lang}:{n.lower()}" not in cache]
     if missing:
         engine = get_engine(lang, beam)
         for i, name in enumerate(missing, 1):
@@ -175,7 +167,7 @@ def transliterate(lang: str, names, beam: int, cache: dict) -> dict:
                 print(f"    {i}/{len(missing)} ...", flush=True)
                 save_cache(cache)
         save_cache(cache)
-    return {n: cache.get(f"{lang}:{n.lower()}", "") for n in uniq}
+    return {n: (seeds.get(n.lower()) or cache.get(f"{lang}:{n.lower()}", "")) for n in uniq}
 
 
 # --------------------------------------------------------------------------- #

@@ -37,6 +37,8 @@ from pathlib import Path
 
 import requests
 
+from config import SLUG_BY_CODE, resolve_codes  # shared per-state registry
+
 try:
     import py7zr
 except ImportError:  # pragma: no cover
@@ -63,9 +65,6 @@ def _safe_extractall(z, dest: Path) -> None:
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 RAW = HERE / ".cache" / "raw"
-
-STATES = {28: "andhra_pradesh", 36: "telangana", 29: "karnataka", 33: "tamil_nadu"}
-ALIAS = {"ap": 28, "tg": 36, "ts": 36, "ka": 29, "kar": 29, "tn": 33, "tamil_nadu": 33}
 
 BASE = "https://github.com/ramSeraph/indian_admin_boundaries/releases/download"
 LEVELS = {
@@ -178,7 +177,7 @@ def simplify(fc: dict, percent: str, out_path: Path) -> bool:
 
 
 def build(state_code: int, offline: bool):
-    slug = STATES[state_code]
+    slug = SLUG_BY_CODE[state_code]
     web_data = ROOT / slug / "web" / "data"
     web_data.mkdir(parents=True, exist_ok=True)
     meta = {
@@ -207,11 +206,10 @@ def build(state_code: int, offline: bool):
 
 def main():
     ap = argparse.ArgumentParser(description="Build per-state district/mandal map polygons")
-    ap.add_argument("--state", choices=["ap", "tg", "ka", "tn", "both"], default="both")
+    ap.add_argument("--state", default="both", help="ap | tg | ka | tn | all (alias: both)")
     ap.add_argument("--offline", action="store_true")
     args = ap.parse_args()
-    targets = list(STATES) if args.state == "both" else [ALIAS[args.state]]
-    for sc in targets:
+    for sc in resolve_codes(args.state):
         build(sc, args.offline)
 
 

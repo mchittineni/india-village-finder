@@ -50,6 +50,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from config import ALIAS, STATES, load_name_seeds  # shared per-state registry + name seeds
 from lgd_datagov import DataGovUnavailable, fetch_datagov
 
 HERE = Path(__file__).resolve().parent  # scraper/
@@ -57,71 +58,8 @@ ROOT = HERE.parent  # Village Finder/
 RAW = HERE / ".cache" / "raw"
 TEMPLATE = HERE / "web_template"
 
-# One config block per state. `slug` is the folder name. `division` is the local
-# name for a sub-district (Mandal in AP/Telangana, Taluk in Karnataka/Tamil Nadu) —
-# the web app uses it to label that tier correctly. `lang` is the state's official
-# language: where LGD publishes a village's name in that script we ship it as an
-# authoritative name (preferred over machine transliteration when that language is
-# selected).
-STATES = {
-    28: {
-        "name": "Andhra Pradesh",
-        "slug": "andhra_pradesh",
-        "lang": "te",
-        "accent": "#1f6feb",
-        "accentSoft": "#eaf2ff",
-        "division": "mandal",
-        # Optional cadastral (survey-plot) vector layer. Presence of this block is
-        # the feature flag: only states listed here render land parcels. The web
-        # app streams tiles from `url` via HTTP range requests (PMTiles), so the
-        # ~850 MB file is a hosting concern only, not a client download.
-        # NOTE: the release URL below is a prototype fallback; move to a
-        # range-request + CORS enabled host (e.g. Cloudflare R2) before launch.
-        "cadastre": {
-            "url": (
-                "https://github.com/ramSeraph/indian_cadastrals/releases/"
-                "download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles"
-            ),
-            "sourceLayer": "APSAC_AP_Cadastrals",  # vector layer id inside the PMTiles
-            "minZoom": 11,  # Leaflet zoom at which parcels appear (low enough that a
-            # whole mandal fits in view, so a selected village's parcels can be
-            # located and fitted even when the village has no point coordinate).
-            # NB: maplibre-gl-leaflet renders one zoom behind Leaflet, so the GL
-            # layer minzoom is minZoom-1 (handled in app.js initCadastre).
-            "tileMaxZoom": 13,  # PMTiles maxzoom (overzoomed above this)
-            "attribution": (
-                'Cadastre &copy; <a href="https://apsac.ap.gov.in/" target="_blank" '
-                'rel="noopener">APSAC</a> (CC0) via '
-                '<a href="https://github.com/ramSeraph/indian_cadastrals" target="_blank" '
-                'rel="noopener">datameet/ramSeraph</a>'
-            ),
-        },
-    },
-    36: {
-        "name": "Telangana",
-        "slug": "telangana",
-        "lang": "te",
-        "accent": "#0f9d58",
-        "accentSoft": "#e3f6ec",
-        "division": "mandal",
-    },
-    29: {
-        "name": "Karnataka",
-        "slug": "karnataka",
-        "lang": "kn",
-        "accent": "#d97706",
-        "accentSoft": "#fdeccf",
-        "division": "taluk",
-    },
-    33: {
-        "name": "Tamil Nadu",
-        "slug": "tamil_nadu",
-        "lang": "ta",
-        "accent": "#dc2626",
-        "accentSoft": "#fdeaea",
-        "division": "taluk",
-    },
-}
+# STATES / ALIAS live in scraper/config.py (shared by every tool) and are imported
+# above. Add a new state there, not here.
 
 # Unicode block per language script — used to validate that an LGD "local" name is
 # actually in the expected script (some states' local column is blank or Latin).
@@ -167,22 +105,6 @@ def transliterate_batch(lang: str, names: list[str]) -> dict[str, str]:
         )
         return {}
 
-
-ALIAS = {
-    "ap": 28,
-    "andhra_pradesh": 28,
-    "andhra": 28,
-    "tg": 36,
-    "ts": 36,
-    "telangana": 36,
-    "ka": 29,
-    "kar": 29,
-    "karnataka": 29,
-    "tn": 33,
-    "tamil_nadu": 33,
-    "tamilnadu": 33,
-    "tamil": 33,
-}
 
 csv.field_size_limit(10_000_000)
 
@@ -355,6 +277,9 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     rows, dropped = [], 0
     names_local = {}  # villageCode -> authoritative native name
     state_lang = cfg.get("lang")
+    # Human-verified native names keyed by English name (manual overrides > OSM);
+    # used to fill authoritative names the source feed doesn't carry in-script.
+    seeds = load_name_seeds(state_lang) if state_lang else {}
     for v in villages:
         mi = m_index.get(v["mandal_code"])
         if mi is None:
@@ -367,11 +292,16 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         # no longer renders a rural/urban badge). Still set 1 if explicitly urban.
         cat = 1 if v["category"].lower().startswith("urban") else 0
         rows.append([v["name"], mi, v["code"], cat, v.get("pincode", "")])
-        # Keep the LGD-published local name only when it is genuinely in the
-        # state's script (some states leave it blank or fill it with Latin text).
+        # Authoritative native name, in priority order: the LGD-published local
+        # name (only when genuinely in the state's script), else a human-verified
+        # seed (override / OSM) matched by English name.
         loc = v.get("local", "")
         if loc and in_script(loc, state_lang):
             names_local[str(v["code"])] = loc
+        elif seeds:
+            seeded = seeds.get(v["name"].strip().lower())
+            if seeded and in_script(seeded, state_lang):
+                names_local[str(v["code"])] = seeded
     rows.sort(key=lambda r: norm(r[0]))
     with_pincode = sum(1 for r in rows if r[4])
 
@@ -482,11 +412,15 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         for v in sorted(writable, key=lambda x: x["name"]):
             m = m_sorted[m_index[v["mandal_code"]]]
             d = districts[m["district_code"]]
-            # Prefer this run's local name, else the preserved authoritative name
-            # (keeps the CSV consistent with the map's names.json).
-            loc = v.get("local", "") or effective_local.get(str(v["code"]), "")
-            if in_script(loc, state_lang):
-                native, source = loc, "LGD"
+            # Native name priority: this run's LGD local name → the authoritative
+            # names.json entry (preserved/seeded from override/OSM) → neural → rule
+            # engine. Keeps the CSV consistent with the map's names.json.
+            localnow = v.get("local", "")
+            auth = effective_local.get(str(v["code"]), "")
+            if localnow and in_script(localnow, state_lang):
+                native, source = localnow, "LGD"
+            elif auth and in_script(auth, state_lang):
+                native, source = auth, "authoritative"
             else:
                 native = neural_native.get(str(v["code"])) or translit.get(v["name"], "")
                 source = "transliterated" if native else ""
