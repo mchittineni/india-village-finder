@@ -18,10 +18,11 @@ Project layout (shared tooling, self-contained per-state outputs)
 
 Data flow
 ---------
-1. DOWNLOAD  the latest daily LGD (Local Government Directory) CSV dump from the
-   community mirror `ramSeraph/opendata` (official LGD data, republished
-   captcha-free, refreshed daily) into scraper/.cache/raw/. One national file
-   set is shared by both states.
+1. FETCH  the latest LGD (Local Government Directory) village data. By default
+   (`--source datagov`) straight from the official Open Government Data platform
+   API (data.gov.in) — no captcha, refreshed ~daily; see scraper/lgd_datagov.py.
+   `--source ramseraph` falls back to the community `ramSeraph/opendata` mirror
+   (.7z CSV dumps). Either way, four CSVs land in scraper/.cache/raw/.
 2. For EACH state (Andhra Pradesh = 28, Telangana = 36):
      FILTER  rows to that state.
      VERIFY  district/mandal counts against the LIVE LGD portal (non-fatal).
@@ -29,11 +30,14 @@ Data flow
              <state>/data/<state>_villages.csv
      BUILD   copy web_template into <state>/web/ and write config.js.
 
-Run:  python pipeline.py                  (both states, auto-detect latest dump)
+Run:  python pipeline.py                  (both states, data.gov.in API)
       python pipeline.py --state ap       (only Andhra Pradesh)
-      python pipeline.py --state tg       (only Telangana)
-      python pipeline.py --offline        (reuse already-downloaded raw CSVs)
+      python pipeline.py --source ramseraph  (use the ramSeraph mirror instead)
+      python pipeline.py --offline        (reuse already-fetched raw CSVs)
       python pipeline.py --no-verify      (skip the live LGD cross-check)
+
+A free data.gov.in API key in $DATA_GOV_KEY is recommended for --source datagov
+(the public sample key caps responses at 10 rows). Register at https://data.gov.in/.
 """
 
 from __future__ import annotations
@@ -313,8 +317,16 @@ def load_state(paths: dict[str, Path], state_code: int):
         c_scode = _col(rd.fieldnames, "sub-district code")
         c_vcode = _col(rd.fieldnames, "village code")
         c_vname = _col(rd.fieldnames, "village name", "english")
-        c_cat = _col(rd.fieldnames, "village category")
-        c_status = _col(rd.fieldnames, "village status")
+        # Category / status / local name aren't in the data.gov.in feed (the app
+        # no longer shows the rural/urban badge); tolerate their absence.
+        try:
+            c_cat = _col(rd.fieldnames, "village category")
+        except KeyError:
+            c_cat = None
+        try:
+            c_status = _col(rd.fieldnames, "village status")
+        except KeyError:
+            c_status = None
         try:
             c_vlocal = _col(rd.fieldnames, "village name", "local")
         except KeyError:
@@ -327,8 +339,8 @@ def load_state(paths: dict[str, Path], state_code: int):
                         "name": row[c_vname].strip(),
                         "local": (row[c_vlocal].strip() if c_vlocal else ""),
                         "mandal_code": int(row[c_scode]),
-                        "category": row[c_cat].strip(),
-                        "status": row[c_status].strip(),
+                        "category": (row[c_cat].strip() if c_cat else ""),
+                        "status": (row[c_status].strip() if c_status else ""),
                     }
                 )
 
@@ -420,7 +432,9 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         di = d_index[m_sorted[mi]["district_code"]]
         d_counts[di] += 1
         m_counts[mi] += 1
-        cat = 0 if v["category"].lower().startswith("rural") else 1
+        # Category is unavailable from data.gov.in; default unknown -> 0 (the app
+        # no longer renders a rural/urban badge). Still set 1 if explicitly urban.
+        cat = 1 if v["category"].lower().startswith("urban") else 0
         rows.append([v["name"], mi, v["code"], cat, v.get("pincode", "")])
         # Keep the LGD-published local name only when it is genuinely in the
         # state's script (some states leave it blank or fill it with Latin text).
@@ -572,7 +586,7 @@ def _build_web(state_code, cfg, web: Path, meta):
         "source": {
             "name": "Local Government Directory (LGD)",
             "url": "https://lgdirectory.gov.in",
-            "mirror": "https://github.com/ramSeraph/opendata",
+            "mirror": "https://data.gov.in/ (Open Government Data platform)",
         },
         "sourceDate": meta["source_date"],
         "generatedAt": meta["generated_at"],
@@ -592,10 +606,21 @@ def main():
     ap.add_argument("--state", choices=["ap", "tg", "ka", "tn", "both"], default="both")
     ap.add_argument("--offline", action="store_true", help="reuse already-extracted raw CSVs")
     ap.add_argument("--no-verify", action="store_true", help="skip live LGD cross-check")
+    ap.add_argument(
+        "--source",
+        choices=["datagov", "ramseraph"],
+        default="datagov",
+        help="LGD data source: data.gov.in official API (default) or the ramSeraph mirror",
+    )
     args = ap.parse_args()
 
     targets = list(STATES) if args.state == "both" else [ALIAS[args.state]]
-    paths = download_and_extract(args.offline)
+    if args.source == "datagov":
+        from lgd_datagov import fetch_datagov
+
+        paths = fetch_datagov(targets, RAW, args.offline)
+    else:
+        paths = download_and_extract(args.offline)
     source_date = _source_date(paths)
 
     for sc in targets:

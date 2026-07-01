@@ -1508,18 +1508,12 @@
       if (highlightCode && row[2] === highlightCode) r.dataset.hl = "1";
       var main = el("div", "main");
       main.appendChild(el("div", "name", esc(vname(row))));
-      main.appendChild(
-        el(
-          "div",
-          "meta",
-          (row[3] === 0 ? t("rural") : t("urban")) +
-            (row[4] ? " · " + t("pin_label") + " " + row[4] : "") +
-            (coords[row[2]] ? " · 📍" : "")
-        )
-      );
+      var rMeta = row[4] ? t("pin_label") + " " + row[4] : "";
+      if (villagePoints[row[2]] || coords[row[2]]) rMeta += (rMeta ? " · " : "") + "📍";
+      main.appendChild(el("div", "meta", rMeta));
       r.appendChild(main);
       r.appendChild(el("span", "dot"));
-      r.lastChild.style.background = row[3] === 0 ? "#94a3b8" : "#c2570f";
+      r.lastChild.style.background = "#94a3b8";
       r.appendChild(el("span", "chev", "›"));
       r.onclick = function () {
         selectVillageRow(list, r, row, m);
@@ -1624,11 +1618,7 @@
       " " +
       esc(t("district_word")) +
       "</div>" +
-      '<div class="vpop-tags"><span class="badge ' +
-      (row[3] === 0 ? "rural" : "urban") +
-      '">' +
-      esc(row[3] === 0 ? t("rural") : t("urban")) +
-      "</span>" +
+      '<div class="vpop-tags">' +
       pin +
       '<span class="vpop-code">' +
       esc(t("lgd_label")) +
@@ -1953,7 +1943,7 @@
     var r = el("button", "row clickable");
     r.title = row[0];
     var dot = el("span", "dot");
-    dot.style.background = row[3] === 0 ? "#94a3b8" : "#c2570f";
+    dot.style.background = "#94a3b8";
     r.appendChild(dot);
     var main = el("div", "main");
     main.appendChild(el("div", "name", esc(vname(row))));
@@ -1968,13 +1958,6 @@
       )
     );
     r.appendChild(main);
-    r.appendChild(
-      el(
-        "span",
-        "badge " + (row[3] === 0 ? "rural" : "urban"),
-        esc(row[3] === 0 ? t("rural") : t("urban"))
-      )
-    );
     r.onclick = function () {
       clearSearchUI();
       selectMandal(m, row[2]);
