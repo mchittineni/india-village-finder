@@ -50,7 +50,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-from config import ALIAS, STATES, load_name_seeds  # shared per-state registry + name seeds
+from config import (  # shared per-state registry + name seeds + boundary tiles
+    ALIAS,
+    BOUNDARY_TILES,
+    STATES,
+    load_name_seeds,
+)
 from lgd_datagov import DataGovUnavailable, fetch_datagov
 
 HERE = Path(__file__).resolve().parent  # scraper/
@@ -468,6 +473,13 @@ def _build_web(state_code, cfg, web: Path, meta):
         "division": cfg.get("division", "mandal"),
         "nativeLang": cfg.get("lang"),
         "cadastre": cfg.get("cadastre"),  # None for states without a parcel layer
+        # Vector-tile boundaries (shared archive, see config.BOUNDARY_TILES).
+        # None while disabled -> the app keeps its GeoJSON boundary path.
+        "boundaryTiles": (
+            {k: v for k, v in BOUNDARY_TILES.items() if k != "enabled"}
+            if BOUNDARY_TILES.get("enabled")
+            else None
+        ),
         "siblings": siblings,
         "source": {
             "name": "Local Government Directory (LGD)",
