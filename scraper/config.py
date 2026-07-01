@@ -61,7 +61,8 @@ STATES: dict[int, dict] = {
         "name": "Telangana",
         "slug": "telangana",
         "lang": "te",
-        "iso": "IN-TG",
+        # ISO 3166-2 renamed Telangana IN-TG -> IN-TS (2023); OSM uses IN-TS.
+        "iso": "IN-TS",
         "accent": "#0f9d58",
         "accentSoft": "#e3f6ec",
         "division": "mandal",

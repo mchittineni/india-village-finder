@@ -47,7 +47,10 @@ jobs:
 
       - name: Open PR if osm_names.json changed
         run: |
-          if git diff --quiet -- scraper/osm_names.json; then
+          # git status --porcelain (not `git diff --quiet`): on the very first
+          # harvest osm_names.json is UNTRACKED, and `git diff` is silent for
+          # untracked files — the initial 30k-name harvest was thrown away.
+          if [ -z "$(git status --porcelain -- scraper/osm_names.json)" ]; then
             echo "No change to scraper/osm_names.json"; exit 0
           fi
           branch="chore/osm-names-${{ github.run_id }}"
