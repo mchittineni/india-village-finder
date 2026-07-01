@@ -7,6 +7,13 @@ window.VF_CONFIG = {
   "accentSoft": "#eaf2ff",
   "division": "mandal",
   "nativeLang": "te",
+  "cadastre": {
+    "url": "https://github.com/ramSeraph/indian_cadastrals/releases/download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles",
+    "sourceLayer": "APSAC_AP_Cadastrals",
+    "minZoom": 14,
+    "tileMaxZoom": 13,
+    "attribution": "Cadastre &copy; <a href=\"https://apsac.ap.gov.in/\" target=\"_blank\" rel=\"noopener\">APSAC</a> (CC0) via <a href=\"https://github.com/ramSeraph/indian_cadastrals\" target=\"_blank\" rel=\"noopener\">datameet/ramSeraph</a>"
+  },
   "siblings": [
     {
       "name": "Telangana",

@@ -48,6 +48,15 @@
  * @property {Array<{name: string, url: string}>} [siblings]  Other state apps.
  * @property {Object} [counts]       Headline counts.
  * @property {string} [sourceDate]   LGD dump date.
+ * @property {CadastreConfig} [cadastre]  Optional land-parcel (cadastral) vector layer.
+ */
+/**
+ * @typedef {Object} CadastreConfig  Optional PMTiles land-parcel layer config.
+ * @property {string} url          PMTiles URL (served via HTTP range requests).
+ * @property {string} sourceLayer  Vector layer id inside the PMTiles.
+ * @property {number} minZoom      Leaflet zoom at which parcels become visible.
+ * @property {number} tileMaxZoom  PMTiles maxzoom (display overzooms beyond this).
+ * @property {string} [attribution]  HTML attribution string for the parcel source.
  */
 (function () {
   "use strict";
@@ -313,6 +322,10 @@
   var dBreaks = [],
     fuse = null;
   var map, dLayer, mLayer, marker;
+  var cadLayer = null, // MapLibre-GL cadastral (land-parcel) overlay, or null
+    cadOn = false, // whether the parcel layer is currently toggled on
+    cadPopup = null, // Leaflet popup for a clicked parcel
+    cadToggleBtn = null; // the "land parcels" toggle control button
   var dLayerByCode = {},
     mLayerByCode = {};
   var view = { level: "state", d: null, m: null }; // d,m = region objects
@@ -371,6 +384,7 @@
     setFreshness();
     wireSearch();
     wireChrome();
+    wireCadastre();
   }
 
   // ---- theming + chrome ------------------------------------------------
@@ -605,8 +619,11 @@
    * @returns {void}
    */
   function initMap() {
+    // maxZoom is 18 (not 13) so users can zoom in far enough to read individual
+    // land parcels when the cadastral layer is present; region choropleths simply
+    // stay at their last resolution above 13.
     // Zoom buttons live on the right so they don't collide with the sidebar toggle.
-    map = L.map("map", { zoomControl: false, attributionControl: true, minZoom: 5, maxZoom: 13 });
+    map = L.map("map", { zoomControl: false, attributionControl: true, minZoom: 5, maxZoom: 18 });
     L.control.zoom({ position: "topright" }).addTo(map);
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       subdomains: "abcd",
@@ -616,6 +633,167 @@
     }).addTo(map);
     map.createPane("regions");
     map.getPane("regions").style.zIndex = 410;
+    initCadastre();
+  }
+
+  /**
+   * Set up the optional cadastral (land-parcel) vector layer as a MapLibre-GL
+   * overlay inside the Leaflet map, driven by `CFG.cadastre`. Parcels are drawn
+   * from a PMTiles archive streamed via HTTP range requests, so only the tiles
+   * for the current view are fetched. The layer defaults to OFF and is added on
+   * demand by the toggle control; clicks are identified in `wireCadastre()`.
+   * No-op when the state has no `cadastre` config or the libraries are missing.
+   * @returns {void}
+   */
+  function initCadastre() {
+    var C = CFG.cadastre;
+    if (!C || !window.maplibregl || !window.pmtiles || !L.maplibreGL) return;
+    // Register the pmtiles:// protocol once so MapLibre can read range requests.
+    if (!initCadastre._proto) {
+      initCadastre._proto = new pmtiles.Protocol();
+      maplibregl.addProtocol("pmtiles", initCadastre._proto.tile);
+    }
+    var accent = CFG.accent || "#1f6feb";
+    cadLayer = L.maplibreGL({
+      // Leaflet keeps pointer control; we query the GL map manually on click.
+      interactive: false,
+      attribution: C.attribution || "",
+      style: {
+        version: 8,
+        sources: {
+          cad: { type: "vector", url: "pmtiles://" + C.url, maxzoom: C.tileMaxZoom || 13 }
+        },
+        layers: [
+          {
+            id: "cad-fill",
+            type: "fill",
+            source: "cad",
+            "source-layer": C.sourceLayer,
+            minzoom: C.minZoom || 14,
+            paint: { "fill-color": accent, "fill-opacity": 0.08 }
+          },
+          {
+            id: "cad-line",
+            type: "line",
+            source: "cad",
+            "source-layer": C.sourceLayer,
+            minzoom: C.minZoom || 14,
+            paint: { "line-color": accent, "line-opacity": 0.5, "line-width": 0.6 }
+          }
+        ]
+      }
+    });
+  }
+
+  /**
+   * Wire the "land parcels" toggle control, click-to-identify and zoom hint for
+   * the cadastral layer. No-op when the layer is unavailable.
+   * @returns {void}
+   */
+  function wireCadastre() {
+    if (!cadLayer) return;
+    try {
+      cadOn = localStorage.getItem("vf_parcels") === "1";
+    } catch (e) {}
+
+    var Ctl = L.Control.extend({
+      options: { position: "topright" },
+      onAdd: function () {
+        var b = L.DomUtil.create("button", "icon-btn cad-toggle");
+        b.type = "button";
+        b.title = t("parcels_toggle");
+        b.setAttribute("aria-label", t("parcels_toggle"));
+        b.innerHTML = "▦";
+        L.DomEvent.disableClickPropagation(b);
+        L.DomEvent.on(b, "click", function () {
+          setParcels(!cadOn);
+        });
+        cadToggleBtn = b;
+        return b;
+      }
+    });
+    map.addControl(new Ctl());
+    if (cadOn) setParcels(true);
+
+    // Identify the parcel under a click by querying the embedded GL map.
+    map.on("click", function (e) {
+      if (!cadOn || map.getZoom() < (CFG.cadastre.minZoom || 14)) return;
+      var gl = cadLayer.getMaplibreMap && cadLayer.getMaplibreMap();
+      if (!gl) return;
+      var pt = gl.project([e.latlng.lng, e.latlng.lat]);
+      var hits = gl.queryRenderedFeatures(pt, { layers: ["cad-fill"] });
+      if (hits && hits.length) showParcel(hits[0].properties, e.latlng);
+    });
+
+    map.on("zoomend", function () {
+      if (cadOn && map.getZoom() < (CFG.cadastre.minZoom || 14)) toast(t("parcels_zoom_hint"));
+    });
+  }
+
+  /**
+   * Turn the parcel layer on/off, persist the choice and reflect it on the toggle.
+   * @param {boolean} on  Desired state.
+   * @returns {void}
+   */
+  function setParcels(on) {
+    cadOn = !!on;
+    if (cadOn) {
+      cadLayer.addTo(map);
+    } else {
+      if (map.hasLayer(cadLayer)) map.removeLayer(cadLayer);
+      if (cadPopup) map.closePopup(cadPopup);
+    }
+    if (cadToggleBtn) {
+      cadToggleBtn.classList.toggle("active", cadOn);
+      cadToggleBtn.setAttribute("aria-pressed", cadOn ? "true" : "false");
+    }
+    try {
+      localStorage.setItem("vf_parcels", cadOn ? "1" : "0");
+    } catch (e) {}
+    if (cadOn && map.getZoom() < (CFG.cadastre.minZoom || 14)) toast(t("parcels_zoom_hint"));
+  }
+
+  /**
+   * Show a popup describing a clicked land parcel.
+   * @param {Object} props   Vector-tile feature properties (parcel_num, v_name, …).
+   * @param {Object} latlng  Leaflet LatLng of the click.
+   * @returns {void}
+   */
+  function showParcel(props, latlng) {
+    props = props || {};
+    var survey = props.parcel_num || "";
+    var place = [props.v_name, props.m_name, props.d_name]
+      .filter(Boolean)
+      .join(" · ");
+    var area = props.shape_area ? Math.round(Number(props.shape_area)) : null;
+    var wrap = el("div", "vpop cad-pop");
+    wrap.setAttribute("dir", I18N.dirOf(LANG));
+    wrap.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+    });
+    wrap.innerHTML =
+      '<div class="vpop-name">' +
+      esc(t("parcel_title")) +
+      "</div>" +
+      (survey
+        ? '<div class="vpop-tags"><span class="vpop-code">' +
+          esc(t("survey_no")) +
+          " " +
+          esc(survey) +
+          "</span></div>"
+        : "") +
+      (place ? '<div class="vpop-meta">' + esc(place) + "</div>" : "") +
+      (area != null
+        ? '<div class="vpop-meta">' + esc(t("parcel_area", { n: fmt(area) })) + "</div>"
+        : "") +
+      '<div class="vpop-note">' +
+      esc(t("cad_snapshot_note")) +
+      "</div>";
+    if (cadPopup) map.closePopup(cadPopup);
+    cadPopup = L.popup({ className: "village-popup", maxWidth: 280 })
+      .setLatLng(latlng)
+      .setContent(wrap)
+      .openOn(map);
   }
 
   /**

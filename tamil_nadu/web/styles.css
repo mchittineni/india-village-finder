@@ -928,3 +928,17 @@ button.nb-retry:hover {
     display: none !important;
   }
 }
+
+/* Cadastral (land-parcel) layer — toggle control + parcel popup */
+.cad-toggle {
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+.cad-toggle.active {
+  background: var(--brand, #1f6feb);
+  color: #fff;
+  border-color: var(--brand, #1f6feb);
+}
+.village-popup .cad-pop .vpop-code {
+  font-variant-numeric: tabular-nums;
+}

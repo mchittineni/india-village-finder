@@ -97,6 +97,27 @@ STATES = {
         "accent": "#1f6feb",
         "accentSoft": "#eaf2ff",
         "division": "mandal",
+        # Optional cadastral (survey-plot) vector layer. Presence of this block is
+        # the feature flag: only states listed here render land parcels. The web
+        # app streams tiles from `url` via HTTP range requests (PMTiles), so the
+        # ~850 MB file is a hosting concern only, not a client download.
+        # NOTE: the release URL below is a prototype fallback; move to a
+        # range-request + CORS enabled host (e.g. Cloudflare R2) before launch.
+        "cadastre": {
+            "url": (
+                "https://github.com/ramSeraph/indian_cadastrals/releases/"
+                "download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles"
+            ),
+            "sourceLayer": "APSAC_AP_Cadastrals",  # vector layer id inside the PMTiles
+            "minZoom": 14,  # Leaflet zoom at which parcels appear
+            "tileMaxZoom": 13,  # PMTiles maxzoom (overzoomed above this)
+            "attribution": (
+                'Cadastre &copy; <a href="https://apsac.ap.gov.in/" target="_blank" '
+                'rel="noopener">APSAC</a> (CC0) via '
+                '<a href="https://github.com/ramSeraph/indian_cadastrals" target="_blank" '
+                'rel="noopener">datameet/ramSeraph</a>'
+            ),
+        },
     },
     36: {
         "name": "Telangana",
@@ -542,6 +563,7 @@ def _build_web(state_code, cfg, web: Path, meta):
         "accentSoft": cfg["accentSoft"],
         "division": cfg.get("division", "mandal"),
         "nativeLang": cfg.get("lang"),
+        "cadastre": cfg.get("cadastre"),  # None for states without a parcel layer
         "siblings": siblings,
         "source": {
             "name": "Local Government Directory (LGD)",
