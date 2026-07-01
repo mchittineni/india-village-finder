@@ -654,6 +654,14 @@
       maplibregl.addProtocol("pmtiles", initCadastre._proto.tile);
     }
     var accent = CFG.accent || "#1f6feb";
+    // Dev/testing override: `?cad=<url>` points the parcel layer at an alternate
+    // tile host (e.g. a local same-origin file, or a CORS mirror under test)
+    // without editing the generated config. Falls back to the configured URL.
+    var url = C.url;
+    try {
+      var override = new URLSearchParams(location.search).get("cad");
+      if (override) url = override;
+    } catch (e) {}
     cadLayer = L.maplibreGL({
       // Leaflet keeps pointer control; we query the GL map manually on click.
       interactive: false,
@@ -661,7 +669,7 @@
       style: {
         version: 8,
         sources: {
-          cad: { type: "vector", url: "pmtiles://" + C.url, maxzoom: C.tileMaxZoom || 13 }
+          cad: { type: "vector", url: "pmtiles://" + url, maxzoom: C.tileMaxZoom || 13 }
         },
         layers: [
           {
