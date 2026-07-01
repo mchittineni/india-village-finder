@@ -47,9 +47,10 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
-from lgd_datagov import fetch_datagov
+from lgd_datagov import DataGovUnavailable, fetch_datagov
 
 HERE = Path(__file__).resolve().parent  # scraper/
 ROOT = HERE.parent  # Village Finder/
@@ -528,7 +529,14 @@ def main():
     args = ap.parse_args()
 
     targets = list(STATES) if args.state == "both" else [ALIAS[args.state]]
-    paths = fetch_datagov(targets, RAW, args.offline)
+    try:
+        paths = fetch_datagov(targets, RAW, args.offline)
+    except DataGovUnavailable as e:
+        # Transient upstream outage — exit EX_TEMPFAIL (75) so the scheduled
+        # workflow can treat it as a skip (no data written, no PR) rather than a
+        # hard failure. A genuine bug would exit 1 as usual.
+        print(f"[skip] {e}")
+        sys.exit(75)
     source_date = _source_date(paths)
 
     for sc in targets:

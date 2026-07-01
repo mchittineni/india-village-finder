@@ -43,10 +43,25 @@ jobs:
       # Pulls LGD data straight from the data.gov.in official API. DATA_GOV_KEY
       # is a free registered key (repo secret); without it the public sample key
       # caps pages at 10 rows.
+      # data.gov.in is flaky (transient 502s). pipeline.py retries with backoff;
+      # if the API is still unreachable it exits 75 (EX_TEMPFAIL), which we treat
+      # as a skip — no data written, no PR — rather than failing the whole run.
+      # Any other non-zero exit is a real error and fails the job.
       - name: Refresh village data (all states)
+        id: refresh
         env:
           DATA_GOV_KEY: ${{ secrets.DATA_GOV_KEY }}
-        run: python scraper/pipeline.py
+        run: |
+          set +e
+          python scraper/pipeline.py
+          code=$?
+          set -e
+          if [ "$code" = "75" ]; then
+            echo "::warning::data.gov.in temporarily unavailable — skipping this run (no data changes)."
+            echo "⏭️ data.gov.in was unreachable after retries; skipped this run." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$code" != "0" ]; then
+            exit "$code"
+          fi
 
       - name: Decide whether to refresh boundaries
         id: bounds

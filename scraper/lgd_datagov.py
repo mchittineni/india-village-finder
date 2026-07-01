@@ -46,20 +46,36 @@ def _api_key() -> str:
     return os.environ.get("DATA_GOV_KEY") or SAMPLE_KEY
 
 
-def _get(session: requests.Session, params: dict, retries: int = 5) -> dict:
-    """GET one page with retry/backoff — data.gov.in returns transient 5xx/429."""
+def _get(session: requests.Session, params: dict, retries: int = 8) -> dict:
+    """GET one page with retry/backoff — data.gov.in regularly returns transient
+    5xx/429 and dropped connections. Back off exponentially (honouring any
+    ``Retry-After`` header) so a flaky upstream doesn't fail the whole run."""
+    delay = 3.0
+    last: Exception | None = None
     for attempt in range(retries):
         try:
             resp = session.get(API_URL, params=params, timeout=90)
             if resp.status_code in (429, 500, 502, 503, 504):
-                raise requests.HTTPError(f"{resp.status_code}")
+                raise requests.HTTPError(f"HTTP {resp.status_code}", response=resp)
             resp.raise_for_status()
             return resp.json()
-        except (requests.RequestException, ValueError):
+        except (requests.RequestException, ValueError) as e:
+            last = e
             if attempt == retries - 1:
-                raise
-            time.sleep(2 * (attempt + 1))
-    return {}
+                break
+            wait = delay
+            resp = getattr(e, "response", None)
+            if resp is not None:
+                try:
+                    wait = max(wait, float(resp.headers.get("Retry-After", 0)))
+                except (TypeError, ValueError):
+                    pass
+            print(f"  [retry] {e} — waiting {min(wait, 60.0):.0f}s "
+                  f"(attempt {attempt + 1}/{retries})")
+            time.sleep(min(wait, 60.0))
+            delay = min(delay * 2, 60.0)
+    assert last is not None
+    raise last
 
 
 def fetch_state_records(state_code: int, session: requests.Session) -> list[dict]:
@@ -155,28 +171,56 @@ def _write_csvs(records: list[dict], raw: Path, date: str) -> dict[str, Path]:
     return paths
 
 
+class DataGovUnavailable(RuntimeError):
+    """data.gov.in was unreachable after retries and no cached CSVs exist to reuse.
+
+    Signals a *transient* upstream outage (as opposed to a bug), so a scheduled
+    caller can treat it as a skip rather than a hard failure."""
+
+
+def _reuse_csvs(raw: Path, why: str) -> dict[str, Path]:
+    """Reuse the most recent already-written CSVs in ``raw`` — used by ``--offline``
+    and as a fallback when the live API is unreachable but a prior fetch is cached."""
+    paths: dict[str, Path] = {}
+    for kind in KINDS:
+        found = sorted(raw.glob(f"{kind}.*.csv"))
+        if found:
+            paths[kind] = found[-1]
+        elif kind != "pincode_villages":
+            raise RuntimeError(f"{why}: no cached {kind} CSV in {raw}")
+    print(f"[{why}] using {', '.join(p.name for p in paths.values())}")
+    return paths
+
+
 def fetch_datagov(state_codes, raw: Path, offline: bool = False) -> dict[str, Path]:
     """Fetch the given states from data.gov.in and write the LGD CSVs into ``raw``.
-    With ``offline=True`` reuse the most recent already-written CSVs instead."""
+    With ``offline=True`` reuse the most recent already-written CSVs instead.
+
+    On a transient upstream failure, fall back to cached CSVs if any exist;
+    otherwise raise :class:`DataGovUnavailable` so the caller can skip this run
+    rather than crash."""
     raw.mkdir(parents=True, exist_ok=True)
     if offline:
-        paths = {}
-        for kind in KINDS:
-            found = sorted(raw.glob(f"{kind}.*.csv"))
-            if found:
-                paths[kind] = found[-1]
-            elif kind != "pincode_villages":
-                raise RuntimeError(f"--offline but no {kind} CSV in {raw}")
-        print(f"[offline] using {', '.join(p.name for p in paths.values())}")
-        return paths
+        return _reuse_csvs(raw, "offline")
 
     date = dt.date.today().strftime("%d%b%Y")
     records: list[dict] = []
-    with requests.Session() as s:
-        for sc in state_codes:
-            recs = fetch_state_records(sc, s)
-            print(f"[data.gov.in] state {sc}: {len(recs)} village records")
-            records.extend(recs)
+    try:
+        with requests.Session() as s:
+            for sc in state_codes:
+                recs = fetch_state_records(sc, s)
+                print(f"[data.gov.in] state {sc}: {len(recs)} village records")
+                records.extend(recs)
+    except requests.RequestException as e:
+        try:
+            paths = _reuse_csvs(raw, "data.gov.in unreachable, reusing cache")
+        except RuntimeError:
+            raise DataGovUnavailable(
+                f"data.gov.in unreachable and no cached CSVs to fall back on: {e}"
+            ) from e
+        print(f"[data.gov.in] WARNING: live fetch failed ({e}); reused cached CSVs")
+        return paths
+
     paths = _write_csvs(records, raw, date)
     print(f"[data.gov.in] wrote {', '.join(p.name for p in paths.values())}")
     return paths
