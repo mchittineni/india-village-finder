@@ -65,14 +65,27 @@ range-request + CORS enabled host and swap the URL. Cloudflare R2 is recommended
    Expect `206`, `accept-ranges: bytes`, a `content-range`, and
    `access-control-allow-origin`.
 
-## Option B — CI mirror job
+## Option B — CI mirror job (auto-tracking)
 
-`.github/workflows/mirror-cadastrals.yml` automates steps 2–4 on manual dispatch
-(fits the "run heavy transfers in Actions, not on a laptop" convention). It
-requires these repo **secrets**: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
-`R2_SECRET_ACCESS_KEY`, `R2_BUCKET`. After it runs once, update the config URL
-(step 5 above) to the bucket's public/custom-domain URL. The workflow does **not**
-edit the URL for you — that stays an explicit, reviewed change.
+`.github/workflows/mirror-cadastrals.yml` automates steps 2–4 (fits the "run heavy
+transfers in Actions, not on a laptop" convention). It requires these repo
+**secrets**: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
+`R2_BUCKET`. After it runs once, update the config URL (step 5 above) to the
+bucket's public/custom-domain URL. The workflow does **not** edit the URL for
+you — that stays an explicit, reviewed change.
+
+**Auto-tracking:** the job runs **weekly** (and on manual dispatch). It reads the
+upstream release's `updated_at`/`size` from the GitHub API and compares them to
+what it last stored in the R2 object's metadata — if the upstream cadastre hasn't
+changed it **skips the ~810 MB transfer** entirely. The cadastre is refreshed
+rarely, so most weekly runs are no-ops. Use the **force** dispatch input to
+re-mirror regardless (e.g. after recreating the bucket).
+
+Why we still depend on ramSeraph here: APSAC serves the **vector** cadastre
+(`REVENUE/cadastral_ap` / `cadastral/Parcel` FeatureServers) only behind a
+**login token**; the sole anonymous endpoint is a raster PNG tile cache with no
+survey numbers. So ramSeraph's CC0 extraction is the only open source of the
+vectorised, survey-numbered parcels, and this job keeps our mirror current with it.
 
 ## Local verification (no hosting needed)
 

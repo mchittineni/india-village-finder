@@ -1,18 +1,25 @@
 name: mirror-cadastrals
 
 # Mirrors the Andhra Pradesh cadastral PMTiles from the upstream community
-# release to a Cloudflare R2 bucket (S3-compatible) that serves range requests
-# WITH CORS — which the GitHub release URL does not. Run this in CI rather than
-# on a laptop: it downloads and re-uploads ~850 MB.
+# release (ramSeraph/indian_cadastrals — the only open, CC0 source of the
+# vectorised, survey-numbered parcels; APSAC serves vectors only behind a login)
+# to a Cloudflare R2 bucket (S3-compatible) that answers range requests WITH
+# CORS — which the GitHub release URL does not.
 #
-# Manual only. After the first successful run, point the app at the bucket by
-# editing scraper/pipeline.py -> STATES[28]["cadastre"]["url"] (a reviewed
-# change; this workflow deliberately does not rewrite the URL).
+# Auto-tracking: runs weekly and re-mirrors only when the upstream asset's
+# updated_at/size actually changes (the cadastre is refreshed rarely). This
+# avoids re-shovelling ~810 MB on every run. Also dispatchable manually.
+#
+# After the first successful run, point the app at the bucket by editing
+# scraper/pipeline.py -> STATES[28]["cadastre"]["url"] (a reviewed change; this
+# workflow deliberately does not rewrite the URL).
 #
 # Required repo secrets:
 #   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
 
 on:
+  schedule:
+    - cron: "0 4 * * 1" # weekly, Mon 04:00 UTC — re-mirror only if upstream moved
   workflow_dispatch:
     inputs:
       asset_url:
@@ -23,8 +30,13 @@ on:
         description: Destination object key in the R2 bucket
         default: APSAC_AP_Cadastrals.pmtiles
         required: true
+      force:
+        description: Re-mirror even if upstream is unchanged
+        type: boolean
+        default: false
 
-# No repo write access needed; secrets are injected at the job level.
+# Read-only repo scope; GITHUB_TOKEN just reads the upstream public release.
+# R2 credentials are injected as secrets at the job level.
 permissions:
   contents: read
 
@@ -42,8 +54,11 @@ jobs:
       AWS_DEFAULT_REGION: auto
       R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
       BUCKET: ${{ secrets.R2_BUCKET }}
-      ASSET_URL: ${{ inputs.asset_url }}
-      OBJECT_KEY: ${{ inputs.object_key }}
+      # Fall back to the AP cadastral asset on scheduled runs (inputs are empty).
+      ASSET_URL: ${{ inputs.asset_url || 'https://github.com/ramSeraph/indian_cadastrals/releases/download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles' }}
+      OBJECT_KEY: ${{ inputs.object_key || 'APSAC_AP_Cadastrals.pmtiles' }}
+      FORCE: ${{ inputs.force || 'false' }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Verify secrets are configured
         run: |
@@ -62,22 +77,74 @@ jobs:
             exit 1
           fi
 
+      # Read the upstream asset's updated_at + size from the GitHub release API
+      # (no download). Works when ASSET_URL is a github.com release-download URL;
+      # for any other URL we skip change-detection and always mirror.
+      - name: Resolve upstream release metadata
+        id: up
+        run: |
+          rest="${ASSET_URL#https://github.com/}"
+          if [ "$rest" = "$ASSET_URL" ]; then
+            echo "Non-GitHub URL — change-detection disabled."
+            echo "updated=" >> "$GITHUB_OUTPUT"; echo "size=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          owner=$(echo "$rest" | cut -d/ -f1)
+          repo=$(echo "$rest"  | cut -d/ -f2)
+          tag=$(echo "$rest"   | cut -d/ -f5)
+          name=$(echo "$rest"  | cut -d/ -f6)
+          meta=$(gh api "repos/$owner/$repo/releases/tags/$tag" \
+            --jq ".assets[] | select(.name==\"$name\") | \"\(.updated_at) \(.size)\"")
+          up_updated=$(echo "$meta" | awk '{print $1}')
+          up_size=$(echo "$meta" | awk '{print $2}')
+          echo "Upstream $owner/$repo@$tag/$name: updated=$up_updated size=$up_size"
+          [ -n "$up_updated" ] || { echo "::error::asset $name not found in $tag release"; exit 1; }
+          echo "updated=$up_updated" >> "$GITHUB_OUTPUT"
+          echo "size=$up_size"       >> "$GITHUB_OUTPUT"
+
+      # Compare against the version already in R2 (stored in object metadata).
+      # Skip the whole transfer when unchanged and not forced.
+      - name: Decide whether to re-mirror
+        id: decide
+        run: |
+          cur=$(aws s3api head-object --bucket "$BUCKET" --key "$OBJECT_KEY" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --query 'Metadata."upstream-updated-at"' --output text 2>/dev/null || echo "")
+          up='${{ steps.up.outputs.updated }}'
+          echo "R2 has upstream-updated-at=$cur ; upstream=$up ; force=$FORCE"
+          if [ "$FORCE" != "true" ] && [ -n "$up" ] && [ "$cur" = "$up" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Up to date — skipping (upstream unchanged since last mirror)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Download PMTiles from upstream
+        if: steps.decide.outputs.run == 'true'
         run: |
           curl -fSL --retry 3 -o cadastrals.pmtiles "$ASSET_URL"
           # Sanity check: PMTiles files start with the ASCII magic "PMTiles".
           head -c 7 cadastrals.pmtiles | grep -q "PMTiles" \
             || { echo "::error::Downloaded file is not a PMTiles archive"; exit 1; }
+          # If we know the upstream size, verify the download is complete.
+          up_size='${{ steps.up.outputs.size }}'
+          got=$(stat -c %s cadastrals.pmtiles)
+          if [ -n "$up_size" ] && [ "$up_size" != "$got" ]; then
+            echo "::error::size mismatch: upstream $up_size, downloaded $got"; exit 1
+          fi
           ls -lh cadastrals.pmtiles
 
       - name: Upload to R2
+        if: steps.decide.outputs.run == 'true'
         run: |
           aws s3 cp cadastrals.pmtiles "s3://$BUCKET/$OBJECT_KEY" \
             --endpoint-url "$R2_ENDPOINT" \
             --checksum-algorithm CRC32 \
-            --content-type application/octet-stream
+            --content-type application/octet-stream \
+            --metadata "upstream-updated-at=${{ steps.up.outputs.updated }},upstream-size=${{ steps.up.outputs.size }}"
 
       - name: Apply CORS policy to bucket
+        if: steps.decide.outputs.run == 'true'
         run: |
           cat > cors.json <<'JSON'
           {
@@ -97,8 +164,11 @@ jobs:
             --cors-configuration file://cors.json
 
       - name: Summary
+        if: steps.decide.outputs.run == 'true'
         run: |
           echo "### Mirrored \`$OBJECT_KEY\` to R2 bucket \`$BUCKET\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Upstream updated_at: \`${{ steps.up.outputs.updated }}\` (${{ steps.up.outputs.size }} bytes)" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Next: set the bucket's public/custom-domain URL in" >> "$GITHUB_STEP_SUMMARY"
           echo "\`scraper/pipeline.py\` (STATES[28].cadastre.url) and rebuild." >> "$GITHUB_STEP_SUMMARY"
