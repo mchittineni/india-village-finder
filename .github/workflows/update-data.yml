@@ -21,8 +21,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  refresh:
+  # One isolated job per state, in parallel. Each leg fetches only its own state
+  # from data.gov.in (server-side filter), rebuilds that state's outputs, and
+  # uploads the whole state folder as an artifact. States are independent, so a
+  # hard failure in one leg doesn't block the others (fail-fast: false) — the
+  # aggregate job below assembles whatever succeeded into a single reviewed PR.
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        state: # keep in sync with scraper/config.py STATES
+          - { key: ap, slug: andhra_pradesh }
+          - { key: tg, slug: telangana }
+          - { key: ka, slug: karnataka }
+          - { key: tn, slug: tamil_nadu }
+    env:
+      STATE_KEY: ${{ matrix.state.key }}
+      STATE_SLUG: ${{ matrix.state.slug }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -40,49 +56,109 @@ jobs:
       - name: Install dependencies
         run: pip install -r scraper/requirements-dev.txt
 
-      # Pulls LGD data straight from the data.gov.in official API. DATA_GOV_KEY
+      # Pulls this state's LGD data from the data.gov.in official API. DATA_GOV_KEY
       # is a free registered key (repo secret); without it the public sample key
       # caps pages at 10 rows.
       # data.gov.in is flaky (transient 502s). pipeline.py retries with backoff;
       # if the API is still unreachable it exits 75 (EX_TEMPFAIL), which we treat
-      # as a skip — no data written, no PR — rather than failing the whole run.
-      # Any other non-zero exit is a real error and fails the job.
-      - name: Refresh village data (all states)
+      # as a skip — no artifact uploaded, no change lands for this state — rather
+      # than failing the leg. Any other non-zero exit is a real error.
+      - name: Refresh village data
         id: refresh
         env:
           DATA_GOV_KEY: ${{ secrets.DATA_GOV_KEY }}
         run: |
           set +e
-          python scraper/pipeline.py
+          python scraper/pipeline.py --state "$STATE_KEY"
           code=$?
           set -e
           if [ "$code" = "75" ]; then
-            echo "::warning::data.gov.in temporarily unavailable — skipping this run (no data changes)."
-            echo "⏭️ data.gov.in was unreachable after retries; skipped this run." >> "$GITHUB_STEP_SUMMARY"
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::data.gov.in temporarily unavailable — skipping $STATE_SLUG this run."
+            echo "⏭️ $STATE_SLUG: data.gov.in unreachable after retries; skipped." >> "$GITHUB_STEP_SUMMARY"
           elif [ "$code" != "0" ]; then
             exit "$code"
+          else
+            echo "skipped=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Decide whether to refresh boundaries
         id: bounds
+        env:
+          CRON: ${{ github.event.schedule }}
+          WANT_BOUNDS: ${{ github.event.inputs.refresh_boundaries }}
         run: |
-          if [ "${{ github.event.schedule }}" = "0 3 1 * *" ] || \
-             [ "${{ github.event.inputs.refresh_boundaries }}" = "true" ]; then
+          if [ "$CRON" = "0 3 1 * *" ] || [ "$WANT_BOUNDS" = "true" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Refresh map boundaries (monthly / on request)
-        if: steps.bounds.outputs.run == 'true'
-        run: python scraper/build_boundaries.py
+        if: steps.bounds.outputs.run == 'true' && steps.refresh.outputs.skipped != 'true'
+        run: python scraper/build_boundaries.py --state "$STATE_KEY"
 
       - name: Refresh village coordinates (needs boundaries)
-        if: steps.bounds.outputs.run == 'true'
-        run: python scraper/enrich_coords.py
+        if: steps.bounds.outputs.run == 'true' && steps.refresh.outputs.skipped != 'true'
+        run: python scraper/enrich_coords.py --state "$STATE_KEY"
+
+      # The artifact is the whole state folder (regenerated outputs + the committed
+      # files the pipeline preserves, e.g. names_translit.json), so the aggregate
+      # job can overlay it onto a fresh checkout verbatim.
+      - name: Upload state artifact
+        if: steps.refresh.outputs.skipped != 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: data-${{ matrix.state.slug }}
+          path: ${{ matrix.state.slug }}
+          retention-days: 3
+
+  # Assemble every successful state's artifact into one working tree, validate,
+  # and open/update the single data/auto-refresh PR — same review flow as before,
+  # just fed by parallel builds. Runs even if some legs failed (if: always());
+  # a failed leg keeps the workflow red while the healthy states still land.
+  aggregate:
+    needs: build
+    if: always() && needs.build.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r scraper/requirements-dev.txt
+
+      - name: Download state artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: data-*
+          path: _incoming
+
+      - name: Overlay artifacts onto the working tree
+        id: overlay
+        run: |
+          count=0
+          shopt -s nullglob
+          for d in _incoming/data-*; do
+            slug=$(basename "$d"); slug=${slug#data-}
+            rsync -a "$d"/ "$slug"/
+            count=$((count + 1))
+            echo "overlaid $slug"
+          done
+          rm -rf _incoming
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" = "0" ]; then
+            echo "No state artifacts (all legs skipped/failed) — nothing to do." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Validate new data (pytest)
         id: tests
+        if: steps.overlay.outputs.count != '0'
         continue-on-error: true
         run: |
           python -m pytest scraper/tests -v | tee /tmp/pytest.txt
@@ -94,10 +170,12 @@ jobs:
       # while deliberately excluding meta.json / boundaries_meta.json (timestamps).
       - name: Detect real data changes
         id: changed
+        if: steps.overlay.outputs.count != '0'
         run: |
           DATA_FILES="
             */web/data/regions.json
             */web/data/villages.json
+            */web/data/names.json
             */web/data/districts.geojson
             */web/data/mandals.geojson
             */web/data/coords.json
@@ -113,12 +191,14 @@ jobs:
 
       - name: Build PR summary
         if: steps.changed.outputs.yes == 'true'
+        env:
+          TESTS_OUTCOME: ${{ steps.tests.outcome }}
         run: |
           python scraper/changelog.py --out /tmp/pr_body.md
           {
             echo ""
             echo "### ✅ Validation"
-            if [ "${{ steps.tests.outcome }}" = "success" ]; then
+            if [ "$TESTS_OUTCOME" = "success" ]; then
               echo "All data-validity tests **passed**.";
             else
               echo "⚠️ Data-validity tests **failed** — do not merge until fixed.";
@@ -157,9 +237,11 @@ jobs:
         if: steps.cpr.outputs.pull-request-number
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TESTS_OUTCOME: ${{ steps.tests.outcome }}
+          HEAD_SHA: ${{ steps.cpr.outputs.pull-request-head-sha }}
         run: |
-          STATE=$([ "${{ steps.tests.outcome }}" = "success" ] && echo success || echo failure)
-          gh api -X POST "repos/${{ github.repository }}/statuses/${{ steps.cpr.outputs.pull-request-head-sha }}" \
+          STATE=$([ "$TESTS_OUTCOME" = "success" ] && echo success || echo failure)
+          gh api -X POST "repos/${{ github.repository }}/statuses/$HEAD_SHA" \
             -f state="$STATE" \
             -f context="data-validation" \
             -f description="Automated data-validity tests" \
@@ -170,9 +252,10 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.DATA_PAT || secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
         run: |
           gh api -X POST \
-            "repos/${{ github.repository }}/pulls/${{ steps.cpr.outputs.pull-request-number }}/requested_reviewers" \
+            "repos/${{ github.repository }}/pulls/$PR_NUMBER/requested_reviewers" \
             -f "reviewers[]=copilot-pull-request-reviewer[bot]"
 
       - name: Summary
