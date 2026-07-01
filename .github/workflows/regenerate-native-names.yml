@@ -35,12 +35,18 @@ jobs:
   regenerate:
     runs-on: ubuntu-latest
     timeout-minutes: 300
+    # Bind dispatch inputs to env and reference them as shell vars; never
+    # interpolate ${{ inputs.* }} directly into a run: script (textual
+    # substitution before the shell parses it = command injection).
+    env:
+      XLIT_STATE: ${{ inputs.state || 'all' }}
+      XLIT_BEAM: ${{ inputs.beam || '4' }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.10" # fairseq/hydra predate 3.11's stricter dataclass rule
 
@@ -59,14 +65,14 @@ jobs:
           python -c "from ai4bharat.transliteration import XlitEngine; print('IndicXlit import OK')"
 
       - name: Regenerate names_translit.json (villages)
-        run: python scraper/enrich_native_names.py --state "${{ inputs.state || 'all' }}" --beam "${{ inputs.beam || '4' }}"
+        run: python scraper/enrich_native_names.py --state "$XLIT_STATE" --beam "$XLIT_BEAM"
 
       - name: Regenerate regions_native.json (districts/mandals/state)
-        run: python scraper/enrich_native_names.py --regions --state "${{ inputs.state || 'all' }}" --beam "${{ inputs.beam || '4' }}"
+        run: python scraper/enrich_native_names.py --regions --state "$XLIT_STATE" --beam "$XLIT_BEAM"
 
       - name: Report neural accuracy vs LGD gold
         continue-on-error: true
-        run: python scraper/enrich_native_names.py --eval --state "${{ inputs.state || 'all' }}" | tee -a "$GITHUB_STEP_SUMMARY"
+        run: python scraper/enrich_native_names.py --eval --state "$XLIT_STATE" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Validate data (pytest)
         id: tests

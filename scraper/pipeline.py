@@ -324,6 +324,17 @@ def norm(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip().lower()
 
 
+def _csv_cell(value):
+    """Neutralise CSV formula/DDE injection in the released CSVs: spreadsheet apps
+    treat a cell starting with = + - @ (or a leading tab/CR) as a formula. Prefix
+    such values with a single quote so they render literally. Defence-in-depth —
+    the data is government-sourced, but the CSVs are published downloads."""
+    s = "" if value is None else str(value)
+    if s[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + s
+    return s
+
+
 def build_state(state_code, cfg, districts, mandals, villages, source_date, verify):
     state_dir = ROOT / cfg["slug"]
     web = state_dir / "web"
@@ -364,6 +375,22 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     rows.sort(key=lambda r: norm(r[0]))
     with_pincode = sum(1 for r in rows if r[4])
 
+    # The current LGD source (data.gov.in) doesn't carry the in-script name column,
+    # so names_local can come back empty. Don't overwrite previously-committed
+    # authoritative names with an empty file — keep them until a source that
+    # publishes them is wired back in. `effective_local` is what actually ends up on
+    # disk (this run's names, or the preserved committed set), used for the map,
+    # the meta count and the CSV so all three stay consistent.
+    names_path = web_data / "names.json"
+    write_names = bool(names_local) or not names_path.exists()
+    if write_names:
+        effective_local = names_local
+    else:
+        try:
+            effective_local = json.loads(names_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            effective_local = {}
+
     regions = {
         "state": cfg["name"],
         "state_code": state_code,
@@ -395,7 +422,7 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
             "mandals": len(m_sorted),
             "villages": len(rows),
             "with_pincode": with_pincode,
-            "with_local_names": len(names_local),
+            "with_local_names": len(effective_local),
         },
         "native_lang": state_lang,
         "dropped_villages_without_mandal": dropped,
@@ -408,9 +435,9 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     (web_data / "villages.json").write_text(
         json.dumps(villages_doc, ensure_ascii=False, separators=(",", ":"))
     )
-    (web_data / "names.json").write_text(
-        json.dumps(names_local, ensure_ascii=False, separators=(",", ":"))
-    )
+    if write_names:
+        names_path.write_text(json.dumps(names_local, ensure_ascii=False, separators=(",", ":")))
+    # else: keep the committed authoritative names.json (this source has no in-script names)
     (web_data / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
 
     # flat CSV export. Every village gets a name in the state's script: the
@@ -455,7 +482,9 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         for v in sorted(writable, key=lambda x: x["name"]):
             m = m_sorted[m_index[v["mandal_code"]]]
             d = districts[m["district_code"]]
-            loc = v.get("local", "")
+            # Prefer this run's local name, else the preserved authoritative name
+            # (keeps the CSV consistent with the map's names.json).
+            loc = v.get("local", "") or effective_local.get(str(v["code"]), "")
             if in_script(loc, state_lang):
                 native, source = loc, "LGD"
             else:
@@ -463,18 +492,21 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
                 source = "transliterated" if native else ""
             w.writerow(
                 [
-                    cfg["name"],
-                    d["name"],
-                    d["code"],
-                    m["name"],
-                    m["code"],
-                    v["name"],
-                    native,
-                    source,
-                    v["code"],
-                    v.get("pincode", ""),
-                    v["category"],
-                    v["status"],
+                    _csv_cell(x)
+                    for x in (
+                        cfg["name"],
+                        d["name"],
+                        d["code"],
+                        m["name"],
+                        m["code"],
+                        v["name"],
+                        native,
+                        source,
+                        v["code"],
+                        v.get("pincode", ""),
+                        v["category"],
+                        v["status"],
+                    )
                 ]
             )
 

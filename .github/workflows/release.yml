@@ -35,14 +35,18 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # `bump` is a constrained choice input, but bind it to env rather than
+    # interpolate ${{ }} into the run: script (consistent no-inline-inputs rule).
+    env:
+      BUMP_INPUT: ${{ github.event.inputs.bump }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0 # need tags + history to compute the next version
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
 
@@ -59,7 +63,7 @@ jobs:
           fi
           VER=${LATEST#v}; MAJ=${VER%%.*}; REST=${VER#*.}; MIN=${REST%%.*}; PAT=${REST##*.}
 
-          BUMP="${{ github.event.inputs.bump }}"
+          BUMP="${BUMP_INPUT:-}"
           [ -z "$BUMP" ] && BUMP=auto
           if [ "$BUMP" = "auto" ]; then
             CUR=$(ls */web/data/regions.json 2>/dev/null | cut -d/ -f1 | sort)

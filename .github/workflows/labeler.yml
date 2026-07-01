@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Apply path-based labels
-        uses: actions/labeler@v6
+        uses: actions/labeler@f27b608878404679385c85cfa523b85ccb86e213 # v6
         with:
           configuration-path: .github/labeler.yml
           sync-labels: true
@@ -63,7 +63,7 @@ jobs:
 
       - name: Apply path-based labels to those PRs
         if: steps.find.outputs.count != '0'
-        uses: actions/labeler@v6
+        uses: actions/labeler@f27b608878404679385c85cfa523b85ccb86e213 # v6
         with:
           pr-number: ${{ steps.find.outputs.numbers }}
           configuration-path: .github/labeler.yml
