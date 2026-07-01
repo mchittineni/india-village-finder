@@ -784,6 +784,19 @@
       updateRegionDim();
       if (cadOn && map.getZoom() < (CFG.cadastre.minZoom || 14)) toast(t("parcels_zoom_hint"));
     });
+
+    // Parcel-list panel: localise chrome, wire survey-no filter + close.
+    var plTitle = $(".pl-title", $("#parcel-list"));
+    if (plTitle) plTitle.textContent = t("parcels_toggle");
+    var plSearch = $("#pl-search");
+    if (plSearch) {
+      plSearch.placeholder = t("pl_search_ph");
+      plSearch.addEventListener("input", function () {
+        renderParcelList(plSearch.value);
+      });
+    }
+    var plClose = $("#pl-close");
+    if (plClose) plClose.onclick = hideParcelList;
   }
 
   /**
@@ -809,6 +822,7 @@
       cadLayer.addTo(map);
     } else {
       clearParcelHighlight();
+      hideParcelList();
       if (map.hasLayer(cadLayer)) map.removeLayer(cadLayer);
       if (cadPopup) map.closePopup(cadPopup);
     }
@@ -905,6 +919,112 @@
       if (lyr) map.fitBounds(lyr.getBounds(), { padding: [20, 20] });
       fitToVillageParcels(row, 0);
     }
+    refreshParcelList(row, 0);
+  }
+
+  // ---- parcel list (right panel) --------------------------------------
+  var parcelRows = []; // [{ id, survey, area, props, bounds }]
+
+  /**
+   * Populate the right-hand parcel list with the selected village's plots by
+   * querying the highlighted (cad-sel) features once tiles have rendered.
+   * @param {VillageRow} row  The village record.
+   * @param {number} tries  Current attempt count.
+   * @returns {void}
+   */
+  function refreshParcelList(row, tries) {
+    var gl = cadLayer && cadLayer.getMaplibreMap && cadLayer.getMaplibreMap();
+    if (!gl || !$("#parcel-list")) return;
+    var feats = gl.getLayer("cad-sel") ? gl.queryRenderedFeatures({ layers: ["cad-sel"] }) : [];
+    if (!feats.length && tries < 6) {
+      setTimeout(function () {
+        refreshParcelList(row, tries + 1);
+      }, 450);
+      return;
+    }
+    var seen = {};
+    parcelRows = [];
+    feats.forEach(function (f) {
+      var p = f.properties || {};
+      var id = p.objectid || p.objectid_1 || p.parcel_num;
+      if (id == null || seen[id]) return;
+      seen[id] = 1;
+      var b = L.latLngBounds([]);
+      eachCoord(f.geometry, function (lng, lat) {
+        b.extend([lat, lng]);
+      });
+      parcelRows.push({
+        id: id,
+        survey: p.parcel_num != null ? String(p.parcel_num) : "",
+        area: p.shape_area ? Math.round(Number(p.shape_area)) : null,
+        props: p,
+        bounds: b.isValid() ? b : null
+      });
+    });
+    parcelRows.sort(function (a, b) {
+      return a.survey.localeCompare(b.survey, undefined, { numeric: true });
+    });
+    $("#pl-sub").textContent =
+      vname(row) + " · " + t("n_parcels", { n: fmt(parcelRows.length) });
+    var input = $("#pl-search");
+    if (input) input.value = "";
+    renderParcelList("");
+    $("#parcel-list").classList.remove("hidden");
+  }
+
+  /**
+   * Render (a filtered view of) the parcel list.
+   * @param {string} q  Survey-number filter substring.
+   * @returns {void}
+   */
+  function renderParcelList(q) {
+    var box = $("#pl-items");
+    if (!box) return;
+    box.innerHTML = "";
+    var needle = (q || "").trim().toLowerCase();
+    var shown = 0;
+    parcelRows.forEach(function (r) {
+      if (needle && r.survey.toLowerCase().indexOf(needle) === -1) return;
+      shown++;
+      var li = el("li", "pl-item");
+      li.innerHTML =
+        '<span class="pl-sv">' +
+        esc(t("survey_no")) +
+        " " +
+        esc(r.survey || "—") +
+        "</span>" +
+        (r.area != null ? '<span class="pl-area">' + esc(fmt(r.area)) + " m²</span>" : "");
+      li.onclick = function () {
+        selectParcelFromList(r);
+      };
+      box.appendChild(li);
+    });
+    if (!shown) {
+      var empty = el("li", "pl-empty", esc(t("pl_empty")));
+      box.appendChild(empty);
+    }
+  }
+
+  /**
+   * Zoom to a parcel picked from the list and open its info popup.
+   * @param {Object} r  A parcelRows entry.
+   * @returns {void}
+   */
+  function selectParcelFromList(r) {
+    if (r.bounds) {
+      map.fitBounds(r.bounds, { padding: [80, 80], maxZoom: 18 });
+      showParcel(r.props, r.bounds.getCenter());
+    }
+  }
+
+  /**
+   * Hide and clear the parcel list.
+   * @returns {void}
+   */
+  function hideParcelList() {
+    var panel = $("#parcel-list");
+    if (panel) panel.classList.add("hidden");
+    parcelRows = [];
   }
 
   /**

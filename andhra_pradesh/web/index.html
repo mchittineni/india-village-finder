@@ -176,6 +176,25 @@
           <div id="legend-scale" class="legend-scale"></div>
         </div>
 
+        <!-- Land-parcel list for the selected village (populated on demand) -->
+        <aside id="parcel-list" class="parcel-list card hidden" aria-label="Land parcels">
+          <div class="pl-head">
+            <div class="pl-title">Land parcels</div>
+            <button id="pl-close" class="icon-btn" title="Close" aria-label="Close">×</button>
+          </div>
+          <div id="pl-sub" class="pl-sub"></div>
+          <div class="pl-search-wrap">
+            <input
+              id="pl-search"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Search survey no…"
+            />
+          </div>
+          <ul id="pl-items" class="pl-items"></ul>
+        </aside>
+
         <div id="toast" class="toast hidden"></div>
         <div id="map-loading" class="map-loading">Loading map…</div>
       </main>

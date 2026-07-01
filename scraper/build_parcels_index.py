@@ -46,13 +46,17 @@ from pathlib import Path
 try:
     from pmtiles.reader import MmapSource, Reader
     import mapbox_vector_tile as mvt
+    from shapely.geometry import Point, shape
+    from shapely.strtree import STRtree
 except ImportError:  # pragma: no cover - environment dependent
     print(
-        "build_parcels_index requires 'pmtiles' and 'mapbox-vector-tile' "
-        "(pip install pmtiles mapbox-vector-tile)",
+        "build_parcels_index requires 'pmtiles', 'mapbox-vector-tile' and 'shapely' "
+        "(pip install pmtiles mapbox-vector-tile shapely)",
         file=sys.stderr,
     )
     raise
+
+import difflib
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -76,27 +80,62 @@ def tile_to_lnglat(px: float, py: float, z: int, x: int, y: int):
     return lng, lat
 
 
-def load_lgd_lookup(slug: str) -> dict[str, int]:
-    """Build {norm(mandal)|norm(village): lgd_code} from the generated web data.
-    Keys that map to more than one code (name collisions) are dropped."""
+def build_matcher(slug: str):
+    """Return match(lat, lng, norm_village) -> lgd_code | None.
+
+    Strategy: locate the village's LGD *mandal* by point-in-polygon on the mandal
+    boundaries (robust to AP's district renumbering and to duplicate mandal names
+    across districts, which name-only matching can't disambiguate), then match the
+    village name *within that mandal* — exact on the normalised name, else a fuzzy
+    fallback for spelling drift between the cadastre and LGD.
+    """
     data = ROOT / slug / "web" / "data"
     regions = json.loads((data / "regions.json").read_text())
     villages = json.loads((data / "villages.json").read_text())
     rows = villages if isinstance(villages, list) else villages.get("rows", [])
     mandals = regions["mandals"]
-    lookup: dict[str, int] = {}
-    dupes: set[str] = set()
+
+    # mandal LGD code -> [(norm_village, lgd_code)]
+    by_mandal: dict[int, list[tuple[str, int]]] = {}
     for r in rows:
         name, m_idx, code = r[0], r[1], r[2]
-        mandal = mandals[m_idx]["n"] if 0 <= m_idx < len(mandals) else ""
-        key = f"{norm(mandal)}|{norm(name)}"
-        if key in lookup and lookup[key] != code:
-            dupes.add(key)
-        else:
-            lookup[key] = code
-    for k in dupes:
-        lookup.pop(k, None)
-    return lookup
+        mcode = mandals[m_idx]["c"] if 0 <= m_idx < len(mandals) else None
+        if mcode is not None:
+            by_mandal.setdefault(mcode, []).append((norm(name), code))
+
+    # mandal polygons -> shapely, with a spatial index (matched to LGD code `c`)
+    geo = json.loads((data / "mandals.geojson").read_text())
+    geoms, codes = [], []
+    for f in geo["features"]:
+        try:
+            geoms.append(shape(f["geometry"]))
+            codes.append(f["properties"]["c"])
+        except Exception:
+            continue
+    tree = STRtree(geoms)
+
+    def match(lat: float, lng: float, nv: str):
+        pt = Point(lng, lat)
+        mcode = None
+        for i in tree.query(pt):  # bbox candidates
+            if geoms[i].covers(pt):
+                mcode = codes[i]
+                break
+        if mcode is None:  # centroid just outside its mandal — take the nearest
+            mcode = codes[tree.nearest(pt)]
+        cands = by_mandal.get(mcode)
+        if not cands:
+            return None
+        for cnv, code in cands:  # exact within-mandal
+            if cnv == nv:
+                return code
+        names = [cnv for cnv, _ in cands]  # fuzzy within-mandal
+        close = difflib.get_close_matches(nv, names, n=1, cutoff=0.86)
+        if close:
+            return dict(cands)[close[0]]
+        return None
+
+    return match
 
 
 def aggregate_parcels(pmtiles: Path, source_layer: str):
@@ -186,7 +225,7 @@ def main() -> None:
     ap.add_argument("--source-layer", default="APSAC_AP_Cadastrals")
     args = ap.parse_args()
 
-    lgd = load_lgd_lookup(args.slug)
+    match = build_matcher(args.slug)
     boxes = aggregate_parcels(args.pmtiles, args.source_layer)
 
     data_dir = ROOT / args.slug / "web" / "data"
@@ -194,12 +233,14 @@ def main() -> None:
     points: dict[str, list] = {}  # code -> representative point (for a village pin)
     matched = 0
     for key, b in boxes.items():
-        code = lgd.get(key)
+        clat, clng = b[4] / b[6], b[5] / b[6]
+        norm_village = key.split("|", 1)[1]
+        code = match(clat, clng, norm_village)
         if code is None:
             continue
         matched += 1
         index[str(code)] = [round(v, 5) for v in b[:4]]
-        points[str(code)] = [round(b[4] / b[6], 5), round(b[5] / b[6], 5)]
+        points[str(code)] = [round(clat, 5), round(clng, 5)]
 
     idx_out = data_dir / "parcels_index.json"
     idx_out.write_text(json.dumps(index, separators=(",", ":")) + "\n")

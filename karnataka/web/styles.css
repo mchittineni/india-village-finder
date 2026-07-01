@@ -946,3 +946,89 @@ button.nb-retry:hover {
   border-color: var(--brand, #1f6feb);
   color: var(--brand, #1f6feb);
 }
+
+/* Land-parcel list (right side of the map) */
+.parcel-list {
+  position: absolute;
+  top: 12px;
+  right: 52px;
+  width: 260px;
+  max-height: calc(100% - 24px);
+  display: flex;
+  flex-direction: column;
+  padding: 10px 10px 6px;
+  z-index: 500;
+}
+.pl-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pl-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+.pl-sub {
+  font-size: 0.72rem;
+  color: var(--ink-2);
+  margin: 2px 0 8px;
+}
+.pl-search-wrap {
+  margin-bottom: 8px;
+}
+#pl-search {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 0.82rem;
+  background: var(--bg);
+  color: var(--ink);
+}
+#pl-search:focus {
+  outline: none;
+  border-color: var(--brand, #1f6feb);
+}
+.pl-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+.pl-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.pl-item:hover {
+  background: var(--brand-soft, var(--bg));
+}
+.pl-sv {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.pl-area {
+  color: var(--ink-2);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+.pl-empty {
+  padding: 10px 8px;
+  color: var(--ink-2);
+  font-size: 0.78rem;
+}
+@media (max-width: 640px) {
+  .parcel-list {
+    right: 8px;
+    width: 200px;
+  }
+}

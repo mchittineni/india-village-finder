@@ -46,7 +46,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install pmtiles mapbox-vector-tile
+        run: pip install pmtiles mapbox-vector-tile shapely
 
       - name: Download cadastral PMTiles
         run: |
