@@ -316,6 +316,7 @@
     localNames = {},
     translitNames = {};
   var regionNative = {}; // { state, districts:{code:native}, mandals:{code:native} }
+  var parcelIndex = {}; // { lgdCode: [minLat, minLng, maxLat, maxLng] } — parcel extents
   var dByCode = {},
     mByCode = {};
   var villagesByMandal = [];
@@ -362,7 +363,14 @@
         }),
         fetchJSON("regions_native.json").catch(function () {
           return {};
-        })
+        }),
+        // Optional: precomputed village -> parcel bbox (only present where a
+        // cadastral layer is configured). { lgdCode: [minLat,minLng,maxLat,maxLng] }
+        CFG.cadastre
+          ? fetchJSON("parcels_index.json").catch(function () {
+              return {};
+            })
+          : Promise.resolve({})
       ]);
       regions = res[0];
       villages = res[1];
@@ -373,6 +381,7 @@
       localNames = res[6] || {};
       translitNames = res[7] || {};
       regionNative = res[8] || {};
+      parcelIndex = res[9] || {};
     } catch (e) {
       $("#map-loading").textContent = "Could not load data: " + e.message;
       return;
@@ -866,16 +875,27 @@
     if (!cadLayer) return;
     if (!cadOn) setParcels(true);
     highlightVillageParcels(row);
-    if (center) {
-      // Known coordinate: go straight there, then still fit to the parcels.
+    var box = parcelIndex[row[2]];
+    if (box) {
+      // Precomputed parcel extent for this exact village (LGD code): fit directly.
+      map.fitBounds(
+        [
+          [box[0], box[1]],
+          [box[2], box[3]]
+        ],
+        { padding: [40, 40], maxZoom: 17 }
+      );
+    } else if (center) {
+      // Known point coordinate: go there, then fit to the rendered parcels.
       map.setView(center, Math.max(CFG.cadastre.minZoom || 11, 16), { animate: true });
+      fitToVillageParcels(row, 0);
     } else {
-      // Unknown coordinate (most villages): show the whole mandal so its parcels
-      // render, then fitToVillageParcels tightens onto this village's plots.
+      // No index entry and no coordinate: show the mandal so its parcels render,
+      // then tighten onto this village's plots (best-effort name match).
       var lyr = mLayerByCode[m.c];
       if (lyr) map.fitBounds(lyr.getBounds(), { padding: [20, 20] });
+      fitToVillageParcels(row, 0);
     }
-    fitToVillageParcels(row, 0);
   }
 
   /**

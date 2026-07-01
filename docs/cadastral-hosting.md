@@ -95,6 +95,29 @@ python scripts/serve.py
 Toggle **Land parcels** (▦, top-right), zoom past level 14 into an AP village,
 and click a plot to see its survey number.
 
+## Village → parcel index (precise per-village jump)
+
+Only ~16% of villages carry a point coordinate in the LGD data, so to let the app
+jump precisely to a village's parcels we precompute a bounding box per village from
+the cadastral tiles: `scraper/build_parcels_index.py` scans the max-zoom tiles,
+aggregates each village's parcels into a lat/lng box keyed by **LGD village code**,
+and writes `<slug>/web/data/parcels_index.json`. Districts changed in AP's 2022
+reorganisation, so the crosswalk matches on **(mandal, village)** names, not
+district.
+
+Regenerate (heavy — whole-state tile scan, run in CI):
+
+```bash
+pip install pmtiles mapbox-vector-tile
+python scraper/build_parcels_index.py --slug andhra_pradesh \
+  --pmtiles scraper/.cache/cadastrals/APSAC_AP_Cadastrals.pmtiles
+```
+
+Or run the **build-parcels-index** workflow (manual dispatch), which downloads the
+PMTiles, rebuilds the index, and opens a PR with the refreshed file. Current AP
+match rate is ~70% of cadastral villages; the rest fall back to a best-effort
+name highlight at runtime.
+
 ## Optional: slim the tiles
 
 The 848 MB size is a hosting concern only (clients fetch a few tiles per view).
