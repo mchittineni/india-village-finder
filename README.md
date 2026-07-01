@@ -70,18 +70,26 @@ Karnataka's and Tamil Nadu's sub-districts are **Taluks**; AP/Telangana's are **
   and used for search — but its fidelity is **measured against LGD's official names**
   (`scraper/translit_eval.mjs`) and guarded in CI.
 - **Native-script names for every village** — when the state's own language is selected,
-  each village shows its native name resolved as **authoritative LGD spelling →
-  neural transliteration → rule-based transliteration**. Where LGD publishes the official
-  spelling (e.g. most Telangana villages) it wins; everywhere else a trained neural model
-  (**AI4Bharat IndicXlit**, committed offline as `names_translit.json`) fills the gap, so
-  **every village carries a native name**. District, sub-district and state names render in
-  native script too (`regions_native.json`). The canonical English name is always kept on
-  hover and used for search.
+  each village shows its native name resolved as **authoritative in-script spelling →
+  neural transliteration → rule-based transliteration**. The current LGD source (the
+  data.gov.in feed) doesn't carry the local-script name column, so names are produced by a
+  trained neural model (**AI4Bharat IndicXlit**, committed offline as `names_translit.json`),
+  with the rule engine as a final fallback — so **every village still carries a native name**.
+  The authoritative path remains first in the order and takes precedence automatically if a
+  source that publishes official in-script spellings is wired back in. District, sub-district
+  and state names render in native script too (`regions_native.json`). The canonical English
+  name is always kept on hover and used for search.
 - **Districts, mandals and villages listed A → Z** for predictable scanning.
 - **Pincodes** for ~99.9% of villages (from LGD), shown in lists, search and pins.
 - **Village locations** where we can confidently place them (matched via GeoNames and
   validated against the village's sub-district; coverage varies by state, ~8–17%); the
   rest pin at sub-district (mandal/taluk) level.
+- **Land parcels (Andhra Pradesh)** — an optional cadastral layer showing individual
+  survey plots (with survey numbers), streamed from a PMTiles vector archive and
+  toggled on the map. Select a village to jump to its plots, and filter the parcel list
+  by survey number. Data is **CC0** from APSAC (no owner/farmer information). AP-only;
+  requires the tiles to be served from a CORS-enabled host (see
+  [`docs/cadastral-hosting.md`](docs/cadastral-hosting.md)).
 - **Nearby civic services** — from a pinned village, look up the closest hospitals and
   clinics, government offices, and police/post-office/fire stations, with distance and a
   maps link. Fetched on demand from **[OpenStreetMap](https://www.openstreetmap.org)**
@@ -108,8 +116,10 @@ Karnataka's and Tamil Nadu's sub-districts are **Taluks**; AP/Telangana's are **
 ├── karnataka/               # identical structure, for Karnataka (sub-districts = Taluks)
 ├── tamil_nadu/              # identical structure, for Tamil Nadu (sub-districts = Taluks)
 ├── scraper/                 # SHARED tooling — one code path builds all states
-│   ├── pipeline.py          #   LGD dump → per-state village data (JSON + CSV)
+│   ├── pipeline.py          #   LGD data → per-state village data (JSON + CSV)
+│   ├── lgd_datagov.py       #   fetches LGD data from the data.gov.in open-data API
 │   ├── build_boundaries.py  #   LGD polygons → simplified per-state map shapes
+│   ├── build_parcels_index.py #  AP cadastral tiles → per-village parcel bbox/centroid index
 │   ├── enrich_coords.py     #   best-effort precise village coordinates (GeoNames)
 │   ├── enrich_native_names.py #  offline neural native names (IndicXlit; villages + regions)
 │   ├── lgd_client.py        #   live LGD client, used to verify the dump
@@ -121,11 +131,14 @@ Karnataka's and Tamil Nadu's sub-districts are **Taluks**; AP/Telangana's are **
 │   ├── web_template/        #   single source of truth for the UI (copied per state)
 │   └── requirements*.txt    #   runtime · -dev (pytest) · -translit (offline IndicXlit)
 └── .github/workflows/
-    ├── update-data.yml      #   weekly/monthly refresh → opens a reviewed PR
+    ├── update-data.yml      #   daily data + monthly boundaries refresh → reviewed PR
     ├── regenerate-native-names.yml # weekly/on-demand neural names → reviewed PR
+    ├── build-parcels-index.yml #  rebuilds the AP village→parcel index → reviewed PR
+    ├── mirror-cadastrals.yml #   mirrors the AP cadastral tiles to a CORS host (R2)
     ├── ci.yml               #   runs the data-validity tests on every PR
     ├── release.yml          #   publishes a versioned Release with downloadable data
-    └── deploy-pages.yml     #   publishes the site to GitHub Pages
+    ├── docs.yml             #   build-checks the API reference on PRs
+    └── deploy-pages.yml     #   publishes the site + API docs to GitHub Pages
 ```
 
 The `scraper/` is shared on purpose: the logic is identical for every state and only
@@ -136,16 +149,16 @@ differs by an LGD state code (Andhra Pradesh = `28`, Telangana = `36`, Karnataka
 
 ## Where the data comes from
 
-| Layer                                | Source                                                                                            | Why it's trustworthy                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Districts, mandals, villages         | **LGD** (`lgdirectory.gov.in`), Ministry of Panchayati Raj                                        | The official Indian government registry of administrative areas. We read it directly from the **[data.gov.in](https://data.gov.in/) open-data API** (captcha-free, refreshed ~daily) — no third-party mirror.                                                                                                               |
-| Live cross-check                     | LGD's real-time portal                                                                            | Every build compares its district & mandal counts against the **live** LGD site, so stale data is caught. The result is saved in each `web/data/meta.json`.                                                                                                                                                                 |
-| Map shapes                           | [`ramSeraph/indian_admin_boundaries`](https://github.com/ramSeraph/indian_admin_boundaries)       | Current (2016/2022) LGD boundary polygons, joined to the village data by LGD code.                                                                                                                                                                                                                                          |
-| Pincodes                             | **LGD** `pincode_villages` mapping                                                                | Joined to villages by LGD village code (~99.9% coverage).                                                                                                                                                                                                                                                                   |
-| Native village names (authoritative) | **LGD** `Village Name (In Local)` column                                                          | The state's _own official_ spelling. Kept only when it's genuinely in the state's script (blank/Latin entries are dropped), so a shipped native name is authoritative — preferred over everything else. Coverage follows LGD.                                                                                               |
-| Native names (neural fallback)       | **AI4Bharat IndicXlit**, generated offline                                                        | A trained English→Indic model fills every village/region LGD leaves blank (`names_translit.json`, `regions_native.json`). Clearly _approximate_ but markedly better than the rule engine; measured against LGD gold via `enrich_native_names.py --eval`. Committed as plain JSON, so CI and the browser never load PyTorch. |
-| Village coordinates                  | [GeoNames](https://www.geonames.org/) (name match, sub-district-validated)                        | Best-effort _approximate_ points; only kept when close to the village's mandal/taluk, so coverage is partial (~8–17%).                                                                                                                                                                                                      |
-| Nearby civic services                | [OpenStreetMap](https://www.openstreetmap.org/copyright) via [Overpass](https://overpass-api.de/) | Live, on-demand lookup of hospitals/offices/police near a pinned village (ODbL).                                                                                                                                                                                                                                            |
+| Layer                                | Source                                                                                            | Why it's trustworthy                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Districts, mandals, villages         | **LGD** (`lgdirectory.gov.in`), Ministry of Panchayati Raj                                        | The official Indian government registry of administrative areas. We read it directly from the **[data.gov.in](https://data.gov.in/) open-data API** (captcha-free, refreshed ~daily) — no third-party mirror.                                                                                                                                                                |
+| Live cross-check                     | LGD's real-time portal                                                                            | Every build compares its district & mandal counts against the **live** LGD site, so stale data is caught. The result is saved in each `web/data/meta.json`.                                                                                                                                                                                                                  |
+| Map shapes                           | [`ramSeraph/indian_admin_boundaries`](https://github.com/ramSeraph/indian_admin_boundaries)       | Current (2016/2022) LGD boundary polygons, joined to the village data by LGD code.                                                                                                                                                                                                                                                                                           |
+| Pincodes                             | **LGD** `pincode_villages` mapping                                                                | Joined to villages by LGD village code (~99.9% coverage).                                                                                                                                                                                                                                                                                                                    |
+| Native village names (authoritative) | **LGD** `Village Name (In Local)` column (when available)                                         | The state's _own official_ spelling, kept only when genuinely in the state's script. The current data.gov.in LGD feed doesn't include this column, so it contributes nothing today; the path stays first in priority for when a source that publishes it is wired in.                                                                                                        |
+| Native names (neural)                | **AI4Bharat IndicXlit**, generated offline                                                        | A trained English→Indic model produces the native name for every village/region (`names_translit.json`, `regions_native.json`) — the primary source of native names today. Clearly _approximate_ but markedly better than the rule engine; measured against LGD gold via `enrich_native_names.py --eval`. Committed as plain JSON, so CI and the browser never load PyTorch. |
+| Village coordinates                  | [GeoNames](https://www.geonames.org/) (name match, sub-district-validated)                        | Best-effort _approximate_ points; only kept when close to the village's mandal/taluk, so coverage is partial (~8–17%).                                                                                                                                                                                                                                                       |
+| Nearby civic services                | [OpenStreetMap](https://www.openstreetmap.org/copyright) via [Overpass](https://overpass-api.de/) | Live, on-demand lookup of hospitals/offices/police near a pinned village (ODbL).                                                                                                                                                                                                                                                                                             |
 
 > ℹ️ Government data can lag recent changes. For example, the brand-new AP districts
 > **Markapuram** and **Polavaram** appear in the lists and search but don't yet have
@@ -162,7 +175,7 @@ cd scraper
 python3 -m venv .venv
 ./.venv/bin/pip install -r requirements-dev.txt
 
-# 1) refresh village data for all states (auto-detects the latest LGD dump)
+# 1) refresh village data for all states (fetches from the data.gov.in LGD API)
 ./.venv/bin/python pipeline.py
 
 # 2) (occasionally) rebuild the map boundary shapes
@@ -172,7 +185,12 @@ python3 -m venv .venv
 ./.venv/bin/python -m pytest tests -v
 ```
 
-Handy flags: `--state ap|tg|ka|tn|both`, `--offline` (reuse downloads), `--no-verify`.
+> The data fetch uses the **[data.gov.in](https://data.gov.in/) LGD API**. Without a key
+> it falls back to the public sample key, which caps pages at 10 rows — fine for a smoke
+> test, not a full build. For real runs register a free key and export it:
+> `export DATA_GOV_KEY=<your-key>` (in CI it's the `DATA_GOV_KEY` repo secret).
+
+Handy flags: `--state ap|tg|ka|tn|both`, `--offline` (reuse cached CSVs), `--no-verify`.
 
 **Preview the website locally:**
 
@@ -188,8 +206,9 @@ python3 -m http.server 8777
 
 Data is **never pushed straight to `main`.** Instead:
 
-1. **`update-data.yml`** runs on a schedule — **weekly** for village data, **monthly**
-   for map boundaries (or on demand).
+1. **`update-data.yml`** runs on a schedule — **daily** for village data, **monthly**
+   for map boundaries (or on demand). A transient data.gov.in outage is retried and,
+   worst case, skipped cleanly rather than opening an empty/failed PR.
 2. It rebuilds the data and runs the **test suite**.
 3. It opens a **pull request** whose description is an auto-generated
    [summary of exactly what changed](scraper/changelog.py) (villages added / removed /
