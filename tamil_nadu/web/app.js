@@ -317,6 +317,7 @@
     translitNames = {};
   var regionNative = {}; // { state, districts:{code:native}, mandals:{code:native} }
   var parcelIndex = {}; // { lgdCode: [minLat, minLng, maxLat, maxLng] } — parcel extents
+  var villagePoints = {}; // { lgdCode: [lat, lng] } — centroids derived from parcels
   var dByCode = {},
     mByCode = {};
   var villagesByMandal = [];
@@ -370,6 +371,13 @@
           ? fetchJSON("parcels_index.json").catch(function () {
               return {};
             })
+          : Promise.resolve({}),
+        // Optional: village -> parcel-derived centroid, giving a precise pin to
+        // the many villages GeoNames can't place. { lgdCode: [lat,lng] }
+        CFG.cadastre
+          ? fetchJSON("village_points.json").catch(function () {
+              return {};
+            })
           : Promise.resolve({})
       ]);
       regions = res[0];
@@ -382,6 +390,7 @@
       translitNames = res[7] || {};
       regionNative = res[8] || {};
       parcelIndex = res[9] || {};
+      villagePoints = res[10] || {};
     } catch (e) {
       $("#map-loading").textContent = "Could not load data: " + e.message;
       return;
@@ -1447,7 +1456,10 @@
       map.removeLayer(marker);
       marker = null;
     }
-    var precise = coords[row[2]];
+    // Prefer a cadastral centroid (covers most villages), then a GeoNames match,
+    // then the mandal centroid the boundary layer gives us at runtime.
+    var cadPt = villagePoints[row[2]];
+    var precise = cadPt || coords[row[2]];
     var center = precise
       ? L.latLng(precise[0], precise[1])
       : lyr
@@ -1469,7 +1481,7 @@
     var pin = row[4]
       ? '<span class="vpop-code">' + esc(t("pin_label")) + " " + esc(row[4]) + "</span>"
       : "";
-    var note = precise ? t("approx_note") : t(DIV + "_note");
+    var note = cadPt ? t("cadastre_loc_note") : precise ? t("approx_note") : t(DIV + "_note");
     var wrap = el("div", "vpop");
     wrap.setAttribute("dir", I18N.dirOf(LANG));
     // Keep clicks on the interactive popup content (nearby button, retry, links)
@@ -1526,7 +1538,7 @@
     marker.bindPopup(wrap, { className: "village-popup", maxWidth: 280 }).openPopup();
     if (parcelBtn) {
       parcelBtn.onclick = function () {
-        showVillageParcels(row, m, coords[row[2]] ? center : null);
+        showVillageParcels(row, m, precise ? center : null);
       };
     }
     if (nbBtn) {

@@ -20,8 +20,13 @@ Source: the same PMTiles the app renders (STATES[…]["cadastre"]["url"]). We re
 the max-zoom (z13) tiles — full parcel detail — and convert tile coordinates to
 lat/lng. Heavy (whole-state scan); intended to run in CI, not on a laptop.
 
-Output: <slug>/web/data/parcels_index.json
-    { "<lgd_village_code>": [minLat, minLng, maxLat, maxLng], ... }
+Outputs (per state):
+  <slug>/web/data/parcels_index.json  { "<lgd_code>": [minLat,minLng,maxLat,maxLng] }
+      village -> parcel bounding box, for fitting the map to a village.
+  <slug>/web/data/village_points.json { "<lgd_code>": [lat, lng] }
+      village -> representative point (mean of its parcel centres). This gives a
+      real coordinate to the ~84% of villages GeoNames can't place; the web app
+      layers it over coords.json so nearly every village with cadastre gets a pin.
 
 Run:
     python build_parcels_index.py --slug andhra_pradesh \
@@ -95,8 +100,9 @@ def load_lgd_lookup(slug: str) -> dict[str, int]:
 
 
 def aggregate_parcels(pmtiles: Path, source_layer: str):
-    """Scan the z13 tiles and accumulate a lat/lng bbox per
-    norm(mandal)|norm(village). Returns {key: [minLat, minLng, maxLat, maxLng]}."""
+    """Scan the z13 tiles and accumulate, per norm(mandal)|norm(village), a lat/lng
+    bbox plus the running sum of parcel centres (for a representative point).
+    Returns {key: [minLat, minLng, maxLat, maxLng, sumCLat, sumCLng, nParcels]}."""
     r = Reader(MmapSource(open(pmtiles, "rb")))
     hdr = r.header()
     z = hdr["max_zoom"]
@@ -161,12 +167,14 @@ def aggregate_parcels(pmtiles: Path, source_layer: str):
                 lng_b, lat_b = tile_to_lnglat(mxx, mxy, z, x, y)
                 blo_lat, bhi_lat = min(lat_a, lat_b), max(lat_a, lat_b)
                 blo_lng, bhi_lng = min(lng_a, lng_b), max(lng_a, lng_b)
+                clat, clng = (blo_lat + bhi_lat) / 2, (blo_lng + bhi_lng) / 2
                 b = boxes.get(key)
                 if b is None:
-                    boxes[key] = [blo_lat, blo_lng, bhi_lat, bhi_lng]
+                    boxes[key] = [blo_lat, blo_lng, bhi_lat, bhi_lng, clat, clng, 1]
                 else:
                     b[0] = min(b[0], blo_lat); b[1] = min(b[1], blo_lng)
                     b[2] = max(b[2], bhi_lat); b[3] = max(b[3], bhi_lng)
+                    b[4] += clat; b[5] += clng; b[6] += 1
     print(f"[scan] {tiles} tiles with data, {decoded} decoded, {len(boxes)} villages in cadastre")
     return boxes
 
@@ -181,22 +189,41 @@ def main() -> None:
     lgd = load_lgd_lookup(args.slug)
     boxes = aggregate_parcels(args.pmtiles, args.source_layer)
 
-    index: dict[str, list] = {}
+    data_dir = ROOT / args.slug / "web" / "data"
+    index: dict[str, list] = {}  # code -> parcel bbox (for fitBounds)
+    points: dict[str, list] = {}  # code -> representative point (for a village pin)
     matched = 0
-    for key, box in boxes.items():
+    for key, b in boxes.items():
         code = lgd.get(key)
         if code is None:
             continue
         matched += 1
-        index[str(code)] = [round(v, 5) for v in box]
+        index[str(code)] = [round(v, 5) for v in b[:4]]
+        points[str(code)] = [round(b[4] / b[6], 5), round(b[5] / b[6], 5)]
 
-    out = ROOT / args.slug / "web" / "data" / "parcels_index.json"
-    out.write_text(json.dumps(index, separators=(",", ":")) + "\n")
+    idx_out = data_dir / "parcels_index.json"
+    idx_out.write_text(json.dumps(index, separators=(",", ":")) + "\n")
+    pts_out = data_dir / "village_points.json"
+    pts_out.write_text(json.dumps(points, separators=(",", ":")) + "\n")
+
+    # Coverage: how many of the state's villages now have a precise point, once
+    # these cadastral centroids are layered on top of the GeoNames coords.json.
+    villages = json.loads((data_dir / "villages.json").read_text())
+    rows = villages if isinstance(villages, list) else villages.get("rows", [])
+    total = len(rows)
+    coords_path = data_dir / "coords.json"
+    geonames = set(json.loads(coords_path.read_text())) if coords_path.exists() else set()
+    covered = len({str(r[2]) for r in rows} & (set(points) | {str(g) for g in geonames}))
+
     rate = 100 * matched / len(boxes) if boxes else 0
     print(
         f"[index] matched {matched}/{len(boxes)} cadastral villages to LGD "
-        f"({rate:.0f}%); wrote {len(index)} entries -> {out.relative_to(ROOT)} "
-        f"({out.stat().st_size // 1024} KB)"
+        f"({rate:.0f}%); wrote {len(index)} bbox entries + {len(points)} points"
+    )
+    print(
+        f"[coords] {covered}/{total} villages now have a precise point "
+        f"({100 * covered // total if total else 0}%) — cadastral pins fill the "
+        f"gap left by GeoNames ({len(geonames)} villages)"
     )
 
 
