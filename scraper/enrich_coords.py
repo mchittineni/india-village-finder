@@ -28,11 +28,11 @@ from pathlib import Path
 
 import requests
 
+from config import SLUG_BY_CODE, resolve_codes  # shared per-state registry
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 RAW = HERE / ".cache" / "raw"
-STATES = {28: "andhra_pradesh", 36: "telangana", 29: "karnataka", 33: "tamil_nadu"}
-ALIAS = {"ap": 28, "tg": 36, "ts": 36, "ka": 29, "kar": 29, "tn": 33, "tamil_nadu": 33}
 
 GEONAMES_URL = "https://download.geonames.org/export/dump/IN.zip"
 # Bounding box covering AP + Telangana + Karnataka + Tamil Nadu (generous) — filters
@@ -96,7 +96,7 @@ def polygon_centroid(geom) -> tuple[float, float] | None:
 
 
 def enrich(state_code: int, geo_idx) -> dict:
-    slug = STATES[state_code]
+    slug = SLUG_BY_CODE[state_code]
     web_data = ROOT / slug / "web" / "data"
     regions = json.loads((web_data / "regions.json").read_text(encoding="utf-8"))
     villages = json.loads((web_data / "villages.json").read_text(encoding="utf-8"))
@@ -143,13 +143,12 @@ def enrich(state_code: int, geo_idx) -> dict:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--state", choices=["ap", "tg", "ka", "tn", "both"], default="both")
+    ap.add_argument("--state", default="both", help="ap | tg | ka | tn | all (alias: both)")
     args = ap.parse_args()
-    targets = list(STATES) if args.state == "both" else [ALIAS[args.state]]
     print("[geonames] loading place index ...")
     geo_idx = load_geonames()
-    for sc in targets:
-        print(f"=== {STATES[sc]} ===")
+    for sc in resolve_codes(args.state):
+        print(f"=== {SLUG_BY_CODE[sc]} ===")
         enrich(sc, geo_idx)
 
 

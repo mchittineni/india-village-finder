@@ -23,8 +23,12 @@ import json
 import subprocess
 from pathlib import Path
 
+from config import STATES as _REGISTRY  # shared per-state registry
+
 ROOT = Path(__file__).resolve().parent.parent
-STATES = [("Andhra Pradesh", "andhra_pradesh"), ("Telangana", "telangana")]
+# (display name, slug) for every state in the registry — previously hardcoded to
+# AP/Telangana, which silently left Karnataka/Tamil Nadu out of refresh PR bodies.
+STATES = [(s["name"], s["slug"]) for s in _REGISTRY.values()]
 MAX_LIST = 40
 
 
