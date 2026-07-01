@@ -114,12 +114,6 @@ class LGDClient:
     def sub_districts(self, district_code: int) -> list[dict[str, Any]]:
         return self._dwr("lgdDwrSubDistrictService", "getSubDistrictList", district_code)
 
-    def villages(self, sub_district_code: int) -> list[dict[str, Any]]:
-        # getVillageList(subDistrictCode) is the single-signature method that the
-        # public page uses; the *bySubDistrictCode variants are overloaded and
-        # cannot be invoked by name over DWR.
-        return self._dwr("lgdDwrVillageService", "getVillageList", sub_district_code)
-
 
 # --------------------------------------------------------------------------
 # DWR response parsing

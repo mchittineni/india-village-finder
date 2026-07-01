@@ -18,10 +18,10 @@ Project layout (shared tooling, self-contained per-state outputs)
 
 Data flow
 ---------
-1. DOWNLOAD  the latest daily LGD (Local Government Directory) CSV dump from the
-   community mirror `ramSeraph/opendata` (official LGD data, republished
-   captcha-free, refreshed daily) into scraper/.cache/raw/. One national file
-   set is shared by both states.
+1. FETCH  the latest LGD (Local Government Directory) village data straight from
+   the official Open Government Data platform API (data.gov.in) — no captcha,
+   refreshed ~daily; see scraper/lgd_datagov.py. Four CSVs land in
+   scraper/.cache/raw/.
 2. For EACH state (Andhra Pradesh = 28, Telangana = 36):
      FILTER  rows to that state.
      VERIFY  district/mandal counts against the LIVE LGD portal (non-fatal).
@@ -29,11 +29,13 @@ Data flow
              <state>/data/<state>_villages.csv
      BUILD   copy web_template into <state>/web/ and write config.js.
 
-Run:  python pipeline.py                  (both states, auto-detect latest dump)
+Run:  python pipeline.py                  (both states, data.gov.in API)
       python pipeline.py --state ap       (only Andhra Pradesh)
-      python pipeline.py --state tg       (only Telangana)
-      python pipeline.py --offline        (reuse already-downloaded raw CSVs)
+      python pipeline.py --offline        (reuse already-fetched raw CSVs)
       python pipeline.py --no-verify      (skip the live LGD cross-check)
+
+A free data.gov.in API key in $DATA_GOV_KEY is required for real runs (the public
+sample key caps responses at 10 rows). Register at https://data.gov.in/.
 """
 
 from __future__ import annotations
@@ -45,54 +47,15 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
-import requests
-
-try:
-    import py7zr
-except ImportError:  # pragma: no cover
-    py7zr = None
-
-
-def _safe_extract(z, dest: Path, targets: list[str]) -> None:
-    """Extract only ``targets`` from a py7zr archive into ``dest``.
-
-    The .7z dumps come from a third-party community mirror, so a tampered or
-    malicious archive could carry members like ``../../../etc/passwd`` and
-    overwrite files outside ``dest``. Validate every requested member resolves
-    inside ``dest`` before extracting (zip-slip / CWE-22). Monthly bundles hold
-    ~30 daily CSVs, so we only pull the one day we actually need.
-    """
-    root = dest.resolve()
-    for member in targets:
-        if not (root / member).resolve().is_relative_to(root):
-            raise RuntimeError(
-                f"refusing to extract unsafe archive member outside {root}: {member!r}"
-            )
-    z.extract(path=dest, targets=targets)
-
+from lgd_datagov import DataGovUnavailable, fetch_datagov
 
 HERE = Path(__file__).resolve().parent  # scraper/
 ROOT = HERE.parent  # Village Finder/
 RAW = HERE / ".cache" / "raw"
 TEMPLATE = HERE / "web_template"
-
-RELEASES_API = "https://api.github.com/repos/ramSeraph/opendata/releases?per_page=100"
-# The upstream mirror publishes LGD dumps in two shapes:
-#   * daily snapshot   -> "<kind>.DDMonYYYY.csv.7z"  (one CSV inside)
-#   * monthly bundle   -> "<kind>.MonYYYY.7z"        (one daily CSV per day inside)
-# districts/subdistricts/pincode_villages are only published as monthly bundles now;
-# villages is available in both. Match either so we always find the latest of each.
-ASSET_RE = re.compile(
-    r"^(pincode_villages|villages|subdistricts|districts)\."
-    r"(?:(\d{2}[A-Za-z]{3}\d{4})\.csv|([A-Za-z]{3}\d{4}))\.7z$"
-)
-# A single extracted daily CSV, e.g. "districts.30Jun2026.csv".
-CSV_RE = re.compile(
-    r"^(pincode_villages|villages|subdistricts|districts)\.(\d{2}[A-Za-z]{3}\d{4})\.csv$"
-)
-REQUIRED_KINDS = {"villages", "subdistricts", "districts"}  # pincode_villages is optional
 
 # One config block per state. `slug` is the folder name. `division` is the local
 # name for a sub-district (Mandal in AP/Telangana, Taluk in Karnataka/Tamil Nadu) —
@@ -108,6 +71,31 @@ STATES = {
         "accent": "#1f6feb",
         "accentSoft": "#eaf2ff",
         "division": "mandal",
+        # Optional cadastral (survey-plot) vector layer. Presence of this block is
+        # the feature flag: only states listed here render land parcels. The web
+        # app streams tiles from `url` via HTTP range requests (PMTiles), so the
+        # ~850 MB file is a hosting concern only, not a client download.
+        # NOTE: the release URL below is a prototype fallback; move to a
+        # range-request + CORS enabled host (e.g. Cloudflare R2) before launch.
+        "cadastre": {
+            "url": (
+                "https://github.com/ramSeraph/indian_cadastrals/releases/"
+                "download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles"
+            ),
+            "sourceLayer": "APSAC_AP_Cadastrals",  # vector layer id inside the PMTiles
+            "minZoom": 11,  # Leaflet zoom at which parcels appear (low enough that a
+            # whole mandal fits in view, so a selected village's parcels can be
+            # located and fitted even when the village has no point coordinate).
+            # NB: maplibre-gl-leaflet renders one zoom behind Leaflet, so the GL
+            # layer minzoom is minZoom-1 (handled in app.js initCadastre).
+            "tileMaxZoom": 13,  # PMTiles maxzoom (overzoomed above this)
+            "attribution": (
+                'Cadastre &copy; <a href="https://apsac.ap.gov.in/" target="_blank" '
+                'rel="noopener">APSAC</a> (CC0) via '
+                '<a href="https://github.com/ramSeraph/indian_cadastrals" target="_blank" '
+                'rel="noopener">datameet/ramSeraph</a>'
+            ),
+        },
     },
     36: {
         "name": "Telangana",
@@ -200,81 +188,8 @@ csv.field_size_limit(10_000_000)
 
 
 # ---------------------------------------------------------------------------
-# 1. Download latest national LGD dump (shared)
+# 1. Fetch LGD data (data.gov.in official API — see scraper/lgd_datagov.py)
 # ---------------------------------------------------------------------------
-def _latest_member(names: list[str]) -> str | None:
-    """Return the newest ``<kind>.DDMonYYYY.csv`` from a list of names (archive
-    members or files on disk), picked by parsed date rather than string sort so
-    cross-month names like Mar/Jun compare correctly."""
-    best: tuple[dt.date, str] | None = None
-    for n in names:
-        m = CSV_RE.match(Path(n).name)
-        if not m:
-            continue
-        d = dt.datetime.strptime(m.group(2), "%d%b%Y").date()
-        if best is None or d > best[0]:
-            best = (d, n)
-    return best[1] if best else None
-
-
-def find_latest_assets() -> tuple[dict[str, str], str]:
-    r = requests.get(RELEASES_API, timeout=60, headers={"Accept": "application/vnd.github+json"})
-    r.raise_for_status()
-    best: dict[str, tuple[dt.date, str]] = {}
-    for rel in r.json():
-        for a in rel.get("assets", []):
-            m = ASSET_RE.match(a["name"])
-            if not m:
-                continue
-            kind = m.group(1)
-            # group(2) = daily "DDMonYYYY", group(3) = monthly "MonYYYY".
-            d = (
-                dt.datetime.strptime(m.group(2), "%d%b%Y").date()
-                if m.group(2)
-                else dt.datetime.strptime(m.group(3), "%b%Y").date()
-            )
-            if kind not in best or d > best[kind][0]:
-                best[kind] = (d, a["browser_download_url"])
-    if set(best) < REQUIRED_KINDS:
-        raise RuntimeError(f"Could not find all LGD assets; found {set(best)}")
-    date = max(best[k][0] for k in REQUIRED_KINDS).strftime("%b%Y")
-    return {k: v[1] for k, v in best.items()}, date
-
-
-def download_and_extract(offline: bool) -> dict[str, Path]:
-    RAW.mkdir(parents=True, exist_ok=True)
-    paths: dict[str, Path] = {}
-    if offline:
-        for kind in ("districts", "subdistricts", "villages", "pincode_villages"):
-            member = _latest_member([p.name for p in RAW.glob(f"{kind}.*.csv")])
-            if member is not None:
-                paths[kind] = RAW / member
-            elif kind in REQUIRED_KINDS:
-                raise RuntimeError(f"--offline but no extracted {kind} CSV in {RAW}")
-        print(f"[offline] using {', '.join(p.name for p in paths.values())}")
-        return paths
-
-    if py7zr is None:
-        raise RuntimeError("py7zr is required to extract the .7z dumps (pip install py7zr)")
-
-    assets, date = find_latest_assets()
-    print(f"[download] latest LGD dump: {date}")
-    for kind, url in assets.items():
-        archive = RAW / url.split("/")[-1]
-        if not archive.exists():
-            print(f"  fetching {kind} ...")
-            with requests.get(url, stream=True, timeout=300) as resp:
-                resp.raise_for_status()
-                with open(archive, "wb") as fh:
-                    for chunk in resp.iter_content(1 << 16):
-                        fh.write(chunk)
-        with py7zr.SevenZipFile(archive, "r") as z:
-            member = _latest_member(z.getnames())
-            if member is None:
-                raise RuntimeError(f"no dated {kind} CSV inside {archive.name}")
-            _safe_extract(z, RAW, [member])
-        paths[kind] = RAW / member
-    return paths
 
 
 # ---------------------------------------------------------------------------
@@ -322,8 +237,16 @@ def load_state(paths: dict[str, Path], state_code: int):
         c_scode = _col(rd.fieldnames, "sub-district code")
         c_vcode = _col(rd.fieldnames, "village code")
         c_vname = _col(rd.fieldnames, "village name", "english")
-        c_cat = _col(rd.fieldnames, "village category")
-        c_status = _col(rd.fieldnames, "village status")
+        # Category / status / local name aren't in the data.gov.in feed (the app
+        # no longer shows the rural/urban badge); tolerate their absence.
+        try:
+            c_cat = _col(rd.fieldnames, "village category")
+        except KeyError:
+            c_cat = None
+        try:
+            c_status = _col(rd.fieldnames, "village status")
+        except KeyError:
+            c_status = None
         try:
             c_vlocal = _col(rd.fieldnames, "village name", "local")
         except KeyError:
@@ -336,8 +259,8 @@ def load_state(paths: dict[str, Path], state_code: int):
                         "name": row[c_vname].strip(),
                         "local": (row[c_vlocal].strip() if c_vlocal else ""),
                         "mandal_code": int(row[c_scode]),
-                        "category": row[c_cat].strip(),
-                        "status": row[c_status].strip(),
+                        "category": (row[c_cat].strip() if c_cat else ""),
+                        "status": (row[c_status].strip() if c_status else ""),
                     }
                 )
 
@@ -429,7 +352,9 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         di = d_index[m_sorted[mi]["district_code"]]
         d_counts[di] += 1
         m_counts[mi] += 1
-        cat = 0 if v["category"].lower().startswith("rural") else 1
+        # Category is unavailable from data.gov.in; default unknown -> 0 (the app
+        # no longer renders a rural/urban badge). Still set 1 if explicitly urban.
+        cat = 1 if v["category"].lower().startswith("urban") else 0
         rows.append([v["name"], mi, v["code"], cat, v.get("pincode", "")])
         # Keep the LGD-published local name only when it is genuinely in the
         # state's script (some states leave it blank or fill it with Latin text).
@@ -463,7 +388,7 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         "state_code": state_code,
         "generated_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
-        "source_mirror": "github.com/ramSeraph/opendata (LGD daily dump)",
+        "source_mirror": "data.gov.in (Open Government Data platform, LGD API)",
         "source_date": source_date,
         "counts": {
             "districts": len(d_sorted),
@@ -576,11 +501,12 @@ def _build_web(state_code, cfg, web: Path, meta):
         "accentSoft": cfg["accentSoft"],
         "division": cfg.get("division", "mandal"),
         "nativeLang": cfg.get("lang"),
+        "cadastre": cfg.get("cadastre"),  # None for states without a parcel layer
         "siblings": siblings,
         "source": {
             "name": "Local Government Directory (LGD)",
             "url": "https://lgdirectory.gov.in",
-            "mirror": "https://github.com/ramSeraph/opendata",
+            "mirror": "https://data.gov.in/ (Open Government Data platform)",
         },
         "sourceDate": meta["source_date"],
         "generatedAt": meta["generated_at"],
@@ -603,7 +529,14 @@ def main():
     args = ap.parse_args()
 
     targets = list(STATES) if args.state == "both" else [ALIAS[args.state]]
-    paths = download_and_extract(args.offline)
+    try:
+        paths = fetch_datagov(targets, RAW, args.offline)
+    except DataGovUnavailable as e:
+        # Transient upstream outage — exit EX_TEMPFAIL (75) so the scheduled
+        # workflow can treat it as a skip (no data written, no PR) rather than a
+        # hard failure. A genuine bug would exit 1 as usual.
+        print(f"[skip] {e}")
+        sys.exit(75)
     source_date = _source_date(paths)
 
     for sc in targets:

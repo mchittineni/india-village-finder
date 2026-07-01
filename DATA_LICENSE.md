@@ -20,9 +20,10 @@ substantially as follows:
 
 > Contains administrative data from the **Local Government Directory (LGD)**,
 > Ministry of Panchayati Raj, Government of India, used under the Government Open
-> Data License – India (GODL-India). Boundary polygons derived from the
-> `ramSeraph/indian_admin_boundaries` compilation of LGD/Survey of India data.
-> Source data accessed via the open mirror `ramSeraph/opendata`.
+> Data License – India (GODL-India), accessed via the **data.gov.in** open-data API.
+> Boundary polygons derived from the `ramSeraph/indian_admin_boundaries` compilation
+> of LGD/Survey of India data. Andhra Pradesh land parcels (cadastre) from the AP State
+> Applications Centre (APSAC), **CC0**, via `ramSeraph/indian_cadastrals`.
 
 You must also indicate if you modified the data.
 

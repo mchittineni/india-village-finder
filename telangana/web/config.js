@@ -7,6 +7,7 @@ window.VF_CONFIG = {
   "accentSoft": "#e3f6ec",
   "division": "mandal",
   "nativeLang": "te",
+  "cadastre": null,
   "siblings": [
     {
       "name": "Andhra Pradesh",

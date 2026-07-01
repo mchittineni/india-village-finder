@@ -26,6 +26,30 @@
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
+    <!-- MapLibre GL + PMTiles: renders the optional cadastral (land-parcel) vector
+         layer inside the Leaflet map. Only activates when config.js provides a
+         `cadastre` block (currently Andhra Pradesh only). -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+      integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
+      integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"
+      integrity="sha384-QfbOCebHNw8pQiPAOd2IFee2v2A5VYZxBk0+JGZ5H+3mfzVIp6zsQNkTsfGJot93"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"
+      integrity="sha384-4CB9Vtol9LN6lGgBCvmPLbUEZwilrqIvPieSRurgAXAB7FVJaLS9n8WyAIA5wjQ+"
+      crossorigin="anonymous"
+    ></script>
     <script
       src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"
       integrity="sha384-PCSoOZTpbkikBEtd/+uV3WNdc676i9KUf01KOA8CnJotvlx8rRrETbDuwdjqTYvt"
@@ -151,6 +175,25 @@
           <div class="legend-title">Villages per area</div>
           <div id="legend-scale" class="legend-scale"></div>
         </div>
+
+        <!-- Land-parcel list for the selected village (populated on demand) -->
+        <aside id="parcel-list" class="parcel-list card hidden" aria-label="Land parcels">
+          <div class="pl-head">
+            <div class="pl-title">Land parcels</div>
+            <button id="pl-close" class="icon-btn" title="Close" aria-label="Close">×</button>
+          </div>
+          <div id="pl-sub" class="pl-sub"></div>
+          <div class="pl-search-wrap">
+            <input
+              id="pl-search"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Search survey no…"
+            />
+          </div>
+          <ul id="pl-items" class="pl-items"></ul>
+        </aside>
 
         <div id="toast" class="toast hidden"></div>
         <div id="map-loading" class="map-loading">Loading map…</div>
