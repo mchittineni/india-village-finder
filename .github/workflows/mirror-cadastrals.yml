@@ -1,18 +1,25 @@
 name: mirror-cadastrals
 
-# Mirrors the Andhra Pradesh cadastral PMTiles from the upstream community
-# release (ramSeraph/indian_cadastrals — the only open, CC0 source of the
-# vectorised, survey-numbered parcels; APSAC serves vectors only behind a login)
-# to a Cloudflare R2 bucket (S3-compatible) that answers range requests WITH
-# CORS — which the GitHub release URL does not.
+# Mirrors each state's cadastral PMTiles from the upstream community releases
+# (ramSeraph/indian_cadastrals — the only open, CC0 source of the vectorised,
+# survey-numbered parcels; the state GIS servers serve vectors only behind a
+# login) to a Cloudflare R2 bucket (S3-compatible) that answers range requests
+# WITH CORS — which the GitHub release URLs do not.
 #
-# Auto-tracking: runs weekly and re-mirrors only when the upstream asset's
-# updated_at/size actually changes (the cadastre is refreshed rarely). This
-# avoids re-shovelling ~810 MB on every run. Also dispatchable manually.
+# States mirrored (see the matrix below):
+#   andhra-pradesh  APSAC_AP_Cadastrals.pmtiles       (~848 MB)
+#   telangana       TRACGIS_Bhunaksha_Cadastrals.pmtiles (~649 MB)
+#   karnataka       KGISMAPS_KN_Cadastrals.pmtiles    (~1042 MB)
 #
-# After the first successful run, point the app at the bucket by editing
-# scraper/pipeline.py -> STATES[28]["cadastre"]["url"] (a reviewed change; this
-# workflow deliberately does not rewrite the URL).
+# Auto-tracking: runs weekly and re-mirrors a state only when its upstream
+# asset's updated_at/size actually changes (the cadastre is refreshed rarely),
+# so most legs are no-ops. Manual dispatch can target one state or all, and
+# `force` re-mirrors regardless.
+#
+# The public bucket URL is wired into scraper/config.py (STATES[*].cadastre.url)
+# as an explicit, reviewed change — this workflow deliberately does not rewrite
+# it. CORS is a one-time bucket setting (see the CORS step / docs) and does not
+# need an admin-scoped token for the recurring transfer.
 #
 # Required repo secrets:
 #   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
@@ -22,42 +29,53 @@ on:
     - cron: "0 4 * * 1" # weekly, Mon 04:00 UTC — re-mirror only if upstream moved
   workflow_dispatch:
     inputs:
-      asset_url:
-        description: Upstream PMTiles URL to mirror
-        default: https://github.com/ramSeraph/indian_cadastrals/releases/download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles
-        required: true
-      object_key:
-        description: Destination object key in the R2 bucket
-        default: APSAC_AP_Cadastrals.pmtiles
-        required: true
+      only_state:
+        description: Which state to mirror
+        type: choice
+        options:
+          - all
+          - andhra-pradesh
+          - telangana
+          - karnataka
+        default: all
       force:
         description: Re-mirror even if upstream is unchanged
         type: boolean
         default: false
 
-# Read-only repo scope; GITHUB_TOKEN just reads the upstream public release.
+# Read-only repo scope; GITHUB_TOKEN just reads the upstream public releases.
 # R2 credentials are injected as secrets at the job level.
 permissions:
   contents: read
 
-concurrency:
-  group: mirror-cadastrals
-  cancel-in-progress: false
-
 jobs:
   mirror:
-    name: mirror to R2
+    name: mirror ${{ matrix.state }} to R2
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # one state's outage must not cancel the others
+      matrix:
+        include:
+          - state: andhra-pradesh
+            asset: APSAC_AP_Cadastrals.pmtiles
+          - state: telangana
+            asset: TRACGIS_Bhunaksha_Cadastrals.pmtiles
+          - state: karnataka
+            asset: KGISMAPS_KN_Cadastrals.pmtiles
+    concurrency:
+      group: mirror-cadastrals-${{ matrix.state }}
+      cancel-in-progress: false
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: auto
       R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
       BUCKET: ${{ secrets.R2_BUCKET }}
-      # Fall back to the AP cadastral asset on scheduled runs (inputs are empty).
-      ASSET_URL: ${{ inputs.asset_url || 'https://github.com/ramSeraph/indian_cadastrals/releases/download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles' }}
-      OBJECT_KEY: ${{ inputs.object_key || 'APSAC_AP_Cadastrals.pmtiles' }}
-      FORCE: ${{ inputs.force || 'false' }}
+      ASSET_URL: https://github.com/ramSeraph/indian_cadastrals/releases/download/${{ matrix.state }}/${{ matrix.asset }}
+      OBJECT_KEY: ${{ matrix.asset }}
+      FORCE: ${{ github.event.inputs.force || 'false' }}
+      STATE: ${{ matrix.state }}
+      ONLY_STATE: ${{ github.event.inputs.only_state || 'all' }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Verify secrets are configured
@@ -78,17 +96,11 @@ jobs:
           fi
 
       # Read the upstream asset's updated_at + size from the GitHub release API
-      # (no download). Works when ASSET_URL is a github.com release-download URL;
-      # for any other URL we skip change-detection and always mirror.
+      # (no download) to drive change-detection.
       - name: Resolve upstream release metadata
         id: up
         run: |
           rest="${ASSET_URL#https://github.com/}"
-          if [ "$rest" = "$ASSET_URL" ]; then
-            echo "Non-GitHub URL — change-detection disabled."
-            echo "updated=" >> "$GITHUB_OUTPUT"; echo "size=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
           owner=$(echo "$rest" | cut -d/ -f1)
           repo=$(echo "$rest"  | cut -d/ -f2)
           tag=$(echo "$rest"   | cut -d/ -f5)
@@ -107,6 +119,12 @@ jobs:
       - name: Decide whether to re-mirror
         id: decide
         run: |
+          # Manual dispatch may target a single state — skip the other legs.
+          if [ "$ONLY_STATE" != "all" ] && [ "$ONLY_STATE" != "$STATE" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "$STATE not selected (only_state=$ONLY_STATE) — skipping."
+            exit 0
+          fi
           cur=$(aws s3api head-object --bucket "$BUCKET" --key "$OBJECT_KEY" \
             --endpoint-url "$R2_ENDPOINT" \
             --query 'Metadata."upstream-updated-at"' --output text 2>/dev/null || echo "")
@@ -114,7 +132,7 @@ jobs:
           echo "R2 has upstream-updated-at=$cur ; upstream=$up ; force=$FORCE"
           if [ "$FORCE" != "true" ] && [ -n "$up" ] && [ "$cur" = "$up" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "Up to date — skipping (upstream unchanged since last mirror)." >> "$GITHUB_STEP_SUMMARY"
+            echo "\`$OBJECT_KEY\`: up to date — skipping (upstream unchanged)." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
@@ -143,8 +161,14 @@ jobs:
             --content-type application/octet-stream \
             --metadata "upstream-updated-at=${{ steps.up.outputs.updated }},upstream-size=${{ steps.up.outputs.size }}"
 
-      - name: Apply CORS policy to bucket
+      # CORS is a one-time, bucket-level setting. A least-privilege (Object Read &
+      # Write) R2 token — the right scope for this recurring transfer — CANNOT set
+      # it (PutBucketCors needs an Admin token), so this step is best-effort: it
+      # keeps the policy in sync when run with an admin token, and otherwise just
+      # warns. Set CORS once via the R2 dashboard (see docs/cadastral-hosting.md).
+      - name: Apply CORS policy to bucket (best-effort)
         if: steps.decide.outputs.run == 'true'
+        continue-on-error: true
         run: |
           cat > cors.json <<'JSON'
           {
@@ -159,9 +183,14 @@ jobs:
             ]
           }
           JSON
-          aws s3api put-bucket-cors --bucket "$BUCKET" \
-            --endpoint-url "$R2_ENDPOINT" \
-            --cors-configuration file://cors.json
+          if aws s3api put-bucket-cors --bucket "$BUCKET" \
+               --endpoint-url "$R2_ENDPOINT" \
+               --cors-configuration file://cors.json; then
+            echo "CORS policy applied."
+          else
+            echo "::warning::Could not set CORS (object-scoped token can't call PutBucketCors)."
+            echo "Set it once in the R2 dashboard — see docs/cadastral-hosting.md."
+          fi
 
       - name: Summary
         if: steps.decide.outputs.run == 'true'
@@ -169,6 +198,3 @@ jobs:
           echo "### Mirrored \`$OBJECT_KEY\` to R2 bucket \`$BUCKET\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Upstream updated_at: \`${{ steps.up.outputs.updated }}\` (${{ steps.up.outputs.size }} bytes)" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Next: set the bucket's public/custom-domain URL in" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`scraper/pipeline.py\` (STATES[28].cadastre.url) and rebuild." >> "$GITHUB_STEP_SUMMARY"

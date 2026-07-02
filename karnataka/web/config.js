@@ -7,7 +7,23 @@ window.VF_CONFIG = {
   "accentSoft": "#fdeccf",
   "division": "taluk",
   "nativeLang": "kn",
-  "cadastre": null,
+  "cadastre": {
+    "url": "https://pub-f9d4d8c3e04d4318832ab39d095575b6.r2.dev/KGISMAPS_KN_Cadastrals.pmtiles",
+    "sourceLayer": "KGISMAPS_KN_Cadastrals",
+    "minZoom": 11,
+    "tileMaxZoom": 13,
+    "fields": {
+      "survey": "Surveynumber_Old",
+      "villageCode": "LGD_VillageCode",
+      "area": "SHAPE.STArea()",
+      "id": [
+        "OBJECTID",
+        "KGISCadastralID"
+      ]
+    },
+    "attribution": "Cadastre &copy; KGIS (Karnataka, CC0) via <a href=\"https://github.com/ramSeraph/indian_cadastrals\" target=\"_blank\" rel=\"noopener\">datameet/ramSeraph</a>"
+  },
+  "boundaryTiles": null,
   "siblings": [
     {
       "name": "Andhra Pradesh",

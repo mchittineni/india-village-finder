@@ -8,12 +8,24 @@ window.VF_CONFIG = {
   "division": "mandal",
   "nativeLang": "te",
   "cadastre": {
-    "url": "https://github.com/ramSeraph/indian_cadastrals/releases/download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles",
+    "url": "https://pub-f9d4d8c3e04d4318832ab39d095575b6.r2.dev/APSAC_AP_Cadastrals.pmtiles",
     "sourceLayer": "APSAC_AP_Cadastrals",
     "minZoom": 11,
     "tileMaxZoom": 13,
+    "fields": {
+      "survey": "parcel_num",
+      "village": "v_name",
+      "mandal": "m_name",
+      "district": "d_name",
+      "area": "shape_area",
+      "id": [
+        "objectid",
+        "objectid_1"
+      ]
+    },
     "attribution": "Cadastre &copy; <a href=\"https://apsac.ap.gov.in/\" target=\"_blank\" rel=\"noopener\">APSAC</a> (CC0) via <a href=\"https://github.com/ramSeraph/indian_cadastrals\" target=\"_blank\" rel=\"noopener\">datameet/ramSeraph</a>"
   },
+  "boundaryTiles": null,
   "siblings": [
     {
       "name": "Telangana",

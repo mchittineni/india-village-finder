@@ -8,6 +8,7 @@ window.VF_CONFIG = {
   "division": "taluk",
   "nativeLang": "ta",
   "cadastre": null,
+  "boundaryTiles": null,
   "siblings": [
     {
       "name": "Andhra Pradesh",

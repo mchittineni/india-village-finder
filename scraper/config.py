@@ -35,12 +35,13 @@ STATES: dict[int, dict] = {
         # the feature flag: only states listed here render land parcels. The web
         # app streams tiles from `url` via HTTP range requests (PMTiles), so the
         # ~850 MB file is a hosting concern only, not a client download.
-        # NOTE: the release URL below is a prototype fallback; move to a
-        # range-request + CORS enabled host (e.g. Cloudflare R2) before launch.
+        # Hosted on Cloudflare R2 (zero egress, honours HTTP Range + CORS for the
+        # GitHub Pages origin). The file is auto-mirrored from the upstream
+        # ramSeraph release by .github/workflows/mirror-cadastrals.yml.
         "cadastre": {
             "url": (
-                "https://github.com/ramSeraph/indian_cadastrals/releases/"
-                "download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles"
+                "https://pub-f9d4d8c3e04d4318832ab39d095575b6.r2.dev/"
+                "APSAC_AP_Cadastrals.pmtiles"
             ),
             "sourceLayer": "APSAC_AP_Cadastrals",  # vector layer id inside the PMTiles
             "minZoom": 11,  # Leaflet zoom at which parcels appear (low enough that a
@@ -49,6 +50,20 @@ STATES: dict[int, dict] = {
             # NB: maplibre-gl-leaflet renders one zoom behind Leaflet, so the GL
             # layer minzoom is minZoom-1 (handled in app.js initCadastre).
             "tileMaxZoom": 13,  # PMTiles maxzoom (overzoomed above this)
+            # Tile property keys the web app reads (APSAC schema). Each source
+            # agency names its fields differently, so every cadastre block maps
+            # its own keys onto these canonical roles. `village` names the parcel
+            # village-name field (used to highlight a selected village by name);
+            # states whose tiles carry no place name set `villageCode` instead
+            # (highlight by LGD code) and omit village/mandal/district.
+            "fields": {
+                "survey": "parcel_num",
+                "village": "v_name",
+                "mandal": "m_name",
+                "district": "d_name",
+                "area": "shape_area",
+                "id": ["objectid", "objectid_1"],
+            },
             "attribution": (
                 'Cadastre &copy; <a href="https://apsac.ap.gov.in/" target="_blank" '
                 'rel="noopener">APSAC</a> (CC0) via '
@@ -66,6 +81,32 @@ STATES: dict[int, dict] = {
         "accent": "#0f9d58",
         "accentSoft": "#e3f6ec",
         "division": "mandal",
+        # Cadastral parcels — Telangana TRACGIS Bhunaksha extract (CC0) via
+        # ramSeraph, mirrored to R2 (mirror-cadastrals.yml). Same field layout as
+        # APSAC but TitleCase keys; villages carry names, so the app highlights a
+        # selected village's parcels by name like AP.
+        "cadastre": {
+            "url": (
+                "https://pub-f9d4d8c3e04d4318832ab39d095575b6.r2.dev/"
+                "TRACGIS_Bhunaksha_Cadastrals.pmtiles"
+            ),
+            "sourceLayer": "TRACGIS_Bhunaksha_Cadastrals",
+            "minZoom": 11,
+            "tileMaxZoom": 13,
+            "fields": {
+                "survey": "Parcel_num",
+                "village": "V_Name",
+                "mandal": "M_Name",
+                "district": "D_Name",
+                "area": "Shape_Area",
+                "id": ["OBJECTID", "OBJECTID_12", "OBJECTID_1"],
+            },
+            "attribution": (
+                'Cadastre &copy; TRACGIS (Telangana Bhunaksha, CC0) via '
+                '<a href="https://github.com/ramSeraph/indian_cadastrals" '
+                'target="_blank" rel="noopener">datameet/ramSeraph</a>'
+            ),
+        },
     },
     29: {
         "name": "Karnataka",
@@ -75,6 +116,31 @@ STATES: dict[int, dict] = {
         "accent": "#d97706",
         "accentSoft": "#fdeccf",
         "division": "taluk",
+        # Cadastral parcels — Karnataka KGIS extract (CC0) via ramSeraph, mirrored
+        # to R2. KGIS tiles carry no place names (only codes), but include the LGD
+        # village code — so the app highlights a village's parcels by code
+        # (fields.villageCode) instead of by name, and popups show just the
+        # survey number.
+        "cadastre": {
+            "url": (
+                "https://pub-f9d4d8c3e04d4318832ab39d095575b6.r2.dev/"
+                "KGISMAPS_KN_Cadastrals.pmtiles"
+            ),
+            "sourceLayer": "KGISMAPS_KN_Cadastrals",
+            "minZoom": 11,
+            "tileMaxZoom": 13,
+            "fields": {
+                "survey": "Surveynumber_Old",
+                "villageCode": "LGD_VillageCode",
+                "area": "SHAPE.STArea()",
+                "id": ["OBJECTID", "KGISCadastralID"],
+            },
+            "attribution": (
+                'Cadastre &copy; KGIS (Karnataka, CC0) via '
+                '<a href="https://github.com/ramSeraph/indian_cadastrals" '
+                'target="_blank" rel="noopener">datameet/ramSeraph</a>'
+            ),
+        },
     },
     33: {
         "name": "Tamil Nadu",
