@@ -56,7 +56,20 @@
  * @property {string} sourceLayer  Vector layer id inside the PMTiles.
  * @property {number} minZoom      Leaflet zoom at which parcels become visible.
  * @property {number} tileMaxZoom  PMTiles maxzoom (display overzooms beyond this).
+ * @property {CadastreFields} [fields]  Tile-property key map (per source agency).
  * @property {string} [attribution]  HTML attribution string for the parcel source.
+ */
+/**
+ * @typedef {Object} CadastreFields  Maps this source's tile keys onto the roles
+ *   the app reads. Defaults to the APSAC (Andhra Pradesh) schema.
+ * @property {string} survey       Key holding the survey/parcel number.
+ * @property {string} [village]    Key holding the village name (name-match highlight).
+ * @property {string} [villageCode]  Key holding the LGD village code (code-match
+ *   highlight, for sources whose tiles carry no place names, e.g. Karnataka KGIS).
+ * @property {string} [mandal]     Key holding the mandal/taluk name.
+ * @property {string} [district]   Key holding the district name.
+ * @property {string} [area]       Key holding the parcel area (m²).
+ * @property {string[]} [id]       Candidate keys for a stable feature id (dedup).
  */
 (function () {
   "use strict";
@@ -328,6 +341,23 @@
     cadOn = false, // whether the parcel layer is currently toggled on
     cadPopup = null, // Leaflet popup for a clicked parcel
     cadToggleBtn = null; // the "land parcels" toggle control button
+  // Tile-property key map for the cadastre (CFG.cadastre.fields), defaulting to
+  // the APSAC schema so a config without `fields` still works. Each source agency
+  // names its fields differently — see config.py cadastre blocks.
+  var CAD_FIELDS = (CFG.cadastre && CFG.cadastre.fields) || {
+    survey: "parcel_num",
+    village: "v_name",
+    mandal: "m_name",
+    district: "d_name",
+    area: "shape_area",
+    id: ["objectid", "objectid_1"]
+  };
+  // First present candidate id key for a parcel feature (falls back to survey).
+  function parcelId(p) {
+    var ids = CAD_FIELDS.id || [];
+    for (var i = 0; i < ids.length; i++) if (p[ids[i]] != null) return p[ids[i]];
+    return CAD_FIELDS.survey ? p[CAD_FIELDS.survey] : null;
+  }
   var dLayerByCode = {},
     mLayerByCode = {};
   // Vector-tile boundary mode (see initBoundaryTiles): btLayer is the GL overlay,
@@ -873,9 +903,16 @@
    */
   function showParcel(props, latlng) {
     props = props || {};
-    var survey = props.parcel_num || "";
-    var place = [props.v_name, props.m_name, props.d_name].filter(Boolean).join(" · ");
-    var area = props.shape_area ? Math.round(Number(props.shape_area)) : null;
+    var F = CAD_FIELDS;
+    var survey = (F.survey && props[F.survey] != null ? String(props[F.survey]) : "").trim();
+    var place = [
+      F.village && props[F.village],
+      F.mandal && props[F.mandal],
+      F.district && props[F.district]
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    var area = F.area && props[F.area] ? Math.round(Number(props[F.area])) : null;
     var wrap = el("div", "vpop cad-pop");
     wrap.setAttribute("dir", I18N.dirOf(LANG));
     wrap.addEventListener("click", function (ev) {
@@ -970,10 +1007,11 @@
       return;
     }
     var seen = {};
+    var F = CAD_FIELDS;
     parcelRows = [];
     feats.forEach(function (f) {
       var p = f.properties || {};
-      var id = p.objectid || p.objectid_1 || p.parcel_num;
+      var id = parcelId(p);
       if (id == null || seen[id]) return;
       seen[id] = 1;
       var b = L.latLngBounds([]);
@@ -982,8 +1020,8 @@
       });
       parcelRows.push({
         id: id,
-        survey: p.parcel_num != null ? String(p.parcel_num) : "",
-        area: p.shape_area ? Math.round(Number(p.shape_area)) : null,
+        survey: F.survey && p[F.survey] != null ? String(p[F.survey]).trim() : "",
+        area: F.area && p[F.area] ? Math.round(Number(p[F.area])) : null,
         props: p,
         bounds: b.isValid() ? b : null
       });
@@ -1102,17 +1140,32 @@
   }
 
   /**
-   * Set the cadastral highlight filter to the given village, matching its LGD
-   * name against `v_name` case-insensitively and tolerating the (U)/(R) urban/
-   * rural suffixes the parcel data appends.
-   * @param {VillageRow} row  The village record (row[0] = English name).
+   * Set the cadastral highlight filter to the given village. When the tiles carry
+   * the LGD village code (CAD_FIELDS.villageCode, e.g. Karnataka KGIS) we match on
+   * that code exactly; otherwise we match the LGD English name against the parcel
+   * village-name field case-insensitively, tolerating the (U)/(R) urban/rural
+   * suffixes the parcel data appends.
+   * @param {VillageRow} row  The village record (row[0] = name, row[2] = LGD code).
    * @returns {void}
    */
   function highlightVillageParcels(row) {
     var gl = cadLayer && cadLayer.getMaplibreMap && cadLayer.getMaplibreMap();
     if (!gl) return;
-    var n = (row[0] || "").toLowerCase();
-    var filter = ["in", ["downcase", ["get", "v_name"]], ["literal", [n, n + " (u)", n + " (r)"]]];
+    var F = CAD_FIELDS;
+    var filter;
+    if (F.villageCode) {
+      var code = row[2];
+      // Tiles may store the code as a number or a string — match either form.
+      filter = [
+        "any",
+        ["==", ["get", F.villageCode], code],
+        ["==", ["to-string", ["get", F.villageCode]], String(code)]
+      ];
+    } else {
+      var vk = F.village || "v_name";
+      var n = (row[0] || "").toLowerCase();
+      filter = ["in", ["downcase", ["get", vk]], ["literal", [n, n + " (u)", n + " (r)"]]];
+    }
     var apply = function () {
       if (gl.getLayer("cad-sel")) gl.setFilter("cad-sel", filter);
     };

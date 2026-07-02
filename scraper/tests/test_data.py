@@ -331,6 +331,46 @@ def test_mandal_geojson_valid_and_joins(state):
 
 
 # --------------------------------------------------------------------------- #
+# cadastre config (per-state land-parcel layer)
+# --------------------------------------------------------------------------- #
+def _web_config(slug):
+    """Parse the VF_CONFIG object out of a state's generated web/config.js."""
+    txt = (ROOT / slug / "web" / "config.js").read_text(encoding="utf-8")
+    body = txt[txt.index("= ") + 2 : txt.rindex(";")]
+    return json.loads(body)
+
+
+def test_cadastre_config_shape(state):
+    """If a state ships a cadastre layer, its config.js block must be usable: a
+    public range-request URL, a source layer, and a `fields` map that names a
+    survey key plus a way to highlight a village (by name or by LGD code)."""
+    cad = _web_config(state["slug"]).get("cadastre")
+    if not cad:  # Tamil Nadu (and any future state) may have no parcel layer
+        return
+    assert cad["url"].startswith("https://") and cad["url"].endswith(".pmtiles")
+    assert cad["sourceLayer"], "cadastre needs a sourceLayer"
+    f = cad.get("fields") or {}
+    assert f.get("survey"), "cadastre fields must map a survey key"
+    assert f.get("village") or f.get("villageCode"), (
+        "cadastre fields need `village` (name-match) or `villageCode` (code-match)"
+    )
+
+
+def test_cadastre_config_matches_registry():
+    """Each state's config.js cadastre block must equal config.py's registry, so
+    a regenerated build and the committed files never drift."""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "scraper"))
+    import config
+
+    for slug, code, *_ in STATES:
+        assert _web_config(slug).get("cadastre") == config.STATES[code].get("cadastre"), (
+            f"{slug}: config.js cadastre differs from config.STATES[{code}]"
+        )
+
+
+# --------------------------------------------------------------------------- #
 # cross-state invariant
 # --------------------------------------------------------------------------- #
 def test_village_codes_disjoint_across_states():

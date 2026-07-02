@@ -7,7 +7,26 @@ window.VF_CONFIG = {
   "accentSoft": "#e3f6ec",
   "division": "mandal",
   "nativeLang": "te",
-  "cadastre": null,
+  "cadastre": {
+    "url": "https://pub-f9d4d8c3e04d4318832ab39d095575b6.r2.dev/TRACGIS_Bhunaksha_Cadastrals.pmtiles",
+    "sourceLayer": "TRACGIS_Bhunaksha_Cadastrals",
+    "minZoom": 11,
+    "tileMaxZoom": 13,
+    "fields": {
+      "survey": "Parcel_num",
+      "village": "V_Name",
+      "mandal": "M_Name",
+      "district": "D_Name",
+      "area": "Shape_Area",
+      "id": [
+        "OBJECTID",
+        "OBJECTID_12",
+        "OBJECTID_1"
+      ]
+    },
+    "attribution": "Cadastre &copy; TRACGIS (Telangana Bhunaksha, CC0) via <a href=\"https://github.com/ramSeraph/indian_cadastrals\" target=\"_blank\" rel=\"noopener\">datameet/ramSeraph</a>"
+  },
+  "boundaryTiles": null,
   "siblings": [
     {
       "name": "Andhra Pradesh",
