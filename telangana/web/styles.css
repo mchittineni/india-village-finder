@@ -753,6 +753,40 @@ a {
   color: var(--ink-3);
   line-height: 1.4;
 }
+.vpop-coord {
+  margin-top: 8px;
+  font-size: 0.76rem;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.vpop-coord b {
+  color: var(--ink-2);
+  font-weight: 700;
+}
+.vpop-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 7px;
+}
+.vpop-act {
+  flex: 1;
+  text-align: center;
+  border: 1px solid var(--line-2);
+  background: var(--bg);
+  color: var(--ink-2);
+  font-weight: 650;
+  font-size: 0.76rem;
+  padding: 5px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.vpop-act:hover {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--brand-dk);
+}
 
 /* Nearby services (live OpenStreetMap lookup) inside the village popup */
 .vpop-nb-btn {

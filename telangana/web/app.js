@@ -913,6 +913,11 @@
       .filter(Boolean)
       .join(" · ");
     var area = F.area && props[F.area] ? Math.round(Number(props[F.area])) : null;
+    // The parcel's coordinates come from its polygon geometry, surfaced here via
+    // the clicked/centroid point Leaflet hands us. There is no lat/lng attribute.
+    var lat = latlng && latlng.lat != null ? Number(latlng.lat) : null;
+    var lng = latlng && latlng.lng != null ? Number(latlng.lng) : null;
+    var coordStr = lat != null ? lat.toFixed(6) + ", " + lng.toFixed(6) : "";
     var wrap = el("div", "vpop cad-pop");
     wrap.setAttribute("dir", I18N.dirOf(LANG));
     wrap.addEventListener("click", function (ev) {
@@ -933,9 +938,38 @@
       (area != null
         ? '<div class="vpop-meta">' + esc(t("parcel_area", { n: fmt(area) })) + "</div>"
         : "") +
+      (coordStr
+        ? '<div class="vpop-coord">' +
+          esc(t("coordinates")) +
+          " <b>" +
+          esc(coordStr) +
+          "</b></div>" +
+          '<div class="vpop-actions">' +
+          '<a class="vpop-act" target="_blank" rel="noopener" href="https://www.google.com/maps?q=' +
+          lat.toFixed(6) +
+          "," +
+          lng.toFixed(6) +
+          '">' +
+          esc(t("open_in_maps")) +
+          "</a>" +
+          '<button type="button" class="vpop-act vpop-copy">' +
+          esc(t("copy_coords")) +
+          "</button>" +
+          "</div>"
+        : "") +
       '<div class="vpop-note">' +
       esc(t("cad_snapshot_note")) +
       "</div>";
+    var copyBtn = coordStr && wrap.querySelector(".vpop-copy");
+    if (copyBtn) {
+      copyBtn.addEventListener("click", function () {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(coordStr).then(function () {
+            toast(t("coords_copied"));
+          }, function () {});
+        }
+      });
+    }
     if (cadPopup) map.closePopup(cadPopup);
     cadPopup = L.popup({ className: "village-popup", maxWidth: 280 })
       .setLatLng(latlng)
