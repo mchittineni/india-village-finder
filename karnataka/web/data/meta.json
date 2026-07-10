@@ -1,24 +1,37 @@
 {
   "state": "Karnataka",
   "state_code": 29,
-  "generated_at": "2026-06-26T15:10:26Z",
+  "generated_at": "2026-07-10T10:03:26Z",
   "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
-  "source_mirror": "github.com/ramSeraph/opendata (LGD daily dump)",
-  "source_date": "25Jun2026",
+  "source_mirror": "data.gov.in (Open Government Data platform, LGD API)",
+  "source_date": "10Jul2026",
   "counts": {
     "districts": 31,
     "mandals": 240,
-    "villages": 30771,
-    "with_pincode": 29453,
-    "with_local_names": 60,
-    "with_coords": 5110
+    "villages": 26753,
+    "with_pincode": 26753,
+    "with_local_names": 10977,
+    "with_coords": 4509
   },
   "native_lang": "kn",
   "dropped_villages_without_mandal": 0,
   "verification": {
-    "ran": false,
-    "ok": null,
-    "checks": [],
-    "error": "skipped"
+    "ran": true,
+    "ok": true,
+    "checks": [
+      {
+        "check": "district count",
+        "live": 31,
+        "dump": 31,
+        "pass": true
+      },
+      {
+        "check": "mandals in Bagalkote",
+        "live": 10,
+        "dump": 10,
+        "pass": true
+      }
+    ],
+    "error": null
   }
 }
