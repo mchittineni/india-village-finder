@@ -222,9 +222,13 @@ jobs:
           token: ${{ secrets.DATA_PAT || secrets.GITHUB_TOKEN }}
           branch: data/auto-refresh
           delete-branch: true
+          # NB: these are git pathspecs, not shell globs — the action passes them
+          # to `git add` verbatim. A wildcard pathspec must match the FULL path
+          # (no leading-directory expansion like literal paths get), so
+          # `*/web/data` matches nothing; `*/web/data/**` matches the files.
           add-paths: |
-            */web/data
-            */data
+            */web/data/**
+            */data/**
           commit-message: "chore(data): refresh LGD village data"
           title: "chore(data): LGD village data refresh"
           body-path: /tmp/pr_body.md
