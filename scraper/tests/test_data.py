@@ -213,7 +213,9 @@ def test_csv_native_names_populated(state):
     rows = list(csv.DictReader(io.StringIO(path.read_text(encoding="utf-8"))))
     filled = sum(1 for r in rows if r["Village (Native)"].strip())
     assert filled / len(rows) >= 0.95, f"{state['slug']}: only {filled}/{len(rows)} native names"
-    assert all(r["Native Source"] in ("LGD", "transliterated", "") for r in rows)
+    assert all(
+        r["Native Source"] in ("LGD", "authoritative", "transliterated", "") for r in rows
+    )
     # a native name must declare its source, and vice versa
     assert all(
         bool(r["Village (Native)"].strip()) == bool(r["Native Source"].strip()) for r in rows

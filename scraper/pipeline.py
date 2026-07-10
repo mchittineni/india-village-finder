@@ -394,6 +394,48 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
             neural_native = json.loads(nt_path.read_text(encoding="utf-8"))
         except Exception:
             neural_native = {}
+
+    # The neural/region native-name sidecars are produced offline (weekly
+    # IndicXlit workflow) and committed, so a daily LGD refresh can orphan
+    # entries: villages/mandals get renumbered or dropped upstream, and a
+    # village can gain an authoritative name it previously lacked. Prune both
+    # files against THIS run's codes so a refresh PR stays internally
+    # consistent (test_data.py enforces these invariants); the weekly regen
+    # then fills in names for genuinely new villages.
+    valid_codes = {str(v["code"]) for v in writable}
+    pruned = {
+        code: name
+        for code, name in neural_native.items()
+        if code in valid_codes and code not in effective_local
+    }
+    if nt_path.exists() and pruned != neural_native:
+        print(
+            f"[{cfg['slug']}] pruned {len(neural_native) - len(pruned)} stale "
+            f"neural native names"
+        )
+        nt_path.write_text(
+            json.dumps(pruned, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+        )
+        neural_native = pruned
+    rn_path = web_data / "regions_native.json"
+    if rn_path.exists():
+        try:
+            rn = json.loads(rn_path.read_text(encoding="utf-8"))
+        except Exception:
+            rn = None
+        if rn:
+            rn_dropped = 0
+            for tier in ("districts", "mandals"):
+                valid = {str(r["c"]) for r in regions.get(tier, [])}
+                tier_map = rn.get(tier) or {}
+                keep = {c: n for c, n in tier_map.items() if c in valid}
+                rn_dropped += len(tier_map) - len(keep)
+                rn[tier] = keep
+            if rn_dropped:
+                print(f"[{cfg['slug']}] pruned {rn_dropped} stale native region names")
+                rn_path.write_text(
+                    json.dumps(rn, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+                )
     with open(
         state_dir / "data" / f"{cfg['slug']}_villages.csv", "w", newline="", encoding="utf-8"
     ) as fh:
