@@ -53,6 +53,8 @@ from pathlib import Path
 from config import (  # shared per-state registry + name seeds + boundary tiles
     ALIAS,
     BOUNDARY_TILES,
+    MANDI_PRICES_URL,
+    MAP_OVERLAYS,
     STATES,
     load_name_seeds,
 )
@@ -497,7 +499,15 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
 
 def _build_web(state_code, cfg, web: Path, meta):
     # copy the single-source template files
-    for fname in ("index.html", "styles.css", "app.js", "i18n.js", "nearby.js"):
+    for fname in (
+        "index.html",
+        "styles.css",
+        "app.js",
+        "i18n.js",
+        "nearby.js",
+        "weather.js",
+        "mandi.js",
+    ):
         src = TEMPLATE / fname
         if src.exists():
             shutil.copyfile(src, web / fname)
@@ -515,6 +525,11 @@ def _build_web(state_code, cfg, web: Path, meta):
         "division": cfg.get("division", "mandal"),
         "nativeLang": cfg.get("lang"),
         "cadastre": cfg.get("cadastre"),  # None for states without a parcel layer
+        # Daily Agmarknet mandi-price snapshot for the prices panel (published
+        # to a data branch by update-mandi-prices.yml, served with CORS).
+        "mandi": {"url": MANDI_PRICES_URL.format(slug=cfg["slug"])},
+        # Optional WMS overlays (groundwater/soil), shared across states.
+        "overlays": MAP_OVERLAYS,
         # Vector-tile boundaries (shared archive, see config.BOUNDARY_TILES).
         # None while disabled -> the app keeps its GeoJSON boundary path.
         "boundaryTiles": (

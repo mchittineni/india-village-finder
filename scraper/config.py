@@ -40,8 +40,7 @@ STATES: dict[int, dict] = {
         # ramSeraph release by .github/workflows/mirror-cadastrals.yml.
         "cadastre": {
             "url": (
-                "https://pub-f9d4d8c3e04d4318832ab39d095575b6.r2.dev/"
-                "APSAC_AP_Cadastrals.pmtiles"
+                "https://pub-f9d4d8c3e04d4318832ab39d095575b6.r2.dev/" "APSAC_AP_Cadastrals.pmtiles"
             ),
             "sourceLayer": "APSAC_AP_Cadastrals",  # vector layer id inside the PMTiles
             "minZoom": 11,  # Leaflet zoom at which parcels appear (low enough that a
@@ -70,6 +69,12 @@ STATES: dict[int, dict] = {
                 '<a href="https://github.com/ramSeraph/indian_cadastrals" target="_blank" '
                 'rel="noopener">datameet/ramSeraph</a>'
             ),
+            # Official FMB / sub-survey viewer (no URL prefill supported —
+            # the app copies the parcel identifiers and opens this page).
+            "fmb": {
+                "name": "BhuNaksha AP",
+                "url": "https://bhunaksha.ap.gov.in/bhunaksha/fmb/index.jsp",
+            },
         },
     },
     36: {
@@ -102,10 +107,16 @@ STATES: dict[int, dict] = {
                 "id": ["OBJECTID", "OBJECTID_12", "OBJECTID_1"],
             },
             "attribution": (
-                'Cadastre &copy; TRACGIS (Telangana Bhunaksha, CC0) via '
+                "Cadastre &copy; TRACGIS (Telangana Bhunaksha, CC0) via "
                 '<a href="https://github.com/ramSeraph/indian_cadastrals" '
                 'target="_blank" rel="noopener">datameet/ramSeraph</a>'
             ),
+            # Bhu Bharati (Dharani's successor) cadastral viewer; TG publishes
+            # no public FMB sketches — survey-boundary view is the closest.
+            "fmb": {
+                "name": "Bhu Bharati",
+                "url": "https://bhubharati.telangana.gov.in/gis/",
+            },
         },
     },
     29: {
@@ -136,10 +147,15 @@ STATES: dict[int, dict] = {
                 "id": ["OBJECTID", "KGISCadastralID"],
             },
             "attribution": (
-                'Cadastre &copy; KGIS (Karnataka, CC0) via '
+                "Cadastre &copy; KGIS (Karnataka, CC0) via "
                 '<a href="https://github.com/ramSeraph/indian_cadastrals" '
                 'target="_blank" rel="noopener">datameet/ramSeraph</a>'
             ),
+            # Bhoomi "view survey documents" (Tippan/FMB; OTP login, no prefill).
+            "fmb": {
+                "name": "Bhoomi survey documents",
+                "url": "https://landrecords.karnataka.gov.in/service130/",
+            },
         },
     },
     33: {
@@ -185,6 +201,62 @@ BOUNDARY_TILES: dict = {
     "minZoom": 4,
     "tileMaxZoom": 12,
 }
+
+# Daily Agmarknet mandi-price snapshots (scraper/fetch_mandi_prices.py), published
+# by .github/workflows/update-mandi-prices.yml to the dedicated `data/mandi-prices`
+# branch — NOT main, so daily price churn never needs a reviewed PR.
+# raw.githubusercontent.com serves the branch with `Access-Control-Allow-Origin: *`,
+# which lets the GitHub Pages app fetch it cross-origin.
+# Optional agri map overlays (WMS raster — no CORS/keys needed for img tiles),
+# rendered by app.js initOverlays() into a Leaflet layers control. `labelKey`
+# is an i18n key (web_template/i18n.js). Verified anonymous + HTTPS 2026-07:
+#  - Bhuvan RGNDWM groundwater prospects (lithology-geomorphology, classified
+#    by well depth/yield) for all four states in one overlay.
+#  - ISRIC SoilGrids WRB most-probable soil class (250 m, CC-BY 4.0) — the
+#    NBSS&LUP soil WMS renders outline-only and lacks AP/TS, so SoilGrids is
+#    the usable classified soil layer. CGWB/India-WRIS endpoints are down
+#    (2026-07) and historically flaky — deliberately not used.
+MAP_OVERLAYS: list[dict] = [
+    {
+        "id": "gw",
+        "labelKey": "ov_gw",
+        "url": "https://bhuvan-vec1.nrsc.gov.in/bhuvan/wms",
+        "wms": {
+            "layers": "gw:AP_LGEOM,gw:TS_LGEOM,gw:KA_LGEOM,gw:TN_LGEOM",
+            "format": "image/png",
+            "transparent": True,
+            "version": "1.1.1",
+        },
+        "opacity": 0.6,
+        "maxZoom": 15,
+        "attribution": (
+            'Groundwater prospects: <a href="https://bhuvan.nrsc.gov.in" '
+            'target="_blank" rel="noopener">Bhuvan, NRSC/ISRO</a>'
+        ),
+    },
+    {
+        "id": "soil",
+        "labelKey": "ov_soil",
+        "url": "https://maps.isric.org/mapserv?map=/map/wrb.map",
+        "wms": {
+            "layers": "MostProbable",
+            "format": "image/png",
+            "transparent": True,
+            "version": "1.3.0",
+        },
+        "opacity": 0.65,
+        "maxZoom": 14,
+        "attribution": (
+            'Soil: <a href="https://soilgrids.org" target="_blank" '
+            'rel="noopener">ISRIC SoilGrids</a> (CC BY 4.0)'
+        ),
+    },
+]
+
+MANDI_PRICES_URL = (
+    "https://raw.githubusercontent.com/mchittineni/india-village-finder/"
+    "refs/heads/data/mandi-prices/{slug}.json"
+)
 
 # Convenience lookups derived from the registry (never hand-maintained).
 SLUG_BY_CODE: dict[int, str] = {code: s["slug"] for code, s in STATES.items()}

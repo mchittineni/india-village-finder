@@ -1066,3 +1066,142 @@ button.nb-retry:hover {
     width: 200px;
   }
 }
+
+/* ---- mandi prices panel (shares .parcel-list/.pl-* shell) --------------- */
+#mandi-panel {
+  width: 300px;
+}
+#mp-search,
+.mp-district {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 0.82rem;
+  background: var(--bg);
+  color: var(--ink);
+}
+#mp-search:focus,
+.mp-district:focus {
+  outline: none;
+  border-color: var(--brand, #1f6feb);
+}
+.mp-market {
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--ink);
+  padding: 8px 8px 2px;
+}
+.mp-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 0.8rem;
+}
+.mp-item:hover {
+  background: var(--brand-soft, var(--bg));
+}
+.mp-comm {
+  color: var(--ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mp-var {
+  color: var(--ink-3);
+  font-size: 0.7rem;
+}
+.mp-price {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
+  font-weight: 600;
+}
+.mp-range {
+  color: var(--ink-2);
+  font-size: 0.7rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.mp-foot {
+  border-top: 1px solid var(--line);
+  margin-top: 6px;
+  padding: 6px 2px 2px;
+  font-size: 0.68rem;
+  color: var(--ink-3);
+}
+@media (max-width: 640px) {
+  #mandi-panel {
+    width: 230px;
+  }
+}
+
+/* ---- in-popup agromet weather block ------------------------------------- */
+.vpop-wx {
+  margin-top: 8px;
+}
+.wx-now {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 9px;
+  background: var(--brand-soft, var(--bg));
+}
+.wx-now-temp {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.wx-now-desc {
+  font-size: 0.74rem;
+  color: var(--ink-2);
+  line-height: 1.35;
+}
+.wx-days {
+  margin-top: 6px;
+  max-height: 168px;
+  overflow-y: auto;
+}
+.wx-day {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  font-size: 0.76rem;
+  color: var(--ink);
+}
+.wx-day-name {
+  flex: 0 0 34px;
+  color: var(--ink-2);
+}
+.wx-day-icon {
+  flex: 0 0 20px;
+  text-align: center;
+}
+.wx-day-temp {
+  flex: 0 0 76px;
+  font-variant-numeric: tabular-nums;
+}
+.wx-day-rain {
+  flex: 1;
+  text-align: right;
+  color: var(--ink-2);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+.wx-src {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.66rem;
+  color: var(--ink-3);
+  text-decoration: none;
+}
+.wx-src:hover {
+  text-decoration: underline;
+}
