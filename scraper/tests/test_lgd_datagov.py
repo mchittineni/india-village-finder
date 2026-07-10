@@ -138,6 +138,8 @@ def test_fetch_datagov_falls_back_to_cache_on_outage(tmp_path):
     _seed_csvs(tmp_path)
 
     class DownSession:
+        headers: dict = {}
+
         def __enter__(self):
             return self
 
@@ -154,6 +156,8 @@ def test_fetch_datagov_falls_back_to_cache_on_outage(tmp_path):
 
 def test_fetch_datagov_unavailable_when_no_cache(tmp_path):
     class DownSession:
+        headers: dict = {}
+
         def __enter__(self):
             return self
 
