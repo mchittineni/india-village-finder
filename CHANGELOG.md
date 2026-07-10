@@ -33,17 +33,110 @@ release attaches downloadable datasets — see [Releases][releases].
   defined once in `config.MAP_OVERLAYS`. (CGWB/India-WRIS was evaluated and skipped —
   its GIS stack is currently unreachable.)
 
+### Changed
+
+- Documentation brought current across the board: refreshed stats, the data.gov.in-era
+  data-source tables, AP/TG/KA cadastre coverage, the new workflows, and a
+  "live third-party layers" licensing section in `DATA_LICENSE.md`.
+
+## [1.2.9] — 2026-07-10
+
+### Added
+
+- **Parcel GPS coordinates in the popup** — a cadastral parcel popup now shows the
+  clicked point's coordinates with copy and open-in-Google-Maps actions.
+
 ### Fixed
 
-- **Daily data refresh was silently broken** — three stacked issues resolved:
-  api.data.gov.in's WAF rejects python-requests' default User-Agent with HTTP 502
-  (the fetch now identifies itself with a project User-Agent);
-  `create-pull-request`'s `add-paths` wildcards are git pathspecs and matched zero
-  files, so refreshed data never became a PR (now `**`-suffixed); and the offline
-  native-name sidecars (`names_translit.json`, `regions_native.json`) went stale when
-  LGD renumbered villages/mandals — the pipeline now prunes them each run.
-- `build-parcels-index.yml` used `git diff` to detect changes, which is silent for
+- **The daily data refresh was silently broken since the data.gov.in migration** —
+  three stacked issues resolved:
+  - api.data.gov.in's WAF answers HTTP 502 to python-requests' default User-Agent;
+    the fetch now identifies itself with a project-specific User-Agent.
+  - `create-pull-request`'s `add-paths` wildcards are git pathspecs (no shell-style
+    directory expansion) and matched **zero files**, so refreshed data was committed
+    nowhere and no PR appeared while the workflow stayed green; now `**`-suffixed.
+  - The offline native-name sidecars (`names_translit.json`, `regions_native.json`)
+    go stale when LGD renumbers villages/mandals; the pipeline now prunes them
+    against each run's fresh codes.
+- `build-parcels-index.yml` detected changes with `git diff`, which is silent for
   untracked first-run outputs; switched to `git status --porcelain`.
+
+### Changed
+
+- **Village counts rebased** by the first LGD refresh served from the data.gov.in
+  feed (AP 14,715 · TG 10,983 · KA 26,753 · TN 15,833 villages).
+
+## [1.2.8] — 2026-07-05
+
+### Added
+
+- **Telangana & Karnataka land parcels** — cadastral survey plots for two more
+  states: TRACGIS Bhunaksha (TG) and KGIS (KA) extracts (**CC0**, via
+  `ramSeraph/indian_cadastrals`), mirrored to R2 alongside AP's. KGIS tiles carry no
+  place names, so KA highlights a village's parcels by LGD village code.
+
+### Changed
+
+- Neural native names regenerated (IndicXlit) and boundary vector tiles rebuilt on the
+  refreshed data.
+
+## [1.2.7] — 2026-07-02
+
+### Added
+
+- **All-state boundary vector tiles** — `build_boundary_tiles.py` tiles every state's
+  district/mandal polygons into one PMTiles archive (`tiles/boundaries.pmtiles`) so
+  the app can stream shapes per view instead of downloading whole GeoJSON files.
+  Off by default (`config.BOUNDARY_TILES["enabled"]`), testable live with `?bt=1`,
+  rebuilt monthly in CI.
+- **Human-verified native-name seeds** — a shared per-state registry
+  (`scraper/config.py`) plus OpenStreetMap name harvesting (`seed_osm_names.py`) and
+  manual `translit_overrides.json`; both are preferred over the neural model, so
+  committed OSM names upgrade the map/CSV with no PyTorch.
+
+### Changed
+
+- **Data refresh parallelised** — one isolated CI job per state feeding a single
+  aggregate reviewed PR, so a failure in one state doesn't block the others.
+- Overpass queries now identify the project and honour rate limits.
+
+### Fixed
+
+- Telangana's ISO code (`IN-TS`) in the OSM harvest, and untracked-file change
+  detection in the OSM-seed workflow.
+- CI hardening: workflow input binding, SHA-pinned actions, `names.json`
+  preservation, a CSV guard and fetcher tests.
+
+## [1.2.6] — 2026-07-01
+
+### Added
+
+- **Land parcels (Andhra Pradesh)** — an optional cadastral layer of individual
+  survey plots (APSAC, **CC0**), streamed from a PMTiles archive on R2: map toggle,
+  per-village parcel selection with a searchable survey-number list, a precomputed
+  village→parcel index for precise jumps, and a village coordinate derived from its
+  parcels (lifting precise-location coverage). Includes hosting docs and an
+  auto-tracking R2 mirror workflow.
+- **Whole-project API reference** — JSDoc (web app) + pdoc (pipeline) published to
+  GitHub Pages under `/docs/api/` and build-checked on PRs.
+
+### Changed
+
+- **LGD data now comes straight from the official data.gov.in open-data API** — the
+  ramSeraph LGD mirror (and its captcha-OCR hop) is removed entirely. A transient
+  data.gov.in outage skips the run cleanly (exit 75) instead of failing it.
+- Prettier + Black formatting applied project-wide; CI supply-chain hardened
+  (SHA-pinned actions, scraper extraction guards, CDN subresource integrity).
+
+## [1.2.5] — 2026-06-28
+
+### Changed
+
+- Neural native names regenerated (IndicXlit) across all four states.
+
+## [1.2.4] — 2026-06-28
+
+### Added
 
 - **Native district, sub-district and state names** — when the state's own language is
   selected, district/taluk/mandal names and the state name now render in native script
@@ -51,6 +144,11 @@ release attaches downloadable datasets — see [Releases][releases].
   local-script column for these, so each is resolved from a same-named village's native
   name where one exists, otherwise IndicXlit (`enrich_native_names.py --regions`). The
   map falls back to the rule engine for anything not yet covered.
+
+## [1.2.3] — 2026-06-28
+
+### Added
+
 - **Neural native village names (AI4Bharat IndicXlit)** — every village now carries a
   native-script name. Where LGD doesn't publish one in-script, it is supplied by a
   trained neural transliteration model instead of the rule engine, shipped as
@@ -167,7 +265,14 @@ Source` column recording which. Generated via the shared UI engine
 - Community-health files: Contributing guide, Code of Conduct, Security policy,
   and issue / pull-request templates.
 
-[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.2.2...HEAD
+[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.2.9...HEAD
+[1.2.9]: https://github.com/mchittineni/india-village-finder/compare/v1.2.8...v1.2.9
+[1.2.8]: https://github.com/mchittineni/india-village-finder/compare/v1.2.7...v1.2.8
+[1.2.7]: https://github.com/mchittineni/india-village-finder/compare/v1.2.6...v1.2.7
+[1.2.6]: https://github.com/mchittineni/india-village-finder/compare/v1.2.5...v1.2.6
+[1.2.5]: https://github.com/mchittineni/india-village-finder/compare/v1.2.4...v1.2.5
+[1.2.4]: https://github.com/mchittineni/india-village-finder/compare/v1.2.3...v1.2.4
+[1.2.3]: https://github.com/mchittineni/india-village-finder/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/mchittineni/india-village-finder/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/mchittineni/india-village-finder/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/mchittineni/india-village-finder/compare/v1.1.0...v1.2.0
