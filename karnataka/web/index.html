@@ -57,6 +57,8 @@
     ></script>
     <script src="i18n.js"></script>
     <script src="nearby.js"></script>
+    <script src="weather.js"></script>
+    <script src="mandi.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -193,6 +195,30 @@
             />
           </div>
           <ul id="pl-items" class="pl-items"></ul>
+        </aside>
+
+        <!-- Mandi (APMC market) prices for the selected village's district
+             (populated on demand from the daily Agmarknet snapshot) -->
+        <aside id="mandi-panel" class="parcel-list card hidden" aria-label="Mandi prices">
+          <div class="pl-head">
+            <div class="pl-title" id="mp-title">Mandi prices</div>
+            <button id="mp-close" class="icon-btn" title="Close" aria-label="Close">×</button>
+          </div>
+          <div id="mp-sub" class="pl-sub"></div>
+          <div class="pl-search-wrap">
+            <select id="mp-district" class="mp-district" aria-label="District"></select>
+          </div>
+          <div class="pl-search-wrap">
+            <input
+              id="mp-search"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Search commodity…"
+            />
+          </div>
+          <ul id="mp-items" class="pl-items"></ul>
+          <div id="mp-foot" class="mp-foot"></div>
         </aside>
 
         <div id="toast" class="toast hidden"></div>

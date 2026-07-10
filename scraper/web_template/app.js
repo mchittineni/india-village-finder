@@ -460,6 +460,7 @@
     wireSearch();
     wireChrome();
     wireCadastre();
+    wireMandi();
   }
 
   // ---- theming + chrome ------------------------------------------------
@@ -716,6 +717,36 @@
     map.getPane("cadastre").style.pointerEvents = "none";
     initCadastre();
     initBoundaryTiles();
+    initOverlays();
+  }
+
+  /**
+   * Optional agri overlays (groundwater prospects, soil class) from
+   * `CFG.overlays` — plain WMS raster layers in a Leaflet layers control.
+   * Raster img tiles need no CORS, keys or tokens; entries are defined once in
+   * scraper/config.py (MAP_OVERLAYS). Overlays default to OFF.
+   * @returns {void}
+   */
+  function initOverlays() {
+    var defs = CFG.overlays || [];
+    if (!defs.length) return;
+    // Between the region choropleth (410) and the cadastre (420): overlays
+    // should paint over the district fills but never hide land parcels.
+    map.createPane("overlays");
+    map.getPane("overlays").style.zIndex = 415;
+    var entries = {};
+    defs.forEach(function (o) {
+      var params = {};
+      Object.keys(o.wms || {}).forEach(function (k) {
+        params[k] = o.wms[k];
+      });
+      params.pane = "overlays";
+      params.opacity = o.opacity != null ? o.opacity : 0.6;
+      if (o.maxZoom) params.maxZoom = o.maxZoom;
+      if (o.attribution) params.attribution = o.attribution;
+      entries[esc(t(o.labelKey || o.id))] = L.tileLayer.wms(o.url, params);
+    });
+    L.control.layers(null, entries, { position: "topright", collapsed: true }).addTo(map);
   }
 
   /**
@@ -960,13 +991,43 @@
       '<div class="vpop-note">' +
       esc(t("cad_snapshot_note")) +
       "</div>";
+    // Sub-survey numbers / FMB ladder live only on the state land-records
+    // portal, and none of them accepts URL prefill (NIC form wizards, some
+    // captcha-gated) — so the button opens the portal and copies the parcel
+    // identifiers for the user to re-enter there.
+    var fmb = CFG.cadastre && CFG.cadastre.fmb;
+    if (fmb && fmb.url && survey) {
+      var fmbBtn = el("button", "vpop-nb-btn vpop-fmb-btn", "🔍 " + esc(t("fmb_btn")));
+      wrap.appendChild(fmbBtn);
+      fmbBtn.addEventListener("click", function () {
+        var details = [
+          t("survey_no") + " " + survey,
+          place, // village · mandal · district where the tiles carry them
+          coordStr
+        ]
+          .filter(Boolean)
+          .join("\n");
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(details).then(
+            function () {
+              toast(t("fmb_copied", { portal: fmb.name || "" }));
+            },
+            function () {}
+          );
+        }
+        window.open(fmb.url, "_blank", "noopener");
+      });
+    }
     var copyBtn = coordStr && wrap.querySelector(".vpop-copy");
     if (copyBtn) {
       copyBtn.addEventListener("click", function () {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(coordStr).then(function () {
-            toast(t("coords_copied"));
-          }, function () {});
+          navigator.clipboard.writeText(coordStr).then(
+            function () {
+              toast(t("coords_copied"));
+            },
+            function () {}
+          );
         }
       });
     }
@@ -1067,6 +1128,7 @@
     var input = $("#pl-search");
     if (input) input.value = "";
     renderParcelList("");
+    closeMandi(); // the two panels share the same corner — one at a time
     $("#parcel-list").classList.remove("hidden");
   }
 
@@ -2156,6 +2218,22 @@
       wrap.appendChild(nbBox);
     }
 
+    // Agromet weather — current conditions + 7-day forecast, fetched on demand.
+    var wxBtn, wxBox;
+    if (window.VF_WEATHER) {
+      wxBtn = el("button", "vpop-nb-btn", esc(t("wx_btn")));
+      wxBox = el("div", "vpop-wx");
+      wrap.appendChild(wxBtn);
+      wrap.appendChild(wxBox);
+    }
+
+    // Mandi prices — the district's daily Agmarknet quotes, in a side panel.
+    var mpBtn;
+    if (window.VF_MANDI && CFG.mandi && CFG.mandi.url) {
+      mpBtn = el("button", "vpop-nb-btn", esc(t("mandi_btn")));
+      wrap.appendChild(mpBtn);
+    }
+
     marker.bindPopup(wrap, { className: "village-popup", maxWidth: 280 }).openPopup();
     if (parcelBtn) {
       parcelBtn.onclick = function () {
@@ -2165,6 +2243,16 @@
     if (nbBtn) {
       nbBtn.onclick = function () {
         loadNearby(nbBtn, nbBox, center.lat, center.lng);
+      };
+    }
+    if (wxBtn) {
+      wxBtn.onclick = function () {
+        loadWeather(wxBtn, wxBox, center.lat, center.lng);
+      };
+    }
+    if (mpBtn) {
+      mpBtn.onclick = function () {
+        openMandi(d ? d.n : "");
       };
     }
     if (!map.getBounds().contains(center)) map.panTo(center, { animate: true });
@@ -2265,6 +2353,266 @@
     src.rel = "noopener";
     src.textContent = t("nb_src");
     box.appendChild(src);
+  }
+
+  // ---- agromet weather (Open-Meteo, on demand) ---------------------------
+  /**
+   * Fetch the agromet forecast for a point and render it into the popup box,
+   * with a tap-to-retry affordance on failure (mirrors loadNearby).
+   * @param {HTMLButtonElement} btn  The trigger button.
+   * @param {HTMLElement} box  Container for the results/status.
+   * @param {number} lat  Latitude.
+   * @param {number} lng  Longitude.
+   * @returns {void}
+   */
+  function loadWeather(btn, box, lat, lng) {
+    btn.disabled = true;
+    btn.classList.add("loading");
+    box.innerHTML = "";
+    box.appendChild(el("div", "nb-status", esc(t("wx_loading"))));
+    window.VF_WEATHER.fetch(lat, lng)
+      .then(function (wx) {
+        renderWeather(btn, box, wx);
+      })
+      .catch(function () {
+        btn.classList.add("hidden");
+        box.innerHTML = "";
+        var retry = el("button", "nb-status nb-retry", esc(t("wx_err")));
+        retry.onclick = function () {
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("loading");
+          loadWeather(btn, box, lat, lng);
+        };
+        box.appendChild(retry);
+      });
+  }
+
+  /**
+   * Render current conditions + the 7-day forecast into the popup box.
+   * @param {HTMLButtonElement} btn  The trigger button (hidden once results show).
+   * @param {HTMLElement} box  Container for the results.
+   * @param {{current: WeatherNow, days: WeatherDay[]}} wx  Forecast data.
+   * @returns {void}
+   */
+  function renderWeather(btn, box, wx) {
+    btn.classList.add("hidden"); // the trigger is replaced by its results
+    box.innerHTML = "";
+    var cur = wx.current || {};
+    var desc = window.VF_WEATHER.describe(cur.code || 0);
+    var now = el("div", "wx-now");
+    now.innerHTML =
+      '<span class="wx-day-icon">' +
+      desc.icon +
+      "</span>" +
+      '<span class="wx-now-temp">' +
+      Math.round(cur.tempC) +
+      "°C</span>" +
+      '<span class="wx-now-desc">' +
+      esc(t(desc.key)) +
+      "<br>" +
+      esc(t("wx_humidity", { n: cur.humidityPct })) +
+      " · " +
+      esc(t("wx_wind", { n: Math.round(cur.windKmh) })) +
+      "</span>";
+    box.appendChild(now);
+    var days = el("div", "wx-days");
+    var dayFmt = null;
+    try {
+      dayFmt = new Intl.DateTimeFormat(LANG, { weekday: "short" });
+    } catch (e) {
+      /* fall back to the ISO date below */
+    }
+    (wx.days || []).forEach(function (dy) {
+      var dd = window.VF_WEATHER.describe(dy.code || 0);
+      var name = dayFmt ? dayFmt.format(new Date(dy.date + "T12:00:00")) : dy.date.slice(5);
+      var rain =
+        dy.rainMm >= 0.1 || dy.rainProbPct >= 20
+          ? esc(t("wx_mm", { n: Math.round(dy.rainMm * 10) / 10 })) +
+            " · " +
+            (dy.rainProbPct || 0) +
+            "%"
+          : "—";
+      var row = el("div", "wx-day");
+      row.innerHTML =
+        '<span class="wx-day-name">' +
+        esc(name) +
+        "</span>" +
+        '<span class="wx-day-icon" title="' +
+        esc(t(dd.key)) +
+        '">' +
+        dd.icon +
+        "</span>" +
+        '<span class="wx-day-temp">' +
+        Math.round(dy.minC) +
+        "–" +
+        Math.round(dy.maxC) +
+        "°C</span>" +
+        '<span class="wx-day-rain">' +
+        rain +
+        "</span>";
+      days.appendChild(row);
+    });
+    box.appendChild(days);
+    var src = document.createElement("a");
+    src.className = "wx-src";
+    src.href = "https://open-meteo.com/";
+    src.target = "_blank";
+    src.rel = "noopener";
+    src.textContent = t("wx_src");
+    box.appendChild(src);
+  }
+
+  // ---- mandi prices (Agmarknet daily snapshot, side panel) ---------------
+  var mandiData = null; // parsed state snapshot (VF_MANDI caches the fetch)
+
+  /**
+   * Open the mandi-prices panel, preselecting the Agmarknet district that best
+   * matches the selected village's LGD district.
+   * @param {string} lgdDistrict  LGD district name (English), "" for none.
+   * @returns {void}
+   */
+  function openMandi(lgdDistrict) {
+    var panel = $("#mandi-panel");
+    if (!panel) return;
+    hideParcelList(); // the two share the same corner — one at a time
+    panel.classList.remove("hidden");
+    $("#mp-title").textContent = t("mandi_title");
+    $("#mp-search").placeholder = t("mandi_search_ph");
+    $("#mp-search").value = "";
+    $("#mp-sub").textContent = t("mandi_loading");
+    $("#mp-items").innerHTML = "";
+    $("#mp-foot").textContent = "";
+    window.VF_MANDI.load(CFG.mandi.url)
+      .then(function (data) {
+        mandiData = data;
+        fillMandiDistricts(data);
+        var match = window.VF_MANDI.matchDistrict(data, lgdDistrict);
+        $("#mp-district").value = match;
+        renderMandi(match, lgdDistrict);
+      })
+      .catch(function () {
+        $("#mp-sub").textContent = "";
+        var retry = el("li", "pl-empty nb-retry", esc(t("mandi_err")));
+        retry.onclick = function () {
+          openMandi(lgdDistrict);
+        };
+        $("#mp-items").appendChild(retry);
+      });
+  }
+
+  /**
+   * Populate the panel's district selector from the snapshot ("" = whole state).
+   * @param {MandiData} data  Parsed snapshot.
+   * @returns {void}
+   */
+  function fillMandiDistricts(data) {
+    var sel = $("#mp-district");
+    sel.innerHTML = "";
+    var all = document.createElement("option");
+    all.value = "";
+    all.textContent = t("all_districts");
+    sel.appendChild(all);
+    window.VF_MANDI.districts(data).forEach(function (d) {
+      var o = document.createElement("option");
+      o.value = d.name;
+      o.textContent = d.name + " (" + d.rows.length + ")";
+      sel.appendChild(o);
+    });
+  }
+
+  /**
+   * Render the (filtered) quotes for a district, grouped by market.
+   * @param {string} district  Agmarknet district name, "" for the whole state.
+   * @param {string} lgdDistrict  The village's LGD district (for the empty note).
+   * @returns {void}
+   */
+  function renderMandi(district, lgdDistrict) {
+    if (!mandiData) return;
+    var items = $("#mp-items");
+    items.innerHTML = "";
+    var q = $("#mp-search").value.trim().toLowerCase();
+    var rows = district ? mandiData.byDistrict[district] || [] : mandiData.rows;
+    if (q) {
+      rows = rows.filter(function (r) {
+        return (r.commodity + " " + r.variety + " " + r.market).toLowerCase().indexOf(q) !== -1;
+      });
+    }
+    $("#mp-sub").textContent = district
+      ? t("mandi_sub", { district: district })
+      : t("all_districts") + " · " + fmt(rows.length);
+    if (!rows.length) {
+      var msg = q
+        ? t("mandi_empty")
+        : t("mandi_none_district", { district: lgdDistrict || district || CFG.state });
+      items.appendChild(el("li", "pl-empty", esc(msg)));
+    } else {
+      var byMarket = {};
+      rows.forEach(function (r) {
+        (byMarket[r.market] = byMarket[r.market] || []).push(r);
+      });
+      Object.keys(byMarket)
+        .sort()
+        .forEach(function (mk) {
+          var head = district ? mk : mk + " · " + byMarket[mk][0].district;
+          items.appendChild(el("li", "mp-market", esc(head)));
+          byMarket[mk]
+            .sort(function (a, b) {
+              return a.commodity.localeCompare(b.commodity);
+            })
+            .forEach(function (r) {
+              var li = el("li", "mp-item");
+              li.title = r.commodity + " · " + r.grade + " · " + r.date;
+              li.innerHTML =
+                '<span class="mp-comm">' +
+                esc(r.commodity) +
+                ' <span class="mp-var">' +
+                esc(r.variety) +
+                "</span></span>" +
+                '<span class="mp-price">₹' +
+                fmt(r.modal) +
+                ' <span class="mp-range">' +
+                fmt(r.min) +
+                "–" +
+                fmt(r.max) +
+                "</span></span>";
+              items.appendChild(li);
+            });
+        });
+    }
+    $("#mp-foot").textContent = t("mandi_updated", {
+      date: (mandiData.updated || "").slice(0, 10)
+    });
+  }
+
+  /**
+   * Wire the mandi panel chrome (close, district switch, commodity search).
+   * No-op when the state has no mandi feed configured.
+   * @returns {void}
+   */
+  function wireMandi() {
+    if (!(window.VF_MANDI && CFG.mandi && CFG.mandi.url && $("#mandi-panel"))) return;
+    $("#mp-close").onclick = closeMandi;
+    $("#mp-district").addEventListener("change", function () {
+      renderMandi(this.value, "");
+    });
+    var inp = $("#mp-search");
+    var t2;
+    inp.addEventListener("input", function () {
+      clearTimeout(t2);
+      t2 = setTimeout(function () {
+        renderMandi($("#mp-district").value, "");
+      }, 120);
+    });
+  }
+
+  /**
+   * Hide the mandi-prices panel.
+   * @returns {void}
+   */
+  function closeMandi() {
+    var panel = $("#mandi-panel");
+    if (panel) panel.classList.add("hidden");
   }
 
   // ---- search ----------------------------------------------------------

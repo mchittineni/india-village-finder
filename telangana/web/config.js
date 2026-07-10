@@ -24,8 +24,45 @@ window.VF_CONFIG = {
         "OBJECTID_1"
       ]
     },
-    "attribution": "Cadastre &copy; TRACGIS (Telangana Bhunaksha, CC0) via <a href=\"https://github.com/ramSeraph/indian_cadastrals\" target=\"_blank\" rel=\"noopener\">datameet/ramSeraph</a>"
+    "attribution": "Cadastre &copy; TRACGIS (Telangana Bhunaksha, CC0) via <a href=\"https://github.com/ramSeraph/indian_cadastrals\" target=\"_blank\" rel=\"noopener\">datameet/ramSeraph</a>",
+    "fmb": {
+      "name": "Bhu Bharati",
+      "url": "https://bhubharati.telangana.gov.in/gis/"
+    }
   },
+  "mandi": {
+    "url": "https://raw.githubusercontent.com/mchittineni/india-village-finder/refs/heads/data/mandi-prices/telangana.json"
+  },
+  "overlays": [
+    {
+      "id": "gw",
+      "labelKey": "ov_gw",
+      "url": "https://bhuvan-vec1.nrsc.gov.in/bhuvan/wms",
+      "wms": {
+        "layers": "gw:AP_LGEOM,gw:TS_LGEOM,gw:KA_LGEOM,gw:TN_LGEOM",
+        "format": "image/png",
+        "transparent": true,
+        "version": "1.1.1"
+      },
+      "opacity": 0.6,
+      "maxZoom": 15,
+      "attribution": "Groundwater prospects: <a href=\"https://bhuvan.nrsc.gov.in\" target=\"_blank\" rel=\"noopener\">Bhuvan, NRSC/ISRO</a>"
+    },
+    {
+      "id": "soil",
+      "labelKey": "ov_soil",
+      "url": "https://maps.isric.org/mapserv?map=/map/wrb.map",
+      "wms": {
+        "layers": "MostProbable",
+        "format": "image/png",
+        "transparent": true,
+        "version": "1.3.0"
+      },
+      "opacity": 0.65,
+      "maxZoom": 14,
+      "attribution": "Soil: <a href=\"https://soilgrids.org\" target=\"_blank\" rel=\"noopener\">ISRIC SoilGrids</a> (CC BY 4.0)"
+    }
+  ],
   "boundaryTiles": null,
   "siblings": [
     {
@@ -47,7 +84,7 @@ window.VF_CONFIG = {
   "source": {
     "name": "Local Government Directory (LGD)",
     "url": "https://lgdirectory.gov.in",
-    "mirror": "https://github.com/ramSeraph/opendata"
+    "mirror": "https://data.gov.in/ (Open Government Data platform)"
   },
   "sourceDate": "25Jun2026",
   "generatedAt": "2026-06-26T15:10:24Z",
