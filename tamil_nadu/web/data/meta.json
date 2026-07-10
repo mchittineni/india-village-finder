@@ -1,24 +1,37 @@
 {
   "state": "Tamil Nadu",
   "state_code": 33,
-  "generated_at": "2026-06-26T15:10:28Z",
+  "generated_at": "2026-07-10T09:40:14Z",
   "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
-  "source_mirror": "github.com/ramSeraph/opendata (LGD daily dump)",
-  "source_date": "25Jun2026",
+  "source_mirror": "data.gov.in (Open Government Data platform, LGD API)",
+  "source_date": "10Jul2026",
   "counts": {
     "districts": 38,
     "mandals": 317,
-    "villages": 18681,
-    "with_pincode": 18652,
-    "with_local_names": 1516,
-    "with_coords": 2383
+    "villages": 15489,
+    "with_pincode": 15489,
+    "with_local_names": 2405,
+    "with_coords": 1983
   },
   "native_lang": "ta",
   "dropped_villages_without_mandal": 0,
   "verification": {
-    "ran": false,
-    "ok": null,
-    "checks": [],
-    "error": "skipped"
+    "ran": true,
+    "ok": true,
+    "checks": [
+      {
+        "check": "district count",
+        "live": 38,
+        "dump": 38,
+        "pass": true
+      },
+      {
+        "check": "mandals in Ariyalur",
+        "live": 4,
+        "dump": 4,
+        "pass": true
+      }
+    ],
+    "error": null
   }
 }
