@@ -1,0 +1,43 @@
+name: data.gov.in fetch with outage skip
+description: >
+  Run a data.gov.in-backed command with the shared skip contract: exit code 75
+  (EX_TEMPFAIL — upstream unreachable after retries) becomes a clean skip
+  instead of a red run, any other non-zero exit still fails the job. Callers
+  gate their publish/upload steps on the `skipped` output.
+
+inputs:
+  command:
+    description: command to run (a workflow-authored literal, not user input)
+    required: true
+  skip-summary:
+    description: line added to the step summary (and warning) on a skip
+    required: true
+
+outputs:
+  skipped:
+    description: '"true" when the upstream was unreachable and the run skipped'
+    value: ${{ steps.run.outputs.skipped }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run fetch
+      id: run
+      shell: bash
+      env:
+        CMD: ${{ inputs.command }}
+        SKIP_MSG: ${{ inputs.skip-summary }}
+      run: |
+        set +e
+        bash -c "$CMD"
+        code=$?
+        set -e
+        if [ "$code" = "75" ]; then
+          echo "skipped=true" >> "$GITHUB_OUTPUT"
+          echo "::warning::$SKIP_MSG"
+          echo "$SKIP_MSG" >> "$GITHUB_STEP_SUMMARY"
+        elif [ "$code" != "0" ]; then
+          exit "$code"
+        else
+          echo "skipped=false" >> "$GITHUB_OUTPUT"
+        fi

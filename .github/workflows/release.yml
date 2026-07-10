@@ -45,10 +45,8 @@ jobs:
         with:
           fetch-depth: 0 # need tags + history to compute the next version
 
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: "3.12"
+      - name: Setup environment
+        uses: ./.github/actions/setup-pipeline
 
       - name: Compute next version
         id: ver

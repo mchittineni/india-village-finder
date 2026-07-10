@@ -1,0 +1,65 @@
+name: Open data PR if outputs changed
+description: >
+  The shared tail of every "rebuild an artifact" workflow: if the given output
+  paths changed, commit them to a fresh branch and open a pull request —
+  nothing is ever pushed to main. Uses `git status --porcelain` (not
+  `git diff`) so brand-new UNTRACKED outputs on a first run are detected too;
+  `git diff` is silent for untracked files and once threw away an initial
+  30k-name harvest.
+
+inputs:
+  files:
+    description: space-separated paths/globs to commit (shell-expanded)
+    required: true
+  branch:
+    description: branch name to create
+    required: true
+  commit-message:
+    description: commit message
+    required: true
+  title:
+    description: pull-request title
+    required: true
+  body:
+    description: pull-request body
+    required: true
+  token:
+    description: token used to push and open the PR
+    required: true
+
+outputs:
+  created:
+    description: '"true" when a PR was opened, "false" when nothing changed'
+    value: ${{ steps.pr.outputs.created }}
+
+runs:
+  using: composite
+  steps:
+    # Inputs are bound to env, never interpolated into the script (injection).
+    - name: Commit outputs and open PR
+      id: pr
+      shell: bash
+      env:
+        FILES: ${{ inputs.files }}
+        BRANCH: ${{ inputs.branch }}
+        COMMIT_MSG: ${{ inputs.commit-message }}
+        PR_TITLE: ${{ inputs.title }}
+        PR_BODY: ${{ inputs.body }}
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        if [ -z "$(git status --porcelain -- $FILES)" ]; then
+          echo "No change in $FILES"
+          echo "created=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git checkout -b "$BRANCH"
+        git add -- $FILES
+        git commit -m "$COMMIT_MSG"
+        git push -u origin "$BRANCH"
+        # No --fill: it computes title/body defaults from origin/main...HEAD,
+        # which doesn't exist in a shallow single-ref checkout (and we always
+        # pass an explicit title + body anyway).
+        gh pr create --title "$PR_TITLE" --body "$PR_BODY"
+        echo "created=true" >> "$GITHUB_OUTPUT"
