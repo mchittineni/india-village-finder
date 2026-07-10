@@ -58,5 +58,8 @@ runs:
         git add -- $FILES
         git commit -m "$COMMIT_MSG"
         git push -u origin "$BRANCH"
-        gh pr create --fill --title "$PR_TITLE" --body "$PR_BODY"
+        # No --fill: it computes title/body defaults from origin/main...HEAD,
+        # which doesn't exist in a shallow single-ref checkout (and we always
+        # pass an explicit title + body anyway).
+        gh pr create --title "$PR_TITLE" --body "$PR_BODY"
         echo "created=true" >> "$GITHUB_OUTPUT"
