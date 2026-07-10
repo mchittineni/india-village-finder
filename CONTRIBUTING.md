@@ -32,11 +32,15 @@ python3 -m venv .venv
   `python scraper/pipeline.py --offline --no-verify` to regenerate them.
 - The data pipeline is in **`scraper/`** — see [`scraper/README.md`](scraper/README.md).
 - CI follows an **actions/ + workflows/ split**: steps shared by several workflows
-  (toolchain setup, "commit outputs → open a PR", the data.gov.in outage-skip
-  contract) live as local composite actions in **`.github/actions/`**; each workflow
-  in `.github/workflows/` keeps only its unique logic. Conventions: third-party
-  actions are SHA-pinned, and inputs are bound to `env:` rather than interpolated
-  into `run:` scripts (injection).
+  (toolchain setup, the data.gov.in outage-skip contract, publishing to and
+  overlaying from `data/*` branches) live as local composite actions in
+  **`.github/actions/`**; each workflow in `.github/workflows/` keeps only its
+  unique logic. Conventions: third-party actions are SHA-pinned, and inputs are
+  bound to `env:` rather than interpolated into `run:` scripts (injection).
+- **Where outputs land:** the LGD village data and neural native names go through
+  reviewed PRs to `main`; regenerable artifacts (boundary tiles, parcel indexes,
+  OSM name seeds, mandi prices) are published to dedicated `data/*` branches and
+  overlaid at deploy/build time — see the README's review-flow section.
 - Preview locally: `python3 -m http.server 8777` from the repo root, then open
   `http://localhost:8777/`.
 

@@ -164,14 +164,14 @@ pipeline keeps them current. Karnataka's and Tamil Nadu's sub-districts are
         ├── update-data.yml      #   daily data + monthly boundaries refresh → reviewed PR
         ├── update-mandi-prices.yml # daily Agmarknet snapshots → data/mandi-prices branch
         ├── regenerate-native-names.yml # weekly/on-demand neural names → reviewed PR
-        ├── seed-osm-names.yml   #   monthly OSM native-name harvest → reviewed PR
-        ├── build-parcels-index.yml #  rebuilds the village→parcel indexes → reviewed PR
-        ├── build-boundary-tiles.yml # monthly boundary vector tiles → reviewed PR
+        ├── seed-osm-names.yml   #   monthly OSM native-name harvest → data/osm-names branch
+        ├── build-parcels-index.yml #  rebuilds the village→parcel indexes → data/parcels-index branch
+        ├── build-boundary-tiles.yml # monthly boundary vector tiles → data/boundary-tiles branch
         ├── mirror-cadastrals.yml #   mirrors the cadastral tiles to a CORS host (R2)
         ├── ci.yml               #   runs the data-validity tests on every PR
         ├── release.yml          #   publishes a versioned Release with downloadable data
         ├── docs.yml             #   build-checks the API reference on PRs
-        └── deploy-pages.yml     #   publishes the site + API docs to GitHub Pages
+        └── deploy-pages.yml     #   publishes the site (main + data/* overlays) + API docs
 ```
 
 The `scraper/` is shared on purpose: the logic is identical for every state and only
@@ -257,11 +257,21 @@ Data is **never pushed straight to `main`.** Instead:
 
 So the commit history doubles as an auditable, reviewed changelog of the data.
 
-> **The one deliberate exception:** daily **mandi prices** never touch `main`.
-> `update-mandi-prices.yml` force-pushes each day's snapshot as a single commit to the
-> dedicated `data/mandi-prices` branch, which the app reads at runtime — market prices
-> churn 100% every day, so routing them through reviewed PRs would only create noise,
-> and the branch never influences the released datasets.
+> **The deliberate exception — regenerable artifacts live on `data/*` branches,
+> not in `main`:** machine-regenerated outputs whose "review" would only ever be
+> rubber-stamping are published straight to dedicated data branches by their
+> workflows, and overlaid back in where they're consumed:
+>
+> | Branch                | Content                                               | Consumed by                                 |
+> | --------------------- | ----------------------------------------------------- | ------------------------------------------- |
+> | `data/mandi-prices`   | daily Agmarknet price snapshots                       | the app, at runtime (raw.githubusercontent) |
+> | `data/boundary-tiles` | `tiles/boundaries.pmtiles` + `boundary_bounds.json`   | Pages deploys + release zips (overlay)      |
+> | `data/parcels-index`  | per-state `parcels_index.json`, `village_points.json` | Pages deploys + release zips (overlay)      |
+> | `data/osm-names`      | `scraper/osm_names.json` (OSM name seeds)             | pipeline runs, at build time (overlay)      |
+>
+> The **LGD village data itself** (and the neural native names, which the daily
+> pipeline prunes and the tests validate against it) stays on the reviewed-PR
+> path above — that's the dataset of record that feeds releases.
 
 ### Tests
 

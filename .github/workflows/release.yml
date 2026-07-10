@@ -81,6 +81,13 @@ jobs:
           echo "version=v$MAJ.$MIN.$PAT" >> "$GITHUB_OUTPUT"
           echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
 
+      # Boundary bounds + parcel indexes live on data/* branches — overlay them
+      # so the release zips stay complete per-state datasets.
+      - name: Overlay data branches
+        uses: ./.github/actions/overlay-data-branches
+        with:
+          branches: data/boundary-tiles data/parcels-index
+
       - name: Package data artifacts
         run: |
           set -euo pipefail

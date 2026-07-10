@@ -1,0 +1,30 @@
+name: Overlay data branches
+description: >
+  Fetch the given data/* branches and copy their trees over the working tree —
+  how site deploys, releases and pipeline runs consume the regenerable
+  artifacts that live outside main (published by publish-data-branch).
+  Branches that don't exist yet are skipped, so first runs and forks work.
+
+inputs:
+  branches:
+    description: space-separated data branch names to overlay
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Overlay
+      shell: bash
+      env:
+        BRANCHES: ${{ inputs.branches }}
+      run: |
+        set -euo pipefail
+        for b in $BRANCHES; do
+          if git fetch -q --depth 1 origin "$b" 2>/dev/null; then
+            git checkout -q FETCH_HEAD -- .
+            git reset -q -- . # keep the overlay unstaged; consumers just read files
+            echo "overlaid $b"
+          else
+            echo "no $b branch yet — skipped"
+          fi
+        done

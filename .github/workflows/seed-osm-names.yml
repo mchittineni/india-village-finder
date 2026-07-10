@@ -1,10 +1,11 @@
 name: seed-osm-names
 
 # Harvests human-verified native place names (name:te / name:kn / name:ta) from
-# OpenStreetMap via Overpass and commits them to scraper/osm_names.json, which the
-# pipeline prefers over the neural transliterator. Overpass is public + rate-limited,
-# so this runs on demand / monthly here rather than on a laptop. Opens a PR; the
-# next data refresh applies the names to each state's names.json + CSV.
+# OpenStreetMap via Overpass and publishes scraper/osm_names.json to the
+# data/osm-names branch, which pipeline runs overlay at build time (the pipeline
+# prefers these over the neural transliterator). Overpass is public +
+# rate-limited, so this runs on demand / monthly here rather than on a laptop.
+# The next data refresh applies the names to each state's names.json + CSV.
 
 on:
   schedule:
@@ -16,8 +17,7 @@ on:
         default: all
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: write # push the data/osm-names branch
 
 concurrency:
   group: seed-osm-names
@@ -41,12 +41,11 @@ jobs:
       - name: Harvest native names from OpenStreetMap
         run: python scraper/seed_osm_names.py --state "$OSM_STATE"
 
-      - name: Open PR if osm_names.json changed
-        uses: ./.github/actions/open-data-pr
+      - name: Publish to the data/osm-names branch
+        uses: ./.github/actions/publish-data-branch
         with:
+          branch: data/osm-names
           files: scraper/osm_names.json
-          branch: chore/osm-names-${{ github.run_id }}
-          commit-message: "chore(data): refresh OSM-sourced native place names"
-          title: "chore(data): refresh OSM native place names"
-          body: "Human-verified native names harvested from OpenStreetMap (`name:te`/`name:kn`/`name:ta`) by the seed-osm-names workflow. The next data refresh applies them to each state's `names.json` and CSV, preferred over the neural transliterator. Data © OpenStreetMap contributors (ODbL)."
+          message: "data: OSM-sourced native place names"
+          summary: "🌐 Published OSM native names to data/osm-names."
           token: ${{ github.token }}

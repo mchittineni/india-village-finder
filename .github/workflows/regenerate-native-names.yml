@@ -45,6 +45,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
+      # OSM name seeds live on the data/osm-names branch; the generator prefers
+      # them over the model, so overlay them before regenerating.
+      - name: Overlay OSM name seeds
+        uses: ./.github/actions/overlay-data-branches
+        with:
+          branches: data/osm-names
+
       - name: Setup environment
         uses: ./.github/actions/setup-pipeline
         with:

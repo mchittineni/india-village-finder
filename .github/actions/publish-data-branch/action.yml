@@ -1,0 +1,65 @@
+name: Publish outputs to a data branch
+description: >
+  Commit the given repo-relative paths to a long-lived data/* branch — the
+  landing zone for regenerable artifacts that the site/pipeline consume but
+  that don't belong in main's reviewed history (see the README's review-flow
+  section). Non-destructive: existing branch content is kept and updated, so
+  per-state runs can share one branch; the branch is created on first publish.
+
+inputs:
+  branch:
+    description: data branch to publish to (e.g. data/boundary-tiles)
+    required: true
+  files:
+    description: space-separated repo-relative paths/globs (shell-expanded)
+    required: true
+  message:
+    description: commit message (a UTC timestamp is appended)
+    required: true
+  summary:
+    description: optional step-summary line on publish
+    default: ""
+  token:
+    description: token used to clone/push the data branch
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Inputs are bound to env, never interpolated into the script (injection).
+    - name: Publish
+      shell: bash
+      env:
+        BRANCH: ${{ inputs.branch }}
+        FILES: ${{ inputs.files }}
+        MSG: ${{ inputs.message }}
+        SUMMARY: ${{ inputs.summary }}
+        TOKEN: ${{ inputs.token }}
+      run: |
+        set -euo pipefail
+        src="$PWD"
+        work="$(mktemp -d)"
+        auth="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        # reuse the branch if it exists (keeps other files, e.g. other states'
+        # indexes on a shared branch); first publish creates it
+        git clone -q --depth 1 --branch "$BRANCH" "$auth" "$work" 2>/dev/null \
+          || git -C "$work" init -q -b "$BRANCH"
+        for f in $FILES; do
+          if [ ! -e "$src/$f" ]; then
+            echo "::warning::$f not found in the workspace — skipped"
+            continue
+          fi
+          mkdir -p "$work/$(dirname "$f")"
+          cp -r "$src/$f" "$work/$(dirname "$f")/"
+        done
+        cd "$work"
+        git add -A
+        if git rev-parse -q --verify HEAD >/dev/null && git diff --cached --quiet; then
+          echo "No changes for $BRANCH."
+          exit 0
+        fi
+        git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "$MSG ($(date -u +%Y-%m-%dT%H:%MZ))"
+        git push -q "$auth" "$BRANCH"
+        if [ -n "$SUMMARY" ]; then echo "$SUMMARY" >> "$GITHUB_STEP_SUMMARY"; fi

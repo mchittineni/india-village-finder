@@ -42,6 +42,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
+      # scraper/osm_names.json lives on the data/osm-names branch (published by
+      # seed-osm-names.yml), not in main — overlay it so the pipeline prefers
+      # the human-verified names. Skipped gracefully while the branch is absent.
+      - name: Overlay OSM name seeds
+        uses: ./.github/actions/overlay-data-branches
+        with:
+          branches: data/osm-names
+
       - name: Setup environment
         uses: ./.github/actions/setup-pipeline
         with:

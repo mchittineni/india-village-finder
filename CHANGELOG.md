@@ -36,11 +36,20 @@ release attaches downloadable datasets — see [Releases][releases].
 ### Changed
 
 - **CI refactored to an actions/ + workflows/ split** — the steps every workflow
-  repeated (Python/Node setup + dependency install, the "commit outputs to a branch
-  and open a reviewed PR" tail, and the data.gov.in exit-75 outage-skip contract) now
-  live as local composite actions under `.github/actions/`
-  (`setup-pipeline`, `open-data-pr`, `datagov-fetch`); each workflow keeps only its
+  repeated (Python/Node setup + dependency install, the data.gov.in exit-75
+  outage-skip contract, data-branch publish/overlay) now live as local composite
+  actions under `.github/actions/` (`setup-pipeline`, `datagov-fetch`,
+  `publish-data-branch`, `overlay-data-branches`); each workflow keeps only its
   unique logic (~95 lines of duplication removed across 10 workflows).
+- **Regenerable artifacts moved off main to `data/*` branches** — boundary vector
+  tiles (`data/boundary-tiles`), parcel indexes + village points
+  (`data/parcels-index`) and OSM name seeds (`data/osm-names`) are now published
+  by their workflows like the mandi snapshots, instead of through reviewed PRs
+  that only ever rubber-stamped machine output. Pages deploys and release zips
+  overlay the branches back in; pipeline runs overlay the OSM seeds at build
+  time; the app already tolerates the files' absence locally. The LGD village
+  data and neural native names keep the reviewed-PR path (dataset of record;
+  the daily pipeline prunes and tests validate the neural names against it).
 - Documentation brought current across the board: refreshed stats, the data.gov.in-era
   data-source tables, AP/TG/KA cadastre coverage, the new workflows, and a
   "live third-party layers" licensing section in `DATA_LICENSE.md`.

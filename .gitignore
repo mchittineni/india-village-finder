@@ -17,3 +17,11 @@ docs/api/
 # OS
 .DS_Store
 **/.DS_Store
+
+# regenerable artifacts published to data/* branches by CI (overlaid into the
+# site/releases at deploy time) — see the README's review-flow section
+tiles/boundaries.pmtiles
+*/web/data/boundary_bounds.json
+*/web/data/parcels_index.json
+*/web/data/village_points.json
+scraper/osm_names.json
