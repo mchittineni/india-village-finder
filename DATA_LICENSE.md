@@ -1,7 +1,8 @@
 # Data Licence — Government Open Data License – India (GODL-India)
 
 All **data files** in this repository — the CSV, JSON and GeoJSON under
-`andhra_pradesh/`, `telangana/`, `karnataka/`, and any data published in GitHub
+`andhra_pradesh/`, `telangana/`, `karnataka/`, `tamil_nadu/`, the daily mandi-price
+snapshots on the `data/mandi-prices` branch, and any data published in GitHub
 Releases — are derived from Government of India open data and are made available
 under the **Government Open Data License – India (GODL-India)**.
 
@@ -19,13 +20,30 @@ If you reuse, adapt, or redistribute the data, you must include an attribution
 substantially as follows:
 
 > Contains administrative data from the **Local Government Directory (LGD)**,
-> Ministry of Panchayati Raj, Government of India, used under the Government Open
-> Data License – India (GODL-India), accessed via the **data.gov.in** open-data API.
-> Boundary polygons derived from the `ramSeraph/indian_admin_boundaries` compilation
-> of LGD/Survey of India data. Andhra Pradesh land parcels (cadastre) from the AP State
-> Applications Centre (APSAC), **CC0**, via `ramSeraph/indian_cadastrals`.
+> Ministry of Panchayati Raj, Government of India, and mandi price data from
+> **Agmarknet**, Ministry of Agriculture & Farmers Welfare, used under the Government
+> Open Data License – India (GODL-India), accessed via the **data.gov.in** open-data
+> API. Boundary polygons derived from the `ramSeraph/indian_admin_boundaries`
+> compilation of LGD/Survey of India data. Land parcels (cadastre) from the state GIS
+> agencies — APSAC (Andhra Pradesh), TRACGIS (Telangana) and KGIS (Karnataka) —
+> **CC0**, via `ramSeraph/indian_cadastrals`.
 
 You must also indicate if you modified the data.
+
+---
+
+## Live third-party layers (not redistributed here)
+
+Some map content is fetched by the browser **directly from its source at runtime**
+and is neither stored in this repository nor included in Releases; each source's own
+licence applies:
+
+- **Weather** — [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).
+- **Groundwater prospects overlay** — [Bhuvan](https://bhuvan.nrsc.gov.in), NRSC/ISRO
+  (Bhuvan terms of use; attribution to Bhuvan/NRSC required, no redistribution).
+- **Soil type overlay** — [ISRIC SoilGrids](https://soilgrids.org) (CC BY 4.0).
+- **Nearby civic services & seeded place names** —
+  [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL).
 
 ---
 

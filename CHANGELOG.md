@@ -14,6 +14,37 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ### Added
 
+- **Agromet weather panel** — from a pinned village, current conditions plus a 7-day
+  agricultural forecast (min/max °C, rainfall, rain probability) via the keyless,
+  CORS-enabled [Open-Meteo](https://open-meteo.com/) API (`web/weather.js`), localised
+  in all six UI languages.
+- **Live mandi (APMC) prices** — the day's market quotes for the village's district
+  (commodity/variety, min–max and modal ₹/quintal, grouped by market, with district
+  switcher and commodity search). `scraper/fetch_mandi_prices.py` +
+  `update-mandi-prices.yml` snapshot the Agmarknet data.gov.in feed daily to the
+  `data/mandi-prices` branch; the app (`web/mandi.js`) fetches it at runtime and
+  fuzzy-matches LGD district names to Agmarknet's spellings.
+- **Sub-survey / FMB sketch link** — the cadastral parcel popup can copy the parcel's
+  identifiers and open the state's land-records portal (BhuNaksha AP / Bhu Bharati TG /
+  Bhoomi KA, configured per state via `cadastre.fmb`). None of the portals accepts URL
+  prefill, so the copied details are re-entered there.
+- **Groundwater & soil map overlays** — a Leaflet layers control with Bhuvan's RGNDWM
+  groundwater-prospect WMS (all four states) and ISRIC SoilGrids' WRB soil-class WMS,
+  defined once in `config.MAP_OVERLAYS`. (CGWB/India-WRIS was evaluated and skipped —
+  its GIS stack is currently unreachable.)
+
+### Fixed
+
+- **Daily data refresh was silently broken** — three stacked issues resolved:
+  api.data.gov.in's WAF rejects python-requests' default User-Agent with HTTP 502
+  (the fetch now identifies itself with a project User-Agent);
+  `create-pull-request`'s `add-paths` wildcards are git pathspecs and matched zero
+  files, so refreshed data never became a PR (now `**`-suffixed); and the offline
+  native-name sidecars (`names_translit.json`, `regions_native.json`) went stale when
+  LGD renumbered villages/mandals — the pipeline now prunes them each run.
+- `build-parcels-index.yml` used `git diff` to detect changes, which is silent for
+  untracked first-run outputs; switched to `git status --porcelain`.
+
 - **Native district, sub-district and state names** — when the state's own language is
   selected, district/taluk/mandal names and the state name now render in native script
   (`web/data/regions_native.json`) instead of going through the rule engine. LGD has no
