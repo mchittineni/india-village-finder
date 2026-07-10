@@ -1,0 +1,51 @@
+name: Setup pipeline environment
+description: >
+  The Python (+ optional Node) toolchain and dependency install shared by every
+  data workflow. Checkout must run before this action — local actions are
+  loaded from the workspace.
+
+inputs:
+  python-version:
+    description: Python version to set up
+    default: "3.12"
+  node-version:
+    description: Node version to set up ("" skips Node)
+    default: ""
+  requirements-file:
+    description: pip requirements file to install ("" skips)
+    default: ""
+  packages:
+    description: space-separated pip packages to install ("" skips)
+    default: ""
+  npm-install:
+    description: run `npm install` ("true"/"false")
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Setup Node.js
+      if: inputs.node-version != ''
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    # Bind inputs to env and reference them as shell vars — never interpolate
+    # ${{ inputs.* }} into run: (textual substitution before the shell parses
+    # it would allow command injection).
+    - name: Install dependencies
+      if: inputs.requirements-file != '' || inputs.packages != '' || inputs.npm-install == 'true'
+      shell: bash
+      env:
+        REQS: ${{ inputs.requirements-file }}
+        PKGS: ${{ inputs.packages }}
+        NPM: ${{ inputs.npm-install }}
+      run: |
+        if [ -n "$REQS" ]; then python -m pip install -r "$REQS"; fi
+        if [ -n "$PKGS" ]; then python -m pip install $PKGS; fi
+        if [ "$NPM" = "true" ]; then npm install; fi

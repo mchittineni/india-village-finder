@@ -31,6 +31,12 @@ python3 -m venv .venv
   `*/web/*.js|css|html` directly; they're generated copies. Run
   `python scraper/pipeline.py --offline --no-verify` to regenerate them.
 - The data pipeline is in **`scraper/`** — see [`scraper/README.md`](scraper/README.md).
+- CI follows an **actions/ + workflows/ split**: steps shared by several workflows
+  (toolchain setup, "commit outputs → open a PR", the data.gov.in outage-skip
+  contract) live as local composite actions in **`.github/actions/`**; each workflow
+  in `.github/workflows/` keeps only its unique logic. Conventions: third-party
+  actions are SHA-pinned, and inputs are bound to `env:` rather than interpolated
+  into `run:` scripts (injection).
 - Preview locally: `python3 -m http.server 8777` from the repo root, then open
   `http://localhost:8777/`.
 

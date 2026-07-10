@@ -26,34 +26,21 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      - name: Setup environment
+        uses: ./.github/actions/setup-pipeline
         with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: pip install requests
+          packages: requests
 
       # Same skip contract as update-data.yml: exit 75 = data.gov.in
       # temporarily unreachable -> keep yesterday's snapshot, don't go red.
       - name: Fetch today's prices
         id: fetch
+        uses: ./.github/actions/datagov-fetch
         env:
           DATA_GOV_KEY: ${{ secrets.DATA_GOV_KEY }}
-        run: |
-          set +e
-          python scraper/fetch_mandi_prices.py --out /tmp/mandi
-          code=$?
-          set -e
-          if [ "$code" = "75" ]; then
-            echo "skipped=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::data.gov.in temporarily unavailable — keeping the previous mandi snapshot."
-            echo "⏭️ data.gov.in unreachable; mandi snapshot not refreshed." >> "$GITHUB_STEP_SUMMARY"
-          elif [ "$code" != "0" ]; then
-            exit "$code"
-          else
-            echo "skipped=false" >> "$GITHUB_OUTPUT"
-          fi
+        with:
+          command: python scraper/fetch_mandi_prices.py --out /tmp/mandi
+          skip-summary: "⏭️ data.gov.in unreachable; mandi snapshot not refreshed."
 
       - name: Publish to the data/mandi-prices branch
         if: steps.fetch.outputs.skipped != 'true'

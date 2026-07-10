@@ -155,18 +155,23 @@ pipeline keeps them current. Karnataka's and Tamil Nadu's sub-districts are
 │   ├── tests/               #   data-validity tests (run on every PR)
 │   ├── web_template/        #   single source of truth for the UI (copied per state)
 │   └── requirements*.txt    #   runtime · -dev (pytest) · -translit (offline IndicXlit)
-└── .github/workflows/
-    ├── update-data.yml      #   daily data + monthly boundaries refresh → reviewed PR
-    ├── update-mandi-prices.yml # daily Agmarknet snapshots → data/mandi-prices branch
-    ├── regenerate-native-names.yml # weekly/on-demand neural names → reviewed PR
-    ├── seed-osm-names.yml   #   monthly OSM native-name harvest → reviewed PR
-    ├── build-parcels-index.yml #  rebuilds the village→parcel indexes → reviewed PR
-    ├── build-boundary-tiles.yml # monthly boundary vector tiles → reviewed PR
-    ├── mirror-cadastrals.yml #   mirrors the cadastral tiles to a CORS host (R2)
-    ├── ci.yml               #   runs the data-validity tests on every PR
-    ├── release.yml          #   publishes a versioned Release with downloadable data
-    ├── docs.yml             #   build-checks the API reference on PRs
-    └── deploy-pages.yml     #   publishes the site + API docs to GitHub Pages
+└── .github/
+    ├── actions/             # local composite actions — steps shared by the workflows
+    │   ├── setup-pipeline/  #   Python (+ optional Node) toolchain + dependency install
+    │   ├── open-data-pr/    #   commit changed outputs to a branch + open a reviewed PR
+    │   └── datagov-fetch/   #   run a data.gov.in fetch with the exit-75 outage-skip contract
+    └── workflows/           # each workflow keeps only its unique logic
+        ├── update-data.yml      #   daily data + monthly boundaries refresh → reviewed PR
+        ├── update-mandi-prices.yml # daily Agmarknet snapshots → data/mandi-prices branch
+        ├── regenerate-native-names.yml # weekly/on-demand neural names → reviewed PR
+        ├── seed-osm-names.yml   #   monthly OSM native-name harvest → reviewed PR
+        ├── build-parcels-index.yml #  rebuilds the village→parcel indexes → reviewed PR
+        ├── build-boundary-tiles.yml # monthly boundary vector tiles → reviewed PR
+        ├── mirror-cadastrals.yml #   mirrors the cadastral tiles to a CORS host (R2)
+        ├── ci.yml               #   runs the data-validity tests on every PR
+        ├── release.yml          #   publishes a versioned Release with downloadable data
+        ├── docs.yml             #   build-checks the API reference on PRs
+        └── deploy-pages.yml     #   publishes the site + API docs to GitHub Pages
 ```
 
 The `scraper/` is shared on purpose: the logic is identical for every state and only

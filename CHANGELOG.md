@@ -35,6 +35,12 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ### Changed
 
+- **CI refactored to an actions/ + workflows/ split** — the steps every workflow
+  repeated (Python/Node setup + dependency install, the "commit outputs to a branch
+  and open a reviewed PR" tail, and the data.gov.in exit-75 outage-skip contract) now
+  live as local composite actions under `.github/actions/`
+  (`setup-pipeline`, `open-data-pr`, `datagov-fetch`); each workflow keeps only its
+  unique logic (~95 lines of duplication removed across 10 workflows).
 - Documentation brought current across the board: refreshed stats, the data.gov.in-era
   data-source tables, AP/TG/KA cadastre coverage, the new workflows, and a
   "live third-party layers" licensing section in `DATA_LICENSE.md`.
