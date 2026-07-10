@@ -102,7 +102,7 @@ window.VF_MANDI = (function () {
   /**
    * List districts present in the snapshot, each with its quotes.
    * @param {MandiData} data  Parsed snapshot.
-   * @returns {{name: string, rows: MandiRow[]}[]} Sorted by district name.
+   * @returns {Array<{name: string, rows: MandiRow[]}>} Sorted by district name.
    */
   function districts(data) {
     return Object.keys(data.byDistrict)
