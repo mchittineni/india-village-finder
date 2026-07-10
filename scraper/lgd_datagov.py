@@ -50,15 +50,18 @@ def _api_key() -> str:
     return os.environ.get("DATA_GOV_KEY") or SAMPLE_KEY
 
 
-def _get(session: requests.Session, params: dict, retries: int = 8) -> dict:
+def _get(session: requests.Session, params: dict, retries: int = 8, url: str = API_URL) -> dict:
     """GET one page with retry/backoff — data.gov.in regularly returns transient
     5xx/429 and dropped connections. Back off exponentially (honouring any
-    ``Retry-After`` header) so a flaky upstream doesn't fail the whole run."""
+    ``Retry-After`` header) so a flaky upstream doesn't fail the whole run.
+
+    ``url`` defaults to the LGD resource; other data.gov.in fetchers (mandi
+    prices) reuse this helper with their own resource URL."""
     delay = 3.0
     last: Exception | None = None
     for attempt in range(retries):
         try:
-            resp = session.get(API_URL, params=params, timeout=90)
+            resp = session.get(url, params=params, timeout=90)
             if resp.status_code in (429, 500, 502, 503, 504):
                 raise requests.HTTPError(f"HTTP {resp.status_code}", response=resp)
             resp.raise_for_status()
@@ -74,8 +77,10 @@ def _get(session: requests.Session, params: dict, retries: int = 8) -> dict:
                     wait = max(wait, float(resp.headers.get("Retry-After", 0)))
                 except (TypeError, ValueError):
                     pass
-            print(f"  [retry] {e} — waiting {min(wait, 60.0):.0f}s "
-                  f"(attempt {attempt + 1}/{retries})")
+            print(
+                f"  [retry] {e} — waiting {min(wait, 60.0):.0f}s "
+                f"(attempt {attempt + 1}/{retries})"
+            )
             time.sleep(min(wait, 60.0))
             delay = min(delay * 2, 60.0)
     assert last is not None

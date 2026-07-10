@@ -1,0 +1,74 @@
+name: Update mandi prices
+
+# Publishes the daily Agmarknet mandi-price snapshots (one JSON per state) to
+# the dedicated `data/mandi-prices` branch — force-pushed as a single commit,
+# so daily price churn never bloats history or needs a reviewed PR. The web
+# app fetches the JSONs from raw.githubusercontent.com (CORS-enabled); see
+# MANDI_PRICES_URL in scraper/config.py.
+on:
+  schedule:
+    # Agmarknet fills through the Indian trading day; ~16:20 IST catches most
+    # of it. Off-hour minute per GitHub's scheduling advice.
+    - cron: "47 10 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write # push the data/mandi-prices branch
+
+concurrency:
+  group: update-mandi-prices
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      # Same skip contract as update-data.yml: exit 75 = data.gov.in
+      # temporarily unreachable -> keep yesterday's snapshot, don't go red.
+      - name: Fetch today's prices
+        id: fetch
+        env:
+          DATA_GOV_KEY: ${{ secrets.DATA_GOV_KEY }}
+        run: |
+          set +e
+          python scraper/fetch_mandi_prices.py --out /tmp/mandi
+          code=$?
+          set -e
+          if [ "$code" = "75" ]; then
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::data.gov.in temporarily unavailable — keeping the previous mandi snapshot."
+            echo "⏭️ data.gov.in unreachable; mandi snapshot not refreshed." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$code" != "0" ]; then
+            exit "$code"
+          else
+            echo "skipped=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to the data/mandi-prices branch
+        if: steps.fetch.outputs.skipped != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          work="$(mktemp -d)"
+          cp /tmp/mandi/*.json "$work"/
+          cd "$work"
+          git init -q -b data/mandi-prices
+          git add .
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "data: mandi prices $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push --force \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            data/mandi-prices
+          echo "🧺 Published $(ls *.json | wc -l) state snapshots to data/mandi-prices." >> "$GITHUB_STEP_SUMMARY"
