@@ -1,15 +1,9 @@
 name: Update village data
 
-# Schedule note: api.data.gov.in reliably returns 502 for a window every morning
-# (observed ≈05:00–07:00+ UTC / late morning IST — likely its daily re-ingest or
-# peak load). GitHub also delays popular cron slots by up to ~4-5h, so the old
-# 02:00 UTC cron always executed inside that window and every leg skipped.
-# 09:27 UTC (+ delay) lands the run at ~09:30–13:30 UTC, which is well inside the
-# window where the API has been observed healthy.
 on:
   schedule:
-    - cron: "27 9 * * *" # daily   — ~09:27 UTC: refresh village data (data.gov.in)
-    - cron: "27 10 1 * *" # monthly — 1st ~10:27 UTC: data + boundaries
+    - cron: "0 2 * * *" # daily   — 02:00 UTC: refresh village data (data.gov.in)
+    - cron: "0 3 1 * *" # monthly — 1st 03:00 UTC: data + boundaries
   workflow_dispatch:
     inputs:
       refresh_boundaries:
@@ -94,7 +88,7 @@ jobs:
           CRON: ${{ github.event.schedule }}
           WANT_BOUNDS: ${{ github.event.inputs.refresh_boundaries }}
         run: |
-          if [ "$CRON" = "27 10 1 * *" ] || [ "$WANT_BOUNDS" = "true" ]; then
+          if [ "$CRON" = "0 3 1 * *" ] || [ "$WANT_BOUNDS" = "true" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"

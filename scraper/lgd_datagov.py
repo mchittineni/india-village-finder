@@ -38,6 +38,10 @@ API_URL = f"https://api.data.gov.in/resource/{RESOURCE_ID}"
 # data.gov.in's documented public sample key (rate-limited; override via env).
 SAMPLE_KEY = "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b"
 PAGE = 1000  # rows per request
+# data.gov.in sits behind a WAF that answers HTTP 502 to python-requests' /
+# python-urllib3's default User-Agent (since ~Jul 2026), while other UAs pass.
+# Identify ourselves honestly instead.
+USER_AGENT = "india-village-finder/1.0 (+https://github.com/mchittineni/india-village-finder)"
 
 KINDS = ("districts", "subdistricts", "villages", "pincode_villages")
 
@@ -207,6 +211,7 @@ def fetch_datagov(state_codes, raw: Path, offline: bool = False) -> dict[str, Pa
     records: list[dict] = []
     try:
         with requests.Session() as s:
+            s.headers["User-Agent"] = USER_AGENT
             for sc in state_codes:
                 recs = fetch_state_records(sc, s)
                 print(f"[data.gov.in] state {sc}: {len(recs)} village records")
