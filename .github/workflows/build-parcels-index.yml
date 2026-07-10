@@ -70,7 +70,10 @@ jobs:
       - name: Open PR if the outputs changed
         run: |
           files="$SLUG/web/data/parcels_index.json $SLUG/web/data/village_points.json"
-          if git diff --quiet -- $files; then
+          # git status --porcelain (not `git diff --quiet`): on the first build
+          # for a new state these outputs are UNTRACKED, and `git diff` is
+          # silent for untracked files — the fresh index would be thrown away.
+          if [ -z "$(git status --porcelain -- $files)" ]; then
             echo "No change in $files"; exit 0
           fi
           branch="chore/parcels-index-$SLUG-${{ github.run_id }}"
