@@ -187,6 +187,7 @@ pipeline keeps them current. Karnataka's and Tamil Nadu's sub-districts are
         ├── mirror-cadastrals.yml #   mirrors the cadastral tiles to a CORS host (R2)
         ├── ci.yml               #   runs the data-validity tests on every PR
         ├── release.yml          #   publishes a versioned Release with downloadable data
+        ├── publish-blog.yml     #   each Release → dev.to blog draft (+ Medium via legacy token)
         ├── docs.yml             #   build-checks the API reference on PRs
         └── deploy-pages.yml     #   publishes the site (main + data/* overlays) + API docs
 ```
