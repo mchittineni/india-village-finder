@@ -12,6 +12,8 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-07-13
+
 ### Added
 
 - **Farmer schemes panel** — the government schemes a farmer can apply for (the
@@ -320,7 +322,8 @@ Source` column recording which. Generated via the shared UI engine
 - Community-health files: Contributing guide, Code of Conduct, Security policy,
   and issue / pull-request templates.
 
-[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.2.12...HEAD
+[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/mchittineni/india-village-finder/compare/v1.2.12...v1.3.0
 [1.2.12]: https://github.com/mchittineni/india-village-finder/compare/v1.2.11...v1.2.12
 [1.2.11]: https://github.com/mchittineni/india-village-finder/compare/v1.2.10...v1.2.11
 [1.2.10]: https://github.com/mchittineni/india-village-finder/compare/v1.2.9...v1.2.10
