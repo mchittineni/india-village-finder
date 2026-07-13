@@ -23,6 +23,12 @@ release attaches downloadable datasets — see [Releases][releases].
   fixation/liming; very sandy → split doses). Localised in all six UI
   languages and always framed as a model estimate to confirm with a Soil
   Health Card test.
+- **`notes/` knowledge vault** — an Obsidian-compatible Markdown vault holding
+  the project's institutional knowledge: per-source dossiers (endpoints, auth
+  quirks, failure modes, verification dates), a dated decision log with the
+  why behind non-obvious choices, architecture maps and curated reference
+  numbers. Plain wikilinked Markdown, readable on GitHub; `notes/.obsidian/`
+  (per-user workspace state) is git-ignored.
 
 ## [1.3.0] — 2026-07-13
 
