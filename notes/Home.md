@@ -34,3 +34,9 @@ Start here. Each link is a note in this vault; see [README](README.md) for conve
 ## Reference
 
 - [[farm-input-rates]] — notified fertilizer prices & NBS rates (update per season)
+
+## Comms
+
+- [blog/](blog/README.md) — ready-to-post blog drafts (intro, war stories,
+  architecture, farming features, i18n); release announcements are automated
+  by `publish-blog.yml`
