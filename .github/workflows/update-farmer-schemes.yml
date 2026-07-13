@@ -1,0 +1,64 @@
+name: Update farmer schemes
+
+# Publishes the weekly myScheme snapshot of government schemes for farmers
+# (one multilingual JSON per state) to the dedicated `data/farmer-schemes`
+# branch — force-pushed as a single commit, so upstream churn never bloats
+# history or needs a reviewed PR. The web app fetches the JSONs from
+# raw.githubusercontent.com (CORS-enabled); see FARMER_SCHEMES_URL in
+# scraper/config.py.
+on:
+  schedule:
+    # Weekly is plenty — scheme catalogs churn slowly. Off-hour minute per
+    # GitHub's scheduling advice.
+    - cron: "37 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write # push the data/farmer-schemes branch
+
+concurrency:
+  group: update-farmer-schemes
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-pipeline
+        with:
+          packages: requests
+
+      # Same skip contract as the LGD/mandi fetches: exit 75 = myScheme
+      # temporarily unreachable -> keep last week's snapshot, don't go red.
+      # A rejected API key exits 1 (red): the public frontend key rotated and
+      # PUBLIC_KEY (or the MYSCHEME_API_KEY secret) needs updating.
+      - name: Fetch farmer schemes
+        id: fetch
+        uses: ./.github/actions/datagov-fetch
+        env:
+          MYSCHEME_API_KEY: ${{ secrets.MYSCHEME_API_KEY }}
+        with:
+          command: python scraper/fetch_farmer_schemes.py --out /tmp/schemes
+          skip-summary: "⏭️ myScheme unreachable; farmer-schemes snapshot not refreshed."
+
+      - name: Publish to the data/farmer-schemes branch
+        if: steps.fetch.outputs.skipped != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          work="$(mktemp -d)"
+          cp /tmp/schemes/*.json "$work"/
+          cd "$work"
+          git init -q -b data/farmer-schemes
+          git add .
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "data: farmer schemes $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push --force \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            data/farmer-schemes
+          echo "🌾 Published $(ls *.json | wc -l) state scheme snapshots to data/farmer-schemes." >> "$GITHUB_STEP_SUMMARY"

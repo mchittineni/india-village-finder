@@ -59,6 +59,7 @@
     <script src="nearby.js"></script>
     <script src="weather.js"></script>
     <script src="mandi.js"></script>
+    <script src="schemes.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -219,6 +220,28 @@
           </div>
           <ul id="mp-items" class="pl-items"></ul>
           <div id="mp-foot" class="mp-foot"></div>
+        </aside>
+
+        <!-- Government schemes for farmers (weekly myScheme snapshot) plus the
+             curated farm-inputs (fertilizer/soil) quick reference -->
+        <aside id="schemes-panel" class="parcel-list card hidden" aria-label="Government schemes">
+          <div class="pl-head">
+            <div class="pl-title" id="sch-title">Schemes</div>
+            <button id="sch-close" class="icon-btn" title="Close" aria-label="Close">×</button>
+          </div>
+          <div id="sch-sub" class="pl-sub"></div>
+          <div class="pl-search-wrap">
+            <input
+              id="sch-search"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Search schemes…"
+            />
+          </div>
+          <ul id="sch-items" class="pl-items"></ul>
+          <div id="sch-farm" class="sch-farm"></div>
+          <div id="sch-foot" class="mp-foot"></div>
         </aside>
 
         <div id="toast" class="toast hidden"></div>

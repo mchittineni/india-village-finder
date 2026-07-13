@@ -2,7 +2,8 @@
 
 All **data files** in this repository — the CSV, JSON and GeoJSON under
 `andhra_pradesh/`, `telangana/`, `karnataka/`, `tamil_nadu/`, the `data/*` branches
-(mandi-price snapshots, boundary tiles, parcel indexes, OSM name seeds), and any data published in GitHub
+(mandi-price snapshots, farmer-scheme snapshots, boundary tiles, parcel indexes,
+OSM name seeds), and any data published in GitHub
 Releases — are derived from Government of India open data and are made available
 under the **Government Open Data License – India (GODL-India)**.
 
@@ -23,7 +24,8 @@ substantially as follows:
 > Ministry of Panchayati Raj, Government of India, and mandi price data from
 > **Agmarknet**, Ministry of Agriculture & Farmers Welfare, used under the Government
 > Open Data License – India (GODL-India), accessed via the **data.gov.in** open-data
-> API. Boundary polygons derived from the `ramSeraph/indian_admin_boundaries`
+> API. Government-scheme summaries from **myScheme** (myscheme.gov.in, Digital
+> India / NeGD). Boundary polygons derived from the `ramSeraph/indian_admin_boundaries`
 > compilation of LGD/Survey of India data. Land parcels (cadastre) from the state GIS
 > agencies — APSAC (Andhra Pradesh), TRACGIS (Telangana) and KGIS (Karnataka) —
 > **CC0**, via `ramSeraph/indian_cadastrals`.

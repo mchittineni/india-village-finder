@@ -32,8 +32,8 @@ body {
   margin: 0;
 }
 body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
   color: var(--ink);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
@@ -1137,6 +1137,116 @@ button.nb-retry:hover {
 }
 @media (max-width: 640px) {
   #mandi-panel {
+    width: 230px;
+  }
+}
+
+/* ---- farmer schemes panel (shares .parcel-list/.pl-* shell) ------------- */
+#schemes-panel {
+  width: 300px;
+}
+#sch-search {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 0.82rem;
+  background: var(--bg);
+  color: var(--ink);
+}
+#sch-search:focus {
+  outline: none;
+  border-color: var(--brand, #1f6feb);
+}
+.sch-group {
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--ink);
+  padding: 8px 8px 2px;
+}
+.sch-item {
+  padding: 0;
+  border-radius: 7px;
+}
+.sch-item:hover {
+  background: var(--brand-soft, var(--bg));
+}
+.sch-item a {
+  display: block;
+  padding: 6px 8px;
+  text-decoration: none;
+  color: inherit;
+}
+.sch-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sch-brief {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: var(--ink-2);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sch-tags {
+  margin-top: 2px;
+  font-size: 0.68rem;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sch-farm {
+  border-top: 1px solid var(--line);
+  margin-top: 6px;
+  padding: 7px 2px 0;
+  font-size: 0.74rem;
+  color: var(--ink-2);
+}
+.sch-farm-title {
+  font-weight: 600;
+  font-size: 0.74rem;
+  color: var(--ink);
+}
+.sch-fert {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+}
+.sch-fert-price {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.sch-farm-note {
+  margin-top: 3px;
+  font-size: 0.68rem;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+.sch-farm-links {
+  margin-top: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.sch-farm-links a {
+  font-size: 0.72rem;
+  color: var(--brand, #1f6feb);
+  text-decoration: none;
+}
+.sch-farm-links a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 640px) {
+  #schemes-panel {
     width: 230px;
   }
 }

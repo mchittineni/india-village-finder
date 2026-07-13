@@ -461,6 +461,7 @@
     wireChrome();
     wireCadastre();
     wireMandi();
+    wireSchemes();
   }
 
   // ---- theming + chrome ------------------------------------------------
@@ -1128,7 +1129,8 @@
     var input = $("#pl-search");
     if (input) input.value = "";
     renderParcelList("");
-    closeMandi(); // the two panels share the same corner — one at a time
+    closeMandi(); // the corner panels are exclusive — one at a time
+    closeSchemes();
     $("#parcel-list").classList.remove("hidden");
   }
 
@@ -2234,6 +2236,13 @@
       wrap.appendChild(mpBtn);
     }
 
+    // Government schemes for farmers — weekly myScheme snapshot, side panel.
+    var schBtn;
+    if (window.VF_SCHEMES && CFG.schemes && CFG.schemes.url) {
+      schBtn = el("button", "vpop-nb-btn", esc(t("sch_btn")));
+      wrap.appendChild(schBtn);
+    }
+
     marker.bindPopup(wrap, { className: "village-popup", maxWidth: 280 }).openPopup();
     if (parcelBtn) {
       parcelBtn.onclick = function () {
@@ -2254,6 +2263,9 @@
       mpBtn.onclick = function () {
         openMandi(d ? d.n : "");
       };
+    }
+    if (schBtn) {
+      schBtn.onclick = openSchemes;
     }
     if (!map.getBounds().contains(center)) map.panTo(center, { animate: true });
   }
@@ -2475,7 +2487,8 @@
   function openMandi(lgdDistrict) {
     var panel = $("#mandi-panel");
     if (!panel) return;
-    hideParcelList(); // the two share the same corner — one at a time
+    hideParcelList(); // the corner panels are exclusive — one at a time
+    closeSchemes();
     panel.classList.remove("hidden");
     $("#mp-title").textContent = t("mandi_title");
     $("#mp-search").placeholder = t("mandi_search_ph");
@@ -2612,6 +2625,158 @@
    */
   function closeMandi() {
     var panel = $("#mandi-panel");
+    if (panel) panel.classList.add("hidden");
+  }
+
+  // ---- farmer schemes (myScheme weekly snapshot, side panel) --------------
+  var schemesData = null; // parsed state snapshot (VF_SCHEMES caches the fetch)
+
+  /**
+   * Open the schemes panel: the state's + Central agriculture schemes from the
+   * weekly myScheme snapshot, plus the static farm-inputs reference.
+   * @returns {void}
+   */
+  function openSchemes() {
+    var panel = $("#schemes-panel");
+    if (!panel) return;
+    hideParcelList(); // the corner panels are exclusive — one at a time
+    closeMandi();
+    panel.classList.remove("hidden");
+    $("#sch-title").textContent = t("sch_title");
+    $("#sch-search").placeholder = t("sch_search_ph");
+    $("#sch-search").value = "";
+    $("#sch-sub").textContent = t("sch_loading");
+    $("#sch-items").innerHTML = "";
+    $("#sch-foot").textContent = "";
+    renderFarmInputs();
+    window.VF_SCHEMES.load(CFG.schemes.url)
+      .then(function (data) {
+        schemesData = data;
+        renderSchemes();
+      })
+      .catch(function () {
+        $("#sch-sub").textContent = "";
+        var retry = el("li", "pl-empty nb-retry", esc(t("sch_err")));
+        retry.onclick = openSchemes;
+        $("#sch-items").appendChild(retry);
+      });
+  }
+
+  /**
+   * Render the (filtered) scheme list, grouped Central first, then the
+   * state's own schemes, each linking to its myScheme page.
+   * @returns {void}
+   */
+  function renderSchemes() {
+    if (!schemesData) return;
+    var items = $("#sch-items");
+    items.innerHTML = "";
+    var q = $("#sch-search").value;
+    var rows = window.VF_SCHEMES.filter(schemesData, q, LANG);
+    $("#sch-sub").textContent = t("sch_sub", { n: fmt(rows.length) });
+    if (!rows.length) {
+      items.appendChild(el("li", "pl-empty", esc(t("sch_empty"))));
+    } else {
+      var groups = [
+        { key: "sch_central", rows: [] },
+        { key: "sch_state", rows: [] }
+      ];
+      rows.forEach(function (s) {
+        groups[s.level === "Central" ? 0 : 1].rows.push(s);
+      });
+      groups.forEach(function (g) {
+        if (!g.rows.length) return;
+        items.appendChild(el("li", "sch-group", esc(t(g.key))));
+        g.rows.forEach(function (s) {
+          var li = el("li", "sch-item");
+          var a = document.createElement("a");
+          a.href = window.VF_SCHEMES.link(s);
+          a.target = "_blank";
+          a.rel = "noopener";
+          a.innerHTML =
+            '<div class="sch-name">' +
+            esc(window.VF_SCHEMES.name(s, LANG)) +
+            "</div>" +
+            '<div class="sch-brief">' +
+            esc(window.VF_SCHEMES.brief(s, LANG)) +
+            "</div>" +
+            ((s.tags || []).length
+              ? '<div class="sch-tags">' + esc(s.tags.join(" · ")) + "</div>"
+              : "");
+          li.appendChild(a);
+          items.appendChild(li);
+        });
+      });
+    }
+    $("#sch-foot").textContent = t("sch_updated", {
+      date: (schemesData.updated || "").slice(0, 10)
+    });
+  }
+
+  /**
+   * Render the static farm-inputs block (notified fertilizer reference prices
+   * + official stock / soil-health portal links) from config.
+   * @returns {void}
+   */
+  function renderFarmInputs() {
+    var box = $("#sch-farm");
+    if (!box) return;
+    box.innerHTML = "";
+    var farm = CFG.farm;
+    if (!farm) return;
+    box.appendChild(
+      el(
+        "div",
+        "sch-farm-title",
+        esc(t("farm_title")) + (farm.season ? " · " + esc(farm.season) : "")
+      )
+    );
+    (farm.fertilizers || []).forEach(function (f) {
+      var row = el("div", "sch-fert");
+      row.innerHTML =
+        "<span>" +
+        esc(f.name) +
+        "</span>" +
+        '<span class="sch-fert-price">' +
+        esc(f.price) +
+        "</span>";
+      box.appendChild(row);
+    });
+    box.appendChild(el("div", "sch-farm-note", esc(t("farm_note"))));
+    var links = el("div", "sch-farm-links");
+    (farm.links || []).forEach(function (l) {
+      var a = document.createElement("a");
+      a.href = l.url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = t(l.labelKey);
+      links.appendChild(a);
+    });
+    box.appendChild(links);
+  }
+
+  /**
+   * Wire the schemes panel chrome (close, search). No-op when the state has
+   * no schemes feed configured.
+   * @returns {void}
+   */
+  function wireSchemes() {
+    if (!(window.VF_SCHEMES && CFG.schemes && CFG.schemes.url && $("#schemes-panel"))) return;
+    $("#sch-close").onclick = closeSchemes;
+    var inp = $("#sch-search");
+    var t2;
+    inp.addEventListener("input", function () {
+      clearTimeout(t2);
+      t2 = setTimeout(renderSchemes, 120);
+    });
+  }
+
+  /**
+   * Hide the schemes panel.
+   * @returns {void}
+   */
+  function closeSchemes() {
+    var panel = $("#schemes-panel");
     if (panel) panel.classList.add("hidden");
   }
 

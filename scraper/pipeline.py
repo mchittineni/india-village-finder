@@ -53,6 +53,8 @@ from pathlib import Path
 from config import (  # shared per-state registry + name seeds + boundary tiles
     ALIAS,
     BOUNDARY_TILES,
+    FARM_INPUTS,
+    FARMER_SCHEMES_URL,
     MANDI_PRICES_URL,
     MAP_OVERLAYS,
     STATES,
@@ -519,6 +521,7 @@ def _build_web(state_code, cfg, web: Path, meta):
         "nearby.js",
         "weather.js",
         "mandi.js",
+        "schemes.js",
     ):
         src = TEMPLATE / fname
         if src.exists():
@@ -540,6 +543,10 @@ def _build_web(state_code, cfg, web: Path, meta):
         # Daily Agmarknet mandi-price snapshot for the prices panel (published
         # to a data branch by update-mandi-prices.yml, served with CORS).
         "mandi": {"url": MANDI_PRICES_URL.format(slug=cfg["slug"])},
+        # Weekly myScheme snapshot of farmer schemes (data/farmer-schemes
+        # branch) + the curated farm-inputs reference (see config.FARM_INPUTS).
+        "schemes": {"url": FARMER_SCHEMES_URL.format(slug=cfg["slug"])},
+        "farm": FARM_INPUTS,
         # Optional WMS overlays (groundwater/soil), shared across states.
         "overlays": MAP_OVERLAYS,
         # Vector-tile boundaries (shared archive, see config.BOUNDARY_TILES).

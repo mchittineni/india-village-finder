@@ -213,9 +213,7 @@ def test_csv_native_names_populated(state):
     rows = list(csv.DictReader(io.StringIO(path.read_text(encoding="utf-8"))))
     filled = sum(1 for r in rows if r["Village (Native)"].strip())
     assert filled / len(rows) >= 0.95, f"{state['slug']}: only {filled}/{len(rows)} native names"
-    assert all(
-        r["Native Source"] in ("LGD", "authoritative", "transliterated", "") for r in rows
-    )
+    assert all(r["Native Source"] in ("LGD", "authoritative", "transliterated", "") for r in rows)
     # a native name must declare its source, and vice versa
     assert all(
         bool(r["Village (Native)"].strip()) == bool(r["Native Source"].strip()) for r in rows
@@ -353,9 +351,9 @@ def test_cadastre_config_shape(state):
     assert cad["sourceLayer"], "cadastre needs a sourceLayer"
     f = cad.get("fields") or {}
     assert f.get("survey"), "cadastre fields must map a survey key"
-    assert f.get("village") or f.get("villageCode"), (
-        "cadastre fields need `village` (name-match) or `villageCode` (code-match)"
-    )
+    assert f.get("village") or f.get(
+        "villageCode"
+    ), "cadastre fields need `village` (name-match) or `villageCode` (code-match)"
 
 
 def test_cadastre_config_matches_registry():
@@ -367,9 +365,25 @@ def test_cadastre_config_matches_registry():
     import config
 
     for slug, code, *_ in STATES:
-        assert _web_config(slug).get("cadastre") == config.STATES[code].get("cadastre"), (
-            f"{slug}: config.js cadastre differs from config.STATES[{code}]"
-        )
+        assert _web_config(slug).get("cadastre") == config.STATES[code].get(
+            "cadastre"
+        ), f"{slug}: config.js cadastre differs from config.STATES[{code}]"
+
+
+def test_feeds_config_matches_registry():
+    """Each state's config.js runtime feeds (mandi prices, farmer schemes) and
+    the static farm-inputs block must equal config.py's templates, so a
+    regenerated build and the committed files never drift."""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "scraper"))
+    import config
+
+    for slug, *_ in STATES:
+        web = _web_config(slug)
+        assert web.get("mandi") == {"url": config.MANDI_PRICES_URL.format(slug=slug)}
+        assert web.get("schemes") == {"url": config.FARMER_SCHEMES_URL.format(slug=slug)}
+        assert web.get("farm") == config.FARM_INPUTS, f"{slug}: farm block drifted"
 
 
 # --------------------------------------------------------------------------- #

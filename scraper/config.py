@@ -258,6 +258,34 @@ MANDI_PRICES_URL = (
     "refs/heads/data/mandi-prices/{slug}.json"
 )
 
+# Weekly myScheme snapshot of government schemes for farmers (state + Central,
+# "Agriculture,Rural & Environment"), multilingual — see
+# scraper/fetch_farmer_schemes.py. Published by update-farmer-schemes.yml to
+# the `data/farmer-schemes` branch, fetched at runtime like the mandi feed.
+FARMER_SCHEMES_URL = (
+    "https://raw.githubusercontent.com/mchittineni/india-village-finder/"
+    "refs/heads/data/farmer-schemes/{slug}.json"
+)
+
+# Farm-inputs quick reference shown in the schemes panel. Static and curated:
+# there is no reliable open feed for fertilizer stock or soil-test data —
+# iFMS/urvarak.nic.in drops connections and the Soil Health portal sits behind
+# a WAF (verified 2026-07) — so the app shows the notified reference prices
+# plus links to the official portals instead. Urea MRP is statutory; DAP is
+# the NBS-subsidised market price. Update `season`/prices when the Cabinet
+# notifies new NBS rates (₹41,534 cr Kharif-2026 round: Apr–Sep 2026).
+FARM_INPUTS: dict = {
+    "season": "Kharif 2026",
+    "fertilizers": [
+        {"name": "Urea (45 kg)", "price": "₹266.50"},
+        {"name": "DAP (50 kg)", "price": "₹1,350"},
+    ],
+    "links": [
+        {"labelKey": "farm_stock_link", "url": "https://urvarak.nic.in/"},
+        {"labelKey": "farm_shc_link", "url": "https://soilhealth.dac.gov.in/"},
+    ],
+}
+
 # Convenience lookups derived from the registry (never hand-maintained).
 SLUG_BY_CODE: dict[int, str] = {code: s["slug"] for code, s in STATES.items()}
 CODE_BY_SLUG: dict[str, int] = {s["slug"]: code for code, s in STATES.items()}

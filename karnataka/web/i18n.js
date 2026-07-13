@@ -139,7 +139,22 @@ window.VF_I18N = (function () {
       fmb_btn: "Sub-survey / FMB sketch",
       fmb_copied: "Survey details copied — pick the village on {portal} and paste them.",
       ov_gw: "Groundwater prospects",
-      ov_soil: "Soil type (SoilGrids)"
+      ov_soil: "Soil type (SoilGrids)",
+      sch_btn: "Govt schemes",
+      sch_title: "Schemes for farmers",
+      sch_sub: "{n} schemes",
+      sch_loading: "Loading schemes…",
+      sch_err: "Couldn’t load schemes — tap to retry.",
+      sch_empty: "No matching schemes.",
+      sch_search_ph: "Search schemes…",
+      sch_central: "Central schemes",
+      sch_state: "State schemes",
+      sch_updated: "Updated {date} · myScheme (myscheme.gov.in)",
+      farm_title: "Farm inputs",
+      farm_note:
+        "Urea MRP is government-fixed; DAP and other P&K fertilizer prices include the NBS subsidy. Check availability with your local dealer.",
+      farm_stock_link: "Fertilizer stock (iFMS)",
+      farm_shc_link: "Soil Health Card"
     },
     te: {
       village_finder: "గ్రామ శోధన",
@@ -250,7 +265,22 @@ window.VF_I18N = (function () {
       fmb_copied:
         "సర్వే వివరాలు కాపీ అయ్యాయి — {portal}లో గ్రామాన్ని ఎంచుకుని వాటిని నమోదు చేయండి.",
       ov_gw: "భూగర్భజల అవకాశాలు",
-      ov_soil: "నేల రకం (SoilGrids)"
+      ov_soil: "నేల రకం (SoilGrids)",
+      sch_btn: "ప్రభుత్వ పథకాలు",
+      sch_title: "రైతు పథకాలు",
+      sch_sub: "{n} పథకాలు",
+      sch_loading: "పథకాలు లోడ్ అవుతున్నాయి…",
+      sch_err: "పథకాలు లోడ్ కాలేదు — మళ్లీ ప్రయత్నించడానికి నొక్కండి.",
+      sch_empty: "సరిపోలే పథకాలు లేవు.",
+      sch_search_ph: "పథకం వెతకండి…",
+      sch_central: "కేంద్ర పథకాలు",
+      sch_state: "రాష్ట్ర పథకాలు",
+      sch_updated: "నవీకరణ {date} · myScheme (myscheme.gov.in)",
+      farm_title: "వ్యవసాయ ఇన్‌పుట్లు",
+      farm_note:
+        "యూరియా ధర ప్రభుత్వం నిర్ణయిస్తుంది; DAP వంటి P&K ఎరువుల ధరల్లో NBS సబ్సిడీ కలిసి ఉంటుంది. అందుబాటు కోసం మీ డీలర్‌ను సంప్రదించండి.",
+      farm_stock_link: "ఎరువుల నిల్వ (iFMS)",
+      farm_shc_link: "భూసార కార్డు"
     },
     hi: {
       village_finder: "ग्राम खोजक",
@@ -344,7 +374,22 @@ window.VF_I18N = (function () {
       fmb_btn: "उप-सर्वे / FMB स्केच",
       fmb_copied: "सर्वे विवरण कॉपी हुए — {portal} पर गाँव चुनकर उन्हें दर्ज करें।",
       ov_gw: "भूजल संभावनाएँ",
-      ov_soil: "मिट्टी का प्रकार (SoilGrids)"
+      ov_soil: "मिट्टी का प्रकार (SoilGrids)",
+      sch_btn: "सरकारी योजनाएँ",
+      sch_title: "किसानों की योजनाएँ",
+      sch_sub: "{n} योजनाएँ",
+      sch_loading: "योजनाएँ लोड हो रही हैं…",
+      sch_err: "योजनाएँ लोड नहीं हुईं — पुनः प्रयास हेतु टैप करें।",
+      sch_empty: "कोई मेल नहीं।",
+      sch_search_ph: "योजना खोजें…",
+      sch_central: "केंद्रीय योजनाएँ",
+      sch_state: "राज्य योजनाएँ",
+      sch_updated: "अद्यतन {date} · myScheme (myscheme.gov.in)",
+      farm_title: "कृषि इनपुट",
+      farm_note:
+        "यूरिया का MRP सरकार-निर्धारित है; DAP जैसे P&K उर्वरकों के दाम में NBS सब्सिडी शामिल है। उपलब्धता अपने डीलर से जाँचें।",
+      farm_stock_link: "उर्वरक स्टॉक (iFMS)",
+      farm_shc_link: "मृदा स्वास्थ्य कार्ड"
     },
     kn: {
       village_finder: "ಗ್ರಾಮ ಹುಡುಕಾಟ",
@@ -454,7 +499,22 @@ window.VF_I18N = (function () {
       fmb_btn: "ಉಪ-ಸರ್ವೆ / FMB ನಕ್ಷೆ",
       fmb_copied: "ಸರ್ವೆ ವಿವರಗಳು ನಕಲಾಗಿವೆ — {portal}ದಲ್ಲಿ ಗ್ರಾಮ ಆಯ್ಕೆ ಮಾಡಿ ಅವನ್ನು ನಮೂದಿಸಿ.",
       ov_gw: "ಅಂತರ್ಜಲ ಸಾಧ್ಯತೆಗಳು",
-      ov_soil: "ಮಣ್ಣಿನ ವಿಧ (SoilGrids)"
+      ov_soil: "ಮಣ್ಣಿನ ವಿಧ (SoilGrids)",
+      sch_btn: "ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು",
+      sch_title: "ರೈತ ಯೋಜನೆಗಳು",
+      sch_sub: "{n} ಯೋಜನೆಗಳು",
+      sch_loading: "ಯೋಜನೆಗಳು ಲೋಡ್ ಆಗುತ್ತಿವೆ…",
+      sch_err: "ಯೋಜನೆಗಳು ಲೋಡ್ ಆಗಲಿಲ್ಲ — ಮರುಪ್ರಯತ್ನಿಸಲು ಒತ್ತಿ.",
+      sch_empty: "ಹೊಂದುವ ಯೋಜನೆಗಳಿಲ್ಲ.",
+      sch_search_ph: "ಯೋಜನೆ ಹುಡುಕಿ…",
+      sch_central: "ಕೇಂದ್ರ ಯೋಜನೆಗಳು",
+      sch_state: "ರಾಜ್ಯ ಯೋಜನೆಗಳು",
+      sch_updated: "ನವೀಕರಣ {date} · myScheme (myscheme.gov.in)",
+      farm_title: "ಕೃಷಿ ಇನ್‌ಪುಟ್‌ಗಳು",
+      farm_note:
+        "ಯೂರಿಯಾ MRP ಸರ್ಕಾರ ನಿಗದಿಪಡಿಸಿದ್ದು; DAP ಮುಂತಾದ P&K ಗೊಬ್ಬರ ಬೆಲೆಗಳಲ್ಲಿ NBS ಸಬ್ಸಿಡಿ ಸೇರಿದೆ. ಲಭ್ಯತೆಯನ್ನು ನಿಮ್ಮ ಡೀಲರ್ ಬಳಿ ಪರಿಶೀಲಿಸಿ.",
+      farm_stock_link: "ಗೊಬ್ಬರ ದಾಸ್ತಾನು (iFMS)",
+      farm_shc_link: "ಮಣ್ಣು ಆರೋಗ್ಯ ಕಾರ್ಡ್"
     },
     ur: {
       village_finder: "گاؤں تلاش",
@@ -548,7 +608,22 @@ window.VF_I18N = (function () {
       fmb_btn: "ذیلی سروے / FMB خاکہ",
       fmb_copied: "سروے کی تفصیلات کاپی ہو گئیں — {portal} پر گاؤں منتخب کر کے انہیں درج کریں۔",
       ov_gw: "زیرِ زمین پانی کے امکانات",
-      ov_soil: "مٹی کی قسم (SoilGrids)"
+      ov_soil: "مٹی کی قسم (SoilGrids)",
+      sch_btn: "سرکاری اسکیمیں",
+      sch_title: "کسانوں کی اسکیمیں",
+      sch_sub: "{n} اسکیمیں",
+      sch_loading: "اسکیمیں لوڈ ہو رہی ہیں…",
+      sch_err: "اسکیمیں لوڈ نہیں ہوئیں — دوبارہ کوشش کے لیے دبائیں۔",
+      sch_empty: "کوئی مماثل اسکیم نہیں۔",
+      sch_search_ph: "اسکیم تلاش کریں…",
+      sch_central: "مرکزی اسکیمیں",
+      sch_state: "ریاستی اسکیمیں",
+      sch_updated: "تازہ کاری {date} · myScheme (myscheme.gov.in)",
+      farm_title: "زرعی اِن پُٹ",
+      farm_note:
+        "یوریا کی قیمت حکومت مقرر کرتی ہے؛ DAP جیسی P&K کھادوں کی قیمت میں NBS سبسڈی شامل ہے۔ دستیابی اپنے ڈیلر سے معلوم کریں۔",
+      farm_stock_link: "کھاد اسٹاک (iFMS)",
+      farm_shc_link: "سائل ہیلتھ کارڈ"
     },
     ta: {
       village_finder: "கிராம தேடல்",
@@ -645,7 +720,22 @@ window.VF_I18N = (function () {
       fmb_copied:
         "சர்வே விவரங்கள் நகலெடுக்கப்பட்டன — {portal}இல் கிராமத்தைத் தேர்ந்தெடுத்து அவற்றை உள்ளிடவும்.",
       ov_gw: "நிலத்தடி நீர் வாய்ப்புகள்",
-      ov_soil: "மண் வகை (SoilGrids)"
+      ov_soil: "மண் வகை (SoilGrids)",
+      sch_btn: "அரசு திட்டங்கள்",
+      sch_title: "விவசாயிகளுக்கான திட்டங்கள்",
+      sch_sub: "{n} திட்டங்கள்",
+      sch_loading: "திட்டங்கள் ஏற்றப்படுகின்றன…",
+      sch_err: "திட்டங்களை ஏற்ற முடியவில்லை — மீண்டும் முயல தட்டவும்.",
+      sch_empty: "பொருந்தும் திட்டங்கள் இல்லை.",
+      sch_search_ph: "திட்டத்தைத் தேடுங்கள்…",
+      sch_central: "மத்திய திட்டங்கள்",
+      sch_state: "மாநிலத் திட்டங்கள்",
+      sch_updated: "புதுப்பிப்பு {date} · myScheme (myscheme.gov.in)",
+      farm_title: "விவசாய இடுபொருட்கள்",
+      farm_note:
+        "யூரியா விலை அரசு நிர்ணயம்; DAP போன்ற P&K உரங்களின் விலையில் NBS மானியம் அடங்கும். கிடைப்பதை உங்கள் விற்பனையாளரிடம் உறுதிப்படுத்துங்கள்.",
+      farm_stock_link: "உர இருப்பு (iFMS)",
+      farm_shc_link: "மண் வள அட்டை"
     }
   };
 

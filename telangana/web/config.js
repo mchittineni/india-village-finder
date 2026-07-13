@@ -33,6 +33,32 @@ window.VF_CONFIG = {
   "mandi": {
     "url": "https://raw.githubusercontent.com/mchittineni/india-village-finder/refs/heads/data/mandi-prices/telangana.json"
   },
+  "schemes": {
+    "url": "https://raw.githubusercontent.com/mchittineni/india-village-finder/refs/heads/data/farmer-schemes/telangana.json"
+  },
+  "farm": {
+    "season": "Kharif 2026",
+    "fertilizers": [
+      {
+        "name": "Urea (45 kg)",
+        "price": "₹266.50"
+      },
+      {
+        "name": "DAP (50 kg)",
+        "price": "₹1,350"
+      }
+    ],
+    "links": [
+      {
+        "labelKey": "farm_stock_link",
+        "url": "https://urvarak.nic.in/"
+      },
+      {
+        "labelKey": "farm_shc_link",
+        "url": "https://soilhealth.dac.gov.in/"
+      }
+    ]
+  },
   "overlays": [
     {
       "id": "gw",
