@@ -190,8 +190,10 @@ def aggregate_parcels(pmtiles: Path, source_layer: str):
                 while stack:
                     c = stack.pop()
                     if c and isinstance(c[0], (int, float)):
-                        mnx = min(mnx, c[0]); mxx = max(mxx, c[0])
-                        mny = min(mny, c[1]); mxy = max(mxy, c[1])
+                        mnx = min(mnx, c[0])
+                        mxx = max(mxx, c[0])
+                        mny = min(mny, c[1])
+                        mxy = max(mxy, c[1])
                     else:
                         stack.extend(c)
                 if mnx == float("inf"):
@@ -211,9 +213,13 @@ def aggregate_parcels(pmtiles: Path, source_layer: str):
                 if b is None:
                     boxes[key] = [blo_lat, blo_lng, bhi_lat, bhi_lng, clat, clng, 1]
                 else:
-                    b[0] = min(b[0], blo_lat); b[1] = min(b[1], blo_lng)
-                    b[2] = max(b[2], bhi_lat); b[3] = max(b[3], bhi_lng)
-                    b[4] += clat; b[5] += clng; b[6] += 1
+                    b[0] = min(b[0], blo_lat)
+                    b[1] = min(b[1], blo_lng)
+                    b[2] = max(b[2], bhi_lat)
+                    b[3] = max(b[3], bhi_lng)
+                    b[4] += clat
+                    b[5] += clng
+                    b[6] += 1
     print(f"[scan] {tiles} tiles with data, {decoded} decoded, {len(boxes)} villages in cadastre")
     return boxes
 
