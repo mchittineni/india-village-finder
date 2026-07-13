@@ -25,3 +25,6 @@ tiles/boundaries.pmtiles
 */web/data/parcels_index.json
 */web/data/village_points.json
 scraper/osm_names.json
+
+# Obsidian per-user workspace state for the notes/ knowledge vault
+notes/.obsidian/

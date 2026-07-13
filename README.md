@@ -141,6 +141,8 @@ pipeline keeps them current. Karnataka's and Tamil Nadu's sub-districts are
 ├── tamil_nadu/              # identical structure, for Tamil Nadu (sub-districts = Taluks)
 ├── tiles/                   # all-state boundary vector tiles (PMTiles; optional path)
 ├── docs/                    # API reference build (JSDoc + pdoc) + hosting notes
+├── notes/                   # project knowledge vault (Obsidian-compatible Markdown:
+│                            #   data-source dossiers, decision log, architecture maps)
 ├── scraper/                 # SHARED tooling — one code path builds all states
 │   ├── config.py            #   per-state registry: LGD code, language, cadastre/FMB,
 │   │                        #   mandi feed URL, map overlays — add a state HERE
