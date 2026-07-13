@@ -1,4 +1,4 @@
-name: Labeler
+name: Apply GitHub Labels
 
 # Apply labels to pull requests based on which files they change.
 # Configuration: .github/labeler.yml
@@ -32,6 +32,7 @@ jobs:
   label:
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
+
     steps:
       - name: Apply path-based labels
         uses: actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d # v6
@@ -43,6 +44,7 @@ jobs:
   sweep:
     if: github.event_name != 'pull_request_target'
     runs-on: ubuntu-latest
+    
     steps:
       - name: Find open PRs missing labels
         id: find

@@ -1,4 +1,5 @@
 name: Setup pipeline environment
+
 description: >
   The Python (+ optional Node) toolchain and dependency install shared by every
   data workflow. Checkout must run before this action — local actions are
@@ -23,7 +24,9 @@ inputs:
 
 runs:
   using: composite
+
   steps:
+  
     - name: Setup Python
       uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
       with:

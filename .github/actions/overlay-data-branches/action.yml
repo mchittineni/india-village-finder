@@ -1,4 +1,5 @@
 name: Overlay data branches
+
 description: >
   Fetch the given data/* branches and copy their trees over the working tree —
   how site deploys, releases and pipeline runs consume the regenerable
@@ -12,7 +13,9 @@ inputs:
 
 runs:
   using: composite
+
   steps:
+  
     - name: Overlay
       shell: bash
       env:

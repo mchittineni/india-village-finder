@@ -1,4 +1,4 @@
-name: build-boundary-tiles
+name: Update Boundary Tiles
 
 # Rebuilds tiles/boundaries.pmtiles (the all-state boundary vector tiles) and the
 # per-state boundary_bounds.json indexes from the committed simplified GeoJSON,
@@ -26,7 +26,8 @@ env:
 jobs:
   tiles:
     runs-on: ubuntu-latest
-    steps:
+
+    steps:      
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 

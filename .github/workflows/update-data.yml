@@ -1,4 +1,4 @@
-name: Update village data
+name: Update Village Data
 
 on:
   schedule:
@@ -28,16 +28,20 @@ jobs:
   # aggregate job below assembles whatever succeeded into a single reviewed PR.
   build:
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
+
       matrix:
         state: # keep in sync with scraper/config.py STATES
           - { key: ap, slug: andhra_pradesh }
           - { key: tg, slug: telangana }
           - { key: ka, slug: karnataka }
           - { key: tn, slug: tamil_nadu }
+
     env:
       STATE_KEY: ${{ matrix.state.key }}
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -111,6 +115,7 @@ jobs:
     needs: build
     if: always() && needs.build.result != 'cancelled'
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7

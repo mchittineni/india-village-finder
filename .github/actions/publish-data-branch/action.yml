@@ -1,4 +1,5 @@
 name: Publish outputs to a data branch
+
 description: >
   Commit the given repo-relative paths to a long-lived data/* branch — the
   landing zone for regenerable artifacts that the site/pipeline consume but
@@ -25,7 +26,9 @@ inputs:
 
 runs:
   using: composite
+
   steps:
+  
     # Inputs are bound to env, never interpolated into the script (injection).
     - name: Publish
       shell: bash
