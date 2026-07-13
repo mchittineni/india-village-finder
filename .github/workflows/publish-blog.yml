@@ -1,13 +1,5 @@
-name: Publish blog post
+name: Publish Blog Post
 
-# Turns each GitHub Release into a blog post so project updates reach readers
-# beyond GitHub. dev.to is the automated channel (scraper/blog_post.py posts
-# via its API — as a DRAFT by default, so nothing auto-generated goes live
-# unreviewed). Medium closed its API to new integrations (2025-01): a legacy
-# MEDIUM_TOKEN is used when present, otherwise cross-post manually with
-# Medium's "Import a story" pointed at the dev.to URL (its importer sets the
-# canonical link). Secrets are optional — without them the workflow still
-# builds the post Markdown and attaches it as an artifact.
 on:
   release:
     types: [published]
@@ -40,8 +32,6 @@ jobs:
         with:
           packages: requests
 
-      # The daily data releases have no CHANGELOG section — fall back to the
-      # release's own notes so every update can still be posted.
       - name: Fetch release notes (fallback body)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +41,6 @@ jobs:
       - name: Build and cross-post
         env:
           DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
-          MEDIUM_TOKEN: ${{ secrets.MEDIUM_TOKEN }}
           TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
           PUBLISH: ${{ github.event.inputs.publish }}
         run: |
