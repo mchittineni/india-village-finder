@@ -12,6 +12,8 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-07-13
+
 ### Added
 
 - **Blog cross-posting** — `publish-blog.yml` turns every GitHub Release into a
@@ -37,6 +39,14 @@ release attaches downloadable datasets — see [Releases][releases].
   why behind non-obvious choices, architecture maps and curated reference
   numbers. Plain wikilinked Markdown, readable on GitHub; `notes/.obsidian/`
   (per-user workspace state) is git-ignored.
+- **Transliteration review queue in the vault** —
+  `scraper/translit_review.py generate` writes one Obsidian note per village
+  where the neural (IndicXlit) and rule-engine names disagree
+  (`notes/translit-review/`, both candidates in the frontmatter); after human
+  verification, `harvest` merges the confirmed spellings into
+  `translit_overrides.json` — the highest-priority name layer — with
+  script-range validation so a wrong-keyboard slip can't reach production.
+  Queue seeded with the first 40 disagreements across the four states.
 
 ## [1.3.0] — 2026-07-13
 
@@ -348,7 +358,8 @@ Source` column recording which. Generated via the shared UI engine
 - Community-health files: Contributing guide, Code of Conduct, Security policy,
   and issue / pull-request templates.
 
-[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/mchittineni/india-village-finder/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/mchittineni/india-village-finder/compare/v1.2.12...v1.3.0
 [1.2.12]: https://github.com/mchittineni/india-village-finder/compare/v1.2.11...v1.2.12
 [1.2.11]: https://github.com/mchittineni/india-village-finder/compare/v1.2.10...v1.2.11
