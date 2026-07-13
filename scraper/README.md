@@ -49,7 +49,7 @@ enrich_native_names.py  ──> ../<state>/web/data/names_translit.json   (offli
 enrich_native_names.py --regions ──> ../<state>/web/data/regions_native.json  (district/mandal/state)
 fetch_mandi_prices.py   ──(Agmarknet API)──> data/mandi-prices branch (per-state JSON, daily)
 fetch_farmer_schemes.py ──(myScheme API)──> data/farmer-schemes branch (per-state JSON, weekly)
-web_template/ ──(copied by pipeline)──> ../<state>/web/{index.html,app.js,i18n.js,nearby.js,weather.js,mandi.js,schemes.js,styles.css}
+web_template/ ──(copied by pipeline)──> ../<state>/web/{index.html,app.js,i18n.js,nearby.js,weather.js,mandi.js,schemes.js,soil.js,styles.css}
 ```
 
 `.cache/` holds the downloaded source dumps and is git-ignored (re-downloaded on demand).

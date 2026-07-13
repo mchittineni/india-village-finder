@@ -522,6 +522,7 @@ def _build_web(state_code, cfg, web: Path, meta):
         "weather.js",
         "mandi.js",
         "schemes.js",
+        "soil.js",
     ):
         src = TEMPLATE / fname
         if src.exists():

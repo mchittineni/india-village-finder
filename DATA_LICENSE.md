@@ -43,7 +43,9 @@ licence applies:
 - **Weather** — [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).
 - **Groundwater prospects overlay** — [Bhuvan](https://bhuvan.nrsc.gov.in), NRSC/ISRO
   (Bhuvan terms of use; attribution to Bhuvan/NRSC required, no redistribution).
-- **Soil type overlay** — [ISRIC SoilGrids](https://soilgrids.org) (CC BY 4.0).
+- **Soil type overlay & per-village soil profile** —
+  [ISRIC SoilGrids](https://soilgrids.org) (CC BY 4.0), via WMS and the point
+  query API.
 - **Nearby civic services & seeded place names** —
   [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL).
 

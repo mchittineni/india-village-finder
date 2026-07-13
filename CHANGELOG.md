@@ -12,6 +12,18 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ## [Unreleased]
 
+### Added
+
+- **Soil & fertilizer profile** — from a pinned village, the point's soil type
+  (WRB group + Indian common name + texture bucket), pH and organic carbon from
+  the ISRIC SoilGrids 250 m point API (`web/soil.js`, keyless, CC BY 4.0 — the
+  same source as the soil map overlay), plus the all-India balanced N-P-K
+  guideline (4:2:1) and an indicative nutrient note derived by standard
+  agronomic rules (alkaline → zinc-deficiency risk; acidic → phosphorus
+  fixation/liming; very sandy → split doses). Localised in all six UI
+  languages and always framed as a model estimate to confirm with a Soil
+  Health Card test.
+
 ## [1.3.0] — 2026-07-13
 
 ### Added
