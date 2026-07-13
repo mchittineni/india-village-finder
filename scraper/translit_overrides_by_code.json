@@ -1,0 +1,8 @@
+{
+  "_comment": "Per-village native-name overrides — keyed {lang: {lgd_village_code: native_script_name}}. Use when a verified spelling must apply to exactly ONE village and not propagate to every village sharing the English name (e.g. a locally-used translated form of a descriptive name). Beats the name-keyed seeds in translit_overrides.json / osm_names.json for that village. Normally written by `scraper/translit_review.py harvest` from review notes marked `scope: code`.",
+  "te": {
+    "584792": "14వ మైలు రాయి"
+  },
+  "kn": {},
+  "ta": {}
+}
