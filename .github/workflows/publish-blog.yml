@@ -1,0 +1,73 @@
+name: Publish blog post
+
+# Turns each GitHub Release into a blog post so project updates reach readers
+# beyond GitHub. dev.to is the automated channel (scraper/blog_post.py posts
+# via its API — as a DRAFT by default, so nothing auto-generated goes live
+# unreviewed). Medium closed its API to new integrations (2025-01): a legacy
+# MEDIUM_TOKEN is used when present, otherwise cross-post manually with
+# Medium's "Import a story" pointed at the dev.to URL (its importer sets the
+# canonical link). Secrets are optional — without them the workflow still
+# builds the post Markdown and attaches it as an artifact.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to post (e.g. v1.3.0)"
+        required: true
+      publish:
+        description: "Publish immediately (default: create drafts)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-blog
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-pipeline
+        with:
+          packages: requests
+
+      # The daily data releases have no CHANGELOG section — fall back to the
+      # release's own notes so every update can still be posted.
+      - name: Fetch release notes (fallback body)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+        run: gh release view "$TAG" --json body --jq .body > /tmp/notes.md
+
+      - name: Build and cross-post
+        env:
+          DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+          MEDIUM_TOKEN: ${{ secrets.MEDIUM_TOKEN }}
+          TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+          PUBLISH: ${{ github.event.inputs.publish }}
+        run: |
+          FLAGS="--devto --medium"
+          if [ "$PUBLISH" = "true" ]; then FLAGS="$FLAGS --publish"; fi
+          python scraper/blog_post.py --tag "$TAG" --notes-file /tmp/notes.md \
+            --out /tmp/blog_post.md $FLAGS | tee -a "$GITHUB_STEP_SUMMARY"
+          {
+            echo ""
+            echo "ℹ️ dev.to posts are created as drafts unless dispatched with publish=true."
+            echo "For Medium without a legacy API token: use *Import a story* with the dev.to URL."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attach post Markdown
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: blog-post-${{ github.event.release.tag_name || github.event.inputs.tag }}
+          path: /tmp/blog_post.md
+          retention-days: 30

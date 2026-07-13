@@ -21,6 +21,7 @@ Shared steps live as composites in `.github/actions/` (`setup-pipeline`,
 | `ci.yml`                      | every PR/push                | pytest data-validity suite                              |
 | `docs.yml`                    | PRs touching docs            | jsdoc/pdoc build check                                  |
 | `release.yml`                 | data merges                  | versioned GitHub Release (+ data-branch overlays)       |
+| `publish-blog.yml`            | release published            | dev.to blog draft (+ Medium via legacy token)           |
 | `deploy-pages.yml`            | pushes to main               | live site (+ data-branch overlays)                      |
 
 Conventions (enforced by review, documented in CONTRIBUTING):

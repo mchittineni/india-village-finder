@@ -14,6 +14,14 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ### Added
 
+- **Blog cross-posting** — `publish-blog.yml` turns every GitHub Release into a
+  blog post (`scraper/blog_post.py`: evergreen project intro + the version's
+  CHANGELOG section, or the release notes as fallback) and posts it to
+  **dev.to** as a draft by default (`DEVTO_API_KEY` secret), with **Medium**
+  supported through a legacy integration token (`MEDIUM_TOKEN`; Medium stopped
+  issuing new API tokens in 2025 — the step summary points to Medium's
+  _Import a story_ flow instead). Canonical URLs point at the GitHub release.
+
 - **Soil & fertilizer profile** — from a pinned village, the point's soil type
   (WRB group + Indian common name + texture bucket), pH and organic carbon from
   the ISRIC SoilGrids 250 m point API (`web/soil.js`, keyless, CC BY 4.0 — the
