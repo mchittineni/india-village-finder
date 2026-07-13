@@ -58,6 +58,7 @@ from config import (  # shared per-state registry + name seeds + boundary tiles
     MANDI_PRICES_URL,
     MAP_OVERLAYS,
     STATES,
+    load_code_overrides,
     load_name_seeds,
 )
 from lgd_datagov import DataGovUnavailable, fetch_datagov
@@ -289,6 +290,9 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     # Human-verified native names keyed by English name (manual overrides > OSM);
     # used to fill authoritative names the source feed doesn't carry in-script.
     seeds = load_name_seeds(state_lang) if state_lang else {}
+    # Per-village pins (keyed by LGD code) beat the name-keyed seeds — for fixes
+    # that must not propagate to same-named villages.
+    code_pins = load_code_overrides(state_lang) if state_lang else {}
     for v in villages:
         mi = m_index.get(v["mandal_code"])
         if mi is None:
@@ -302,11 +306,15 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         cat = 1 if v["category"].lower().startswith("urban") else 0
         rows.append([v["name"], mi, v["code"], cat, v.get("pincode", "")])
         # Authoritative native name, in priority order: the LGD-published local
-        # name (only when genuinely in the state's script), else a human-verified
-        # seed (override / OSM) matched by English name.
+        # name (only when genuinely in the state's script), else a per-village
+        # pin matched by LGD code, else a human-verified seed (override / OSM)
+        # matched by English name.
         loc = v.get("local", "")
+        pinned = code_pins.get(str(v["code"]), "")
         if loc and in_script(loc, state_lang):
             names_local[str(v["code"])] = loc
+        elif pinned and in_script(pinned, state_lang):
+            names_local[str(v["code"])] = pinned
         elif seeds:
             seeded = seeds.get(v["name"].strip().lower())
             if seeded and in_script(seeded, state_lang):

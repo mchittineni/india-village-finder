@@ -1,6 +1,47 @@
 {
-  "_comment": "Manual native-name overrides — highest priority, they beat OSM crowd data and the IndicXlit model. Keyed {lang: {english_name_lowercased: native_script_name}}. Add entries you have verified against an authoritative source (LGD, census, the local administration). Example: \"te\": { \"visakhapatnam\": \"<verified Telugu spelling>\" }. Kept intentionally empty so no unverified spellings ship; edit and commit as corrections are confirmed.",
-  "te": {},
-  "kn": {},
-  "ta": {}
+  "_comment": "Manual native-name overrides — highest priority, they beat OSM crowd data and the IndicXlit model. Keyed {lang: {english_name_lowercased: native_script_name}} — the fix applies to EVERY village with that English name in that language; use translit_overrides_by_code.json to pin a fix to a single village. Normally written by `scraper/translit_review.py harvest` from human-verified review notes (notes/translit-review/); hand-edits are fine too for spellings confirmed against an authoritative source (LGD, census, the local administration).",
+  "te": {
+    "75-tyallur": "75-త్యాల్లూరు",
+    "a. kathigudem": "ఎ. కత్తిగూడెం",
+    "a. kothapalle": "ఎ. కొత్తపల్లె",
+    "a. mallavaram": "ఎ. మల్లవరం",
+    "a. veeravaram": "ఎ. వీరవరం",
+    "a. vemavaram": "ఎ. వేమవరం",
+    "a. vemavarappadu": "ఎ. వేమవరప్పాడు",
+    "a.bandaveedhi": "ఎ. బండవీధి",
+    "a.burdipad": "ఎ. బుర్దిపాద్",
+    "a.channamambapuram": "ఎ. చన్నమాంబాపురం",
+    "a.gonehal": "ఎ. గోనెహాల్",
+    "abangapur": "అబంగాపూర్",
+    "abbaipalem": "అబ్బాయిపాలెం",
+    "abbapur": "అబ్బాపూర్",
+    "abbapur (b)": "అబ్బాపూర్ (బి)",
+    "abbapur (m)": "అబ్బాపూర్ (మండలం)",
+    "abbapuram": "అబ్బపురం",
+    "abdulla nagar": "అబ్దుల్లా నగర్"
+  },
+  "kn": {
+    "102 nekkilady": "102 ನೆಕ್ಕಿಲಾಡಿ",
+    "108 kalthur": "108 ಕಲ್ತೂರ್",
+    "18 manampadi": "18 ಮಾನಂಪಾಡಿ",
+    "1st rudraguppe": "೧ನೇ ರುದ್ರಗುಪ್ಪೆ",
+    "2 bappanadu": "2 ಬಪ್ಪನಾಡು",
+    "2ne channayyanakote": "೨ನೇ ಚನ್ನಯ್ಯನಕೋಟೆ",
+    "2ne chowdlu": "೨ನೇ ಚೌಡ್ಲು",
+    "2ne kudluru": "2ನೇ ಕೂಡ್ಲೂರು",
+    "2ne rudruguppe": "೨ನೇ ರುದ್ರಗುಪ್ಪೆ",
+    "34 kudi": "34 ಕುಡಿ"
+  },
+  "ta": {
+    "48 kailasampalayam": "48 கைலாசம்பாளையம்",
+    "58 kailasampalayam": "58 கைலாசம்பாளையம்",
+    "a metupatty": "ஆ மேட்டுப்பட்டி",
+    "a palapatty": "அ பாலப்பட்டி",
+    "a palayapalayam": "அ பாளையப்பாளையம்",
+    "a-kalayamputhur": "அ-கலயம்புத்தூர்",
+    "a. agaram": "அ. அகரம்",
+    "a. kalappur": "ஏ. கலாப்பூர்",
+    "a. kulathur": "அ. குளத்தூர்",
+    "a. marur": "ஏ. மருர்"
+  }
 }

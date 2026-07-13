@@ -16,9 +16,20 @@ Two subcommands:
   harvest    Walk the vault, take every note a human marked
              `status: verified` (with `verified_native` filled in), validate
              the text is really in the state's script, and merge it into
-             scraper/translit_overrides.json — the HIGHEST-priority name
-             layer, which the pipeline prefers over both engines. Harvested
-             notes are flipped to `status: merged` so the queue stays clean.
+             the overrides layer — the HIGHEST priority, which the pipeline
+             prefers over both engines. Harvested notes are flipped to
+             `status: merged` so the queue stays clean.
+
+             The note's `scope` picks the destination:
+               scope: name  (default) → translit_overrides.json, keyed by the
+                            lowercased English name — the fix applies to every
+                            village with that name in that language (same
+                            spelling → same transliteration, the common case).
+               scope: code  → translit_overrides_by_code.json, keyed by the
+                            LGD village code — the fix pins to exactly THIS
+                            village. Use it for spellings that must not
+                            propagate (e.g. a locally-used translated form of
+                            a descriptive name like "14 Mile Stone").
 
 The overrides file is the correct destination (not names_translit.json):
 the neural sidecar is regenerated weekly and pruned daily, so a fix written
@@ -36,7 +47,15 @@ import re
 import sys
 from pathlib import Path
 
-from config import OVERRIDES_FILE, ROOT, STATES, load_name_seeds, resolve_codes
+from config import (
+    OVERRIDES_BY_CODE_FILE,
+    OVERRIDES_FILE,
+    ROOT,
+    STATES,
+    load_code_overrides,
+    load_name_seeds,
+    resolve_codes,
+)
 from pipeline import transliterate_batch
 
 VAULT = ROOT / "notes" / "translit-review"
@@ -102,6 +121,7 @@ def generate(state_arg: str, limit: int, root: Path = ROOT) -> int:
         regions = json.loads((web_data / "regions.json").read_text(encoding="utf-8"))
         neural = json.loads((web_data / "names_translit.json").read_text(encoding="utf-8"))
         seeds = load_name_seeds(lang)
+        code_pins = load_code_overrides(lang)
         mandal_names = [m["n"] for m in regions["mandals"]]
 
         rows = [r for r in villages["rows"] if str(r[2]) in neural]
@@ -115,8 +135,8 @@ def generate(state_arg: str, limit: int, root: Path = ROOT) -> int:
         for name, mi, vcode, *_ in sorted(rows, key=lambda r: r[0]):
             if written >= limit:
                 break
-            if name.strip().lower() in seeds:
-                continue  # already human-verified via seeds
+            if name.strip().lower() in seeds or str(vcode) in code_pins:
+                continue  # already human-verified via seeds or a per-village pin
             nn, rn = neural[str(vcode)], rules.get(name, "")
             if not nn or not rn or nn == rn:
                 continue  # engines agree (or one is silent) — low review value
@@ -132,13 +152,18 @@ def generate(state_arg: str, limit: int, root: Path = ROOT) -> int:
                 "lang": lang,
                 "neural": nn,
                 "rules": rn,
+                "scope": "name",
                 "status": "needs-review",
                 "verified_native": "",
             }
             body = (
                 "Pick (or type) the correct native spelling into `verified_native` above\n"
                 "and set `status: verified`. `scraper/translit_review.py harvest` merges\n"
-                "it into translit_overrides.json — the highest-priority name layer.\n\n"
+                "it into the overrides — the highest-priority name layer.\n\n"
+                "`scope: name` (default) applies the fix to EVERY village with this\n"
+                "English name in this language; change to `scope: code` to pin it to\n"
+                "just this village (right for translated/descriptive forms that don't\n"
+                "generalise).\n\n"
                 "### Context notes\n\n"
                 "- neural (IndicXlit) and the rule engine disagree on this name\n"
             )
@@ -153,10 +178,16 @@ def generate(state_arg: str, limit: int, root: Path = ROOT) -> int:
 # --------------------------------------------------------------------------- #
 # harvest
 # --------------------------------------------------------------------------- #
-def harvest(dry_run: bool, root: Path = ROOT, overrides_file: Path = OVERRIDES_FILE) -> int:
+def harvest(
+    dry_run: bool,
+    root: Path = ROOT,
+    overrides_file: Path = OVERRIDES_FILE,
+    by_code_file: Path = OVERRIDES_BY_CODE_FILE,
+) -> int:
     vault = root / "notes" / "translit-review"
     overrides = json.loads(overrides_file.read_text(encoding="utf-8"))
-    merged, bad = 0, []
+    by_code = json.loads(by_code_file.read_text(encoding="utf-8"))
+    by_name_n, by_code_n, bad = 0, 0, []
     for path in sorted(vault.rglob("*.md")):
         if path.name == "README.md":
             continue
@@ -164,36 +195,62 @@ def harvest(dry_run: bool, root: Path = ROOT, overrides_file: Path = OVERRIDES_F
         meta = parse_note(text)
         if not meta or meta.get("status", "").lower() != "verified":
             continue
-        lang, name_en, native = (
+        lang, name_en, code, native = (
             meta.get("lang", ""),
             meta.get("name_en", ""),
+            meta.get("lgd_code", ""),
             meta.get("verified_native", ""),
         )
-        if not (lang in SCRIPT_RANGES and name_en and native):
-            bad.append(f"{path}: verified but lang/name_en/verified_native incomplete")
+        scope = (meta.get("scope") or "name").strip().lower()
+        if scope not in ("name", "code"):
+            bad.append(f"{path}: unknown scope {scope!r} (use name or code)")
+            continue
+        key = code if scope == "code" else name_en
+        if not (lang in SCRIPT_RANGES and key and native):
+            field = "lgd_code" if scope == "code" else "name_en"
+            bad.append(f"{path}: verified but lang/{field}/verified_native incomplete")
             continue
         if not in_script(native, lang):
             bad.append(f"{path}: {native!r} is not in the {lang} script")
             continue
-        overrides.setdefault(lang, {})[name_en.strip().lower()] = native
-        merged += 1
+        if scope == "code":
+            by_code.setdefault(lang, {})[code.strip()] = native
+            by_code_n += 1
+        else:
+            en_key = name_en.strip().lower()
+            cur = (overrides.get(lang) or {}).get(en_key)
+            if cur and cur != native:
+                bad.append(
+                    f"{path}: {native!r} conflicts with existing {lang} override "
+                    f"{cur!r} for {name_en!r} — if the villages genuinely differ, "
+                    f"use scope: code"
+                )
+                continue
+            overrides.setdefault(lang, {})[en_key] = native
+            by_name_n += 1
         if not dry_run:
             path.write_text(text.replace("status: verified", "status: merged", 1), encoding="utf-8")
 
     for msg in bad:
         print(f"[error] {msg}", file=sys.stderr)
-    if merged and not dry_run:
-        for lang in SCRIPT_RANGES:
-            if lang in overrides and isinstance(overrides[lang], dict):
-                overrides[lang] = dict(sorted(overrides[lang].items()))
-        overrides_file.write_text(
-            json.dumps(overrides, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-        )
+    if not dry_run:
+        for dest_n, dest, dest_file in (
+            (by_name_n, overrides, overrides_file),
+            (by_code_n, by_code, by_code_file),
+        ):
+            if not dest_n:
+                continue
+            for lang in SCRIPT_RANGES:
+                if lang in dest and isinstance(dest[lang], dict):
+                    dest[lang] = dict(sorted(dest[lang].items()))
+            dest_file.write_text(
+                json.dumps(dest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            )
     print(
-        f"[harvest] merged {merged} verified names into {overrides_file.name}"
-        + (" (dry run)" if dry_run else "")
+        f"[harvest] merged {by_name_n} by-name → {overrides_file.name}, "
+        f"{by_code_n} by-code → {by_code_file.name}" + (" (dry run)" if dry_run else "")
     )
-    if merged and not dry_run:
+    if (by_name_n or by_code_n) and not dry_run:
         print("[harvest] re-run the pipeline (or wait for the daily refresh) to ship them")
     return 1 if bad else 0
 

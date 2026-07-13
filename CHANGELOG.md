@@ -12,6 +12,23 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-07-13
+
+### Added
+
+- **Per-village override scope** in the transliteration review loop — a review
+  note can now say `scope: code` so the verified spelling merges into the new
+  `scraper/translit_overrides_by_code.json`, keyed by LGD village code, and
+  pins to exactly that village (for translated/descriptive forms that must not
+  propagate); the `scope: name` default still merges by English name into
+  `translit_overrides.json` so one fix reaches every same-named village.
+  `harvest` now also errors when two name-scoped notes disagree about the same
+  name instead of letting the last one win, and the pipeline reads the pins
+  ahead of the name-keyed seeds when filling authoritative `names.json`.
+- **First harvested batch of human-verified village names** from the review
+  queue — verified spellings across all four states merged into the overrides
+  layer (including one per-village pin), shipping on the next data refresh.
+
 ## [1.4.0] — 2026-07-13
 
 ### Added
@@ -358,7 +375,8 @@ Source` column recording which. Generated via the shared UI engine
 - Community-health files: Contributing guide, Code of Conduct, Security policy,
   and issue / pull-request templates.
 
-[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/mchittineni/india-village-finder/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/mchittineni/india-village-finder/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/mchittineni/india-village-finder/compare/v1.2.12...v1.3.0
 [1.2.12]: https://github.com/mchittineni/india-village-finder/compare/v1.2.11...v1.2.12
