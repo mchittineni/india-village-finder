@@ -14,6 +14,17 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ### Added
 
+- **Transliteration review queue in the vault** —
+  `scraper/translit_review.py generate` writes one Obsidian note per village
+  where the neural (IndicXlit) and rule-engine names disagree
+  (`notes/translit-review/`, both candidates in the frontmatter); after human
+  verification, `harvest` merges the confirmed spellings into
+  `translit_overrides.json` — the highest-priority name layer — with
+  script-range validation so a wrong-keyboard slip can't reach production.
+  Queue seeded with the first 40 disagreements across the four states.
+
+### Added
+
 - **Blog cross-posting** — `publish-blog.yml` turns every GitHub Release into a
   blog post (`scraper/blog_post.py`: evergreen project intro + the version's
   CHANGELOG section, or the release notes as fallback) and posts it to

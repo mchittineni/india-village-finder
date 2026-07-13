@@ -34,3 +34,10 @@ Start here. Each link is a note in this vault; see [README](README.md) for conve
 ## Reference
 
 - [[farm-input-rates]] — notified fertilizer prices & NBS rates (update per season)
+
+## Review queues
+
+- [translit-review/](translit-review/README.md) — human verification of
+  village-name transliterations: `generate` fills the queue with
+  neural-vs-rules disagreements, you verify in Obsidian, `harvest` merges
+  into the highest-priority overrides layer
