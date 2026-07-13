@@ -1,4 +1,4 @@
-name: build-parcels-index
+name: Update Parcels Index
 
 # Regenerates <slug>/web/data/parcels_index.json — the village -> parcel bbox
 # lookup that lets the map jump precisely to a village's land parcels. The scan
@@ -34,6 +34,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     env:
       # Bind dispatch inputs to env and reference them as shell vars, never
       # interpolate ${{ inputs.* }} directly into a run: script (that substitutes
@@ -41,6 +42,7 @@ jobs:
       SLUG: ${{ inputs.slug }}
       PMTILES_URL: ${{ inputs.pmtiles_url }}
       SOURCE_LAYER: ${{ inputs.source_layer }}
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7

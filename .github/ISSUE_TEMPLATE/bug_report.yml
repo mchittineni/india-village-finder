@@ -1,10 +1,14 @@
 name: "🐛 Bug report"
+
 description: Something in the map or search isn't working as expected
+
 labels: ["bug"]
+
 body:
   - type: markdown
     attributes:
       value: "Thanks for taking the time to report this! The more detail, the faster we can fix it."
+
   - type: dropdown
     id: area
     attributes:
@@ -17,6 +21,7 @@ body:
         - Other / not sure
     validations:
       required: true
+
   - type: textarea
     id: what-happened
     attributes:
@@ -25,15 +30,18 @@ body:
       placeholder: "I searched for 'X', clicked the result, and the map didn't move…"
     validations:
       required: true
+
   - type: textarea
     id: expected
     attributes:
       label: What did you expect to happen?
+
   - type: input
     id: url
     attributes:
       label: Page URL (if relevant)
       placeholder: https://mchittineni.github.io/india-village-finder/...
+      
   - type: input
     id: env
     attributes:

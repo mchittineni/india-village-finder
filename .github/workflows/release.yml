@@ -1,5 +1,4 @@
-name: Publish data release
-
+name: Update Village Data Release
 # Publishes the datasets as a versioned GitHub Release whenever fresh data lands
 # on main (a data-refresh PR merge), or on manual dispatch.
 #
@@ -37,8 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     # `bump` is a constrained choice input, but bind it to env rather than
     # interpolate ${{ }} into the run: script (consistent no-inline-inputs rule).
+
     env:
       BUMP_INPUT: ${{ github.event.inputs.bump }}
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7

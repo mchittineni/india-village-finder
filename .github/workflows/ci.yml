@@ -1,4 +1,4 @@
-name: data-validation
+name: Validate Data
 
 on:
   pull_request:

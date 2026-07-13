@@ -1,6 +1,9 @@
 name: "🗂️ Data correction"
+
 description: Report an incorrect, missing, or misplaced village / mandal / district / pincode
+
 labels: ["data"]
+
 body:
   - type: markdown
     attributes:
@@ -8,6 +11,7 @@ body:
         Our data comes from the **Local Government Directory (LGD)**. We can fix mapping
         issues on our side; for genuinely wrong source records, please also report to
         [lgdirectory.gov.in](https://lgdirectory.gov.in).
+
   - type: dropdown
     id: state
     attributes:
@@ -15,18 +19,22 @@ body:
       options: [Andhra Pradesh, Telangana]
     validations:
       required: true
+
   - type: input
     id: district
     attributes:
       label: District
+
   - type: input
     id: mandal
     attributes:
       label: Mandal
+
   - type: input
     id: village
     attributes:
       label: Village (and LGD code if known)
+      
   - type: dropdown
     id: kind
     attributes:
@@ -40,6 +48,7 @@ body:
         - Other
     validations:
       required: true
+      
   - type: textarea
     id: details
     attributes:

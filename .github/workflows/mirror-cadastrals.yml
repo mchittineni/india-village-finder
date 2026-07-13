@@ -1,4 +1,4 @@
-name: mirror-cadastrals
+name: Update Cadastral PMTiles
 
 # Mirrors each state's cadastral PMTiles from the upstream community releases
 # (ramSeraph/indian_cadastrals — the only open, CC0 source of the vectorised,
@@ -52,8 +52,10 @@ jobs:
   mirror:
     name: mirror ${{ matrix.state }} to R2
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false # one state's outage must not cancel the others
+
       matrix:
         include:
           - state: andhra-pradesh
@@ -62,6 +64,7 @@ jobs:
             asset: TRACGIS_Bhunaksha_Cadastrals.pmtiles
           - state: karnataka
             asset: KGISMAPS_KN_Cadastrals.pmtiles
+
     concurrency:
       group: mirror-cadastrals-${{ matrix.state }}
       cancel-in-progress: false
@@ -77,6 +80,7 @@ jobs:
       STATE: ${{ matrix.state }}
       ONLY_STATE: ${{ github.event.inputs.only_state || 'all' }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
     steps:
       - name: Verify secrets are configured
         run: |
