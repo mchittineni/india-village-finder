@@ -397,13 +397,14 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         except Exception:
             neural_native = {}
 
-    # The neural/region native-name sidecars are produced offline (weekly
-    # IndicXlit workflow) and committed, so a daily LGD refresh can orphan
-    # entries: villages/mandals get renumbered or dropped upstream, and a
-    # village can gain an authoritative name it previously lacked. Prune both
-    # files against THIS run's codes so a refresh PR stays internally
-    # consistent (test_data.py enforces these invariants); the weekly regen
-    # then fills in names for genuinely new villages.
+    # The neural/region native-name and precise-coordinate sidecars are
+    # produced by their own slower cadences (weekly IndicXlit workflow,
+    # monthly enrich_coords run) and committed, so a daily LGD refresh can
+    # orphan entries: villages/mandals get renumbered or dropped upstream,
+    # and a village can gain an authoritative name it previously lacked.
+    # Prune them against THIS run's codes so a refresh PR stays internally
+    # consistent (test_data.py enforces these invariants); the slower regen
+    # then fills in entries for genuinely new villages.
     valid_codes = {str(v["code"]) for v in writable}
     pruned = {
         code: name
@@ -438,6 +439,17 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
                 rn_path.write_text(
                     json.dumps(rn, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
                 )
+    coords_path = web_data / "coords.json"
+    if coords_path.exists():
+        try:
+            coords = json.loads(coords_path.read_text(encoding="utf-8"))
+        except Exception:
+            coords = None
+        if coords:
+            keep = {c: ll for c, ll in coords.items() if c in valid_codes}
+            if keep != coords:
+                print(f"[{cfg['slug']}] pruned {len(coords) - len(keep)} stale precise coords")
+                coords_path.write_text(json.dumps(keep, separators=(",", ":")))
     with open(
         state_dir / "data" / f"{cfg['slug']}_villages.csv", "w", newline="", encoding="utf-8"
     ) as fh:
