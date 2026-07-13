@@ -27,6 +27,22 @@ Statuses: `needs-review` → `verified` (you) → `merged` (harvest).
 Use `status: rejected` for names you looked at and deliberately left to the
 engines — generate won't recreate an existing note.
 
+### When BOTH candidates are wrong
+
+`verified_native` is free text — type the correct spelling from any source
+(Google Maps' native label, the village's own signage/records, local
+knowledge). Two cautions:
+
+- **Transliterate, don't translate.** Google _Translate_ renders meaning —
+  "Mile Stone" becomes మైలురాయి (the word for a milestone) instead of the
+  place-name spelling మైల్ స్టోన్. Google _Maps_' native-language label, or how
+  locals actually write the name, is the better reference. The script guard
+  catches wrong-alphabet slips, but a fluent-looking mistranslation is exactly
+  what only the human can catch.
+- **The fix applies by English name, not by village code** — every village
+  with that English spelling in that language gets it (that's the seed-layer
+  semantic, and for same-named villages it's almost always what you want).
+
 ## Reviewing fast in Obsidian
 
 Open `notes/` as a vault, then:
