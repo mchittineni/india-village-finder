@@ -14,6 +14,46 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ### Added
 
+- **Farmer schemes panel** — the government schemes a farmer can apply for (the
+  state's own + Central, "Agriculture, Rural & Environment"), with scheme names in
+  all six UI languages, grouped Central/State, searchable, each entry linking to its
+  how-to-apply page on [myScheme](https://www.myscheme.gov.in/).
+  `scraper/fetch_farmer_schemes.py` + `update-farmer-schemes.yml` snapshot the
+  myScheme search API weekly to the `data/farmer-schemes` branch; the app
+  (`web/schemes.js`) fetches it at runtime.
+- **Farm-inputs reference** — the schemes panel also shows the notified fertilizer
+  prices (statutory urea MRP, NBS-subsidised DAP; curated per season in
+  `config.FARM_INPUTS`) with links to the official fertilizer-stock (iFMS/urvarak)
+  and Soil Health Card portals. Live stock/soil feeds were evaluated and skipped —
+  urvarak.nic.in drops connections and the SHC portal blocks automation.
+
+## [1.2.12] — 2026-07-13
+
+### Fixed
+
+- **Stale precise-coordinate entries broke data validation** — `coords.json` is
+  regenerated only by the monthly `enrich_coords.py` run, so daily LGD refreshes
+  orphan entries as villages are dropped/renumbered upstream (990 stale codes across
+  the four states by this refresh). The pipeline now prunes it against each run's
+  village codes, like the native-name sidecars.
+
+### Changed
+
+- **Village counts rebased** by the 13Jul2026 LGD dump — a large upstream
+  renumbering wave (AP 15,314 · TG 10,075 · KA 26,319 · TN 16,332 villages;
+  AP gained a mandal, 688).
+
+## [1.2.11] — 2026-07-12
+
+### Changed
+
+- Neural native names regenerated (IndicXlit) on the refreshed data.
+- Dependabot bumps: `actions/labeler` 6.2.0, `actions/stale` 10.4.0.
+
+## [1.2.10] — 2026-07-10
+
+### Added
+
 - **Agromet weather panel** — from a pinned village, current conditions plus a 7-day
   agricultural forecast (min/max °C, rainfall, rain probability) via the keyless,
   CORS-enabled [Open-Meteo](https://open-meteo.com/) API (`web/weather.js`), localised
@@ -280,7 +320,10 @@ Source` column recording which. Generated via the shared UI engine
 - Community-health files: Contributing guide, Code of Conduct, Security policy,
   and issue / pull-request templates.
 
-[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.2.9...HEAD
+[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.2.12...HEAD
+[1.2.12]: https://github.com/mchittineni/india-village-finder/compare/v1.2.11...v1.2.12
+[1.2.11]: https://github.com/mchittineni/india-village-finder/compare/v1.2.10...v1.2.11
+[1.2.10]: https://github.com/mchittineni/india-village-finder/compare/v1.2.9...v1.2.10
 [1.2.9]: https://github.com/mchittineni/india-village-finder/compare/v1.2.8...v1.2.9
 [1.2.8]: https://github.com/mchittineni/india-village-finder/compare/v1.2.7...v1.2.8
 [1.2.7]: https://github.com/mchittineni/india-village-finder/compare/v1.2.6...v1.2.7

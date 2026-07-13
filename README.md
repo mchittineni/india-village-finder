@@ -48,8 +48,8 @@ modern web interface or API.
 |                  | Andhra Pradesh |  Telangana |  Karnataka | Tamil Nadu |
 | ---------------- | -------------: | ---------: | ---------: | ---------: |
 | Districts        |             28 |         33 |         31 |         38 |
-| Mandals / Taluks |            687 |        617 |        240 |        317 |
-| **Villages**     |     **14,715** | **10,983** | **26,753** | **15,833** |
+| Mandals / Taluks |            688 |        617 |        240 |        317 |
+| **Villages**     |     **15,314** | **10,075** | **26,319** | **16,332** |
 
 _(Counts come from the latest LGD refresh via the data.gov.in API; the automated
 pipeline keeps them current. Karnataka's and Tamil Nadu's sub-districts are
@@ -111,6 +111,12 @@ pipeline keeps them current. Karnataka's and Tamil Nadu's sub-districts are
 - **Groundwater & soil overlays** — optional map layers: **groundwater prospects**
   (Bhuvan/NRSC lithology–geomorphology, classified by well depth & yield) and
   **soil type** (ISRIC SoilGrids WRB class), togglable from the layers control.
+- **Farmer schemes & farm inputs** — the government schemes a farmer can apply
+  for (the state's own + Central, from the national **myScheme** platform, with
+  scheme names in all six UI languages and each entry linking to its
+  how-to-apply page), refreshed weekly — plus a quick reference of notified
+  fertilizer prices (urea MRP, NBS-subsidised DAP) with links to the official
+  fertilizer-stock and Soil Health Card portals.
 - **Fresh data, automatically** — refreshed from the Government of India's
   **Local Government Directory (LGD)** and proposed as a reviewed pull request,
   so nothing reaches the live site without passing tests and a review.
@@ -127,7 +133,7 @@ pipeline keeps them current. Karnataka's and Tamil Nadu's sub-districts are
 ├── andhra_pradesh/          # self-contained Andhra Pradesh deliverable
 │   ├── data/                #   andhra_pradesh_villages.csv (one row per village)
 │   └── web/                 #   the map app (index.html, app.js, i18n.js, nearby.js,
-│       │                    #   weather.js, mandi.js, styles.css, config.js)
+│       │                    #   weather.js, mandi.js, schemes.js, styles.css, config.js)
 │       └── data/            #   regions, villages, meta, coords, names, names_translit,
 │                            #   regions_native (.json) + districts/mandals (.geojson)
 ├── telangana/               # identical structure, for Telangana
@@ -141,6 +147,7 @@ pipeline keeps them current. Karnataka's and Tamil Nadu's sub-districts are
 │   ├── pipeline.py          #   LGD data → per-state village data (JSON + CSV) + web app
 │   ├── lgd_datagov.py       #   fetches LGD data from the data.gov.in open-data API
 │   ├── fetch_mandi_prices.py #  daily Agmarknet mandi-price snapshots (data.gov.in)
+│   ├── fetch_farmer_schemes.py # weekly myScheme farmer-scheme snapshots (multilingual)
 │   ├── build_boundaries.py  #   LGD polygons → simplified per-state map shapes
 │   ├── build_boundary_tiles.py # all-state boundary polygons → tiles/boundaries.pmtiles
 │   ├── build_parcels_index.py #  cadastral tiles → per-village parcel bbox/centroid index
@@ -158,11 +165,13 @@ pipeline keeps them current. Karnataka's and Tamil Nadu's sub-districts are
 └── .github/
     ├── actions/             # local composite actions — steps shared by the workflows
     │   ├── setup-pipeline/  #   Python (+ optional Node) toolchain + dependency install
-    │   ├── open-data-pr/    #   commit changed outputs to a branch + open a reviewed PR
-    │   └── datagov-fetch/   #   run a data.gov.in fetch with the exit-75 outage-skip contract
+    │   ├── datagov-fetch/   #   run an upstream fetch with the exit-75 outage-skip contract
+    │   ├── publish-data-branch/ # commit generated files to a data/* branch (no PR)
+    │   └── overlay-data-branches/ # copy data/* branch contents over the working tree
     └── workflows/           # each workflow keeps only its unique logic
         ├── update-data.yml      #   daily data + monthly boundaries refresh → reviewed PR
         ├── update-mandi-prices.yml # daily Agmarknet snapshots → data/mandi-prices branch
+        ├── update-farmer-schemes.yml # weekly myScheme snapshots → data/farmer-schemes branch
         ├── regenerate-native-names.yml # weekly/on-demand neural names → reviewed PR
         ├── seed-osm-names.yml   #   monthly OSM native-name harvest → data/osm-names branch
         ├── build-parcels-index.yml #  rebuilds the village→parcel indexes → data/parcels-index branch
@@ -194,6 +203,8 @@ differs by an LGD state code (Andhra Pradesh = `28`, Telangana = `36`, Karnataka
 | Nearby civic services                | [OpenStreetMap](https://www.openstreetmap.org/copyright) via [Overpass](https://overpass-api.de/)                                   | Live, on-demand lookup of hospitals/offices/police near a pinned village (ODbL).                                                                                                                                                                                                                                                                                             |
 | Land parcels (cadastre)              | APSAC (AP) / TRACGIS (TG) / KGIS (KA), **CC0**, via [`ramSeraph/indian_cadastrals`](https://github.com/ramSeraph/indian_cadastrals) | Each state GIS agency's own survey-plot extract — the only open, vectorised, survey-numbered source (the agencies' live servers are token-gated).                                                                                                                                                                                                                            |
 | Mandi (APMC) prices                  | **Agmarknet**, Ministry of Agriculture & Farmers Welfare, via the [data.gov.in](https://data.gov.in/) API                           | The government's own daily market-arrival price feed; snapshotted per state each day by `update-mandi-prices.yml` (prices are ₹/quintal; not every mandi reports every day).                                                                                                                                                                                                 |
+| Farmer schemes                       | **[myScheme](https://www.myscheme.gov.in/)** (Digital India / NeGD)                                                                 | The national scheme-discovery platform's own search API; the state's + Central "Agriculture, Rural & Environment" schemes, snapshotted weekly by `update-farmer-schemes.yml` with names in all six UI languages. Coverage varies by state — some state agriculture schemes aren't onboarded there yet.                                                                       |
+| Fertilizer reference prices          | Dept. of Fertilizers notifications (curated)                                                                                        | No open live feed exists — iFMS/urvarak.nic.in drops connections and the Soil Health portal blocks automation — so the notified urea MRP / NBS-subsidised DAP price are curated in `config.FARM_INPUTS` per season, with links to the official portals for live stock.                                                                                                       |
 | Weather forecast                     | [Open-Meteo](https://open-meteo.com/) (CC BY 4.0)                                                                                   | National-weather-model aggregator with an open, keyless, CORS-enabled API — fetched live by the browser, never stored.                                                                                                                                                                                                                                                       |
 | Groundwater / soil overlays          | [Bhuvan](https://bhuvan.nrsc.gov.in) (NRSC/ISRO) · [ISRIC SoilGrids](https://soilgrids.org) (CC BY 4.0)                             | Bhuvan's RGNDWM groundwater-prospect maps (1:50K, classified by well depth/yield) and SoilGrids' WRB soil classes, rendered as standard WMS overlays straight from the source servers.                                                                                                                                                                                       |
 
@@ -265,6 +276,7 @@ So the commit history doubles as an auditable, reviewed changelog of the data.
 > | Branch                | Content                                               | Consumed by                                 |
 > | --------------------- | ----------------------------------------------------- | ------------------------------------------- |
 > | `data/mandi-prices`   | daily Agmarknet price snapshots                       | the app, at runtime (raw.githubusercontent) |
+> | `data/farmer-schemes` | weekly myScheme farmer-scheme snapshots               | the app, at runtime (raw.githubusercontent) |
 > | `data/boundary-tiles` | `tiles/boundaries.pmtiles` + `boundary_bounds.json`   | Pages deploys + release zips (overlay)      |
 > | `data/parcels-index`  | per-state `parcels_index.json`, `village_points.json` | Pages deploys + release zips (overlay)      |
 > | `data/osm-names`      | `scraper/osm_names.json` (OSM name seeds)             | pipeline runs, at build time (overlay)      |
@@ -367,6 +379,8 @@ If you use this project in research or a product, please cite it — see
   read via the **[data.gov.in](https://data.gov.in/) open-data API**.
 - **[Agmarknet](https://agmarknet.gov.in/)** — Ministry of Agriculture & Farmers
   Welfare — daily mandi (APMC market) prices, via the data.gov.in API.
+- **[myScheme](https://www.myscheme.gov.in/)** — Digital India / NeGD — the national
+  government-scheme discovery platform, source of the farmer-schemes panel.
 - **[@ramSeraph](https://github.com/ramSeraph)** — the
   [admin-boundary polygons](https://github.com/ramSeraph/indian_admin_boundaries) and
   [cadastral data](https://github.com/ramSeraph/indian_cadastrals) (APSAC / TRACGIS /
