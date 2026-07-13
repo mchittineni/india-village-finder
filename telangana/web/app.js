@@ -2229,6 +2229,15 @@
       wrap.appendChild(wxBox);
     }
 
+    // Soil & fertilizer profile — SoilGrids model estimate, fetched on demand.
+    var soilBtn, soilBox;
+    if (window.VF_SOIL) {
+      soilBtn = el("button", "vpop-nb-btn", esc(t("soil_btn")));
+      soilBox = el("div", "vpop-wx");
+      wrap.appendChild(soilBtn);
+      wrap.appendChild(soilBox);
+    }
+
     // Mandi prices — the district's daily Agmarknet quotes, in a side panel.
     var mpBtn;
     if (window.VF_MANDI && CFG.mandi && CFG.mandi.url) {
@@ -2257,6 +2266,11 @@
     if (wxBtn) {
       wxBtn.onclick = function () {
         loadWeather(wxBtn, wxBox, center.lat, center.lng);
+      };
+    }
+    if (soilBtn) {
+      soilBtn.onclick = function () {
+        loadSoil(soilBtn, soilBox, center.lat, center.lng);
       };
     }
     if (mpBtn) {
@@ -2473,6 +2487,99 @@
     src.rel = "noopener";
     src.textContent = t("wx_src");
     box.appendChild(src);
+  }
+
+  // ---- soil & fertilizer profile (SoilGrids point model, on demand) -------
+  /**
+   * Fetch the soil profile for a point and render it into the popup box,
+   * with a tap-to-retry affordance on failure (mirrors loadWeather).
+   * @param {HTMLButtonElement} btn  The trigger button.
+   * @param {HTMLElement} box  Container for the results/status.
+   * @param {number} lat  Latitude.
+   * @param {number} lng  Longitude.
+   * @returns {void}
+   */
+  function loadSoil(btn, box, lat, lng) {
+    btn.disabled = true;
+    btn.classList.add("loading");
+    box.innerHTML = "";
+    box.appendChild(el("div", "nb-status", esc(t("soil_loading"))));
+    window.VF_SOIL.fetch(lat, lng)
+      .then(function (soil) {
+        renderSoil(btn, box, soil);
+      })
+      .catch(function () {
+        btn.classList.add("hidden");
+        box.innerHTML = "";
+        var retry = el("button", "nb-status nb-retry", esc(t("soil_err")));
+        retry.onclick = function () {
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("loading");
+          loadSoil(btn, box, lat, lng);
+        };
+        box.appendChild(retry);
+      });
+  }
+
+  /**
+   * Render the soil & fertilizer profile into the popup box: soil type
+   * (WRB group + Indian common name + texture), pH / organic carbon, the
+   * all-India balanced N-P-K guideline and the indicative nutrient note.
+   * Every value is a SoilGrids model estimate — the footer keeps the
+   * "confirm with a Soil Health Card test" framing.
+   * @param {HTMLButtonElement} btn  The trigger button (hidden once results show).
+   * @param {HTMLElement} box  Container for the results.
+   * @param {SoilProfile} soil  Model profile.
+   * @returns {void}
+   */
+  function renderSoil(btn, box, soil) {
+    btn.classList.add("hidden"); // the trigger is replaced by its results
+    box.innerHTML = "";
+    var card = el("div", "soil-card");
+
+    var typeBits = [];
+    if (soil.wrb) {
+      var grp = window.VF_SOIL.groupKey(soil.wrb);
+      typeBits.push("<b>" + esc(soil.wrb) + "</b>" + (grp ? " — " + esc(t(grp)) : ""));
+    }
+    var tex = window.VF_SOIL.texture(soil.clayPct, soil.sandPct);
+    if (tex) typeBits.push(esc(t(tex)));
+    if (typeBits.length) {
+      card.appendChild(
+        el("div", "soil-row", esc(t("soil_lbl_type")) + ": " + typeBits.join(" · "))
+      );
+    }
+
+    var propBits = [];
+    if (soil.ph != null) {
+      var phk = window.VF_SOIL.phClass(soil.ph);
+      propBits.push("pH " + soil.ph.toFixed(1) + (phk ? " (" + esc(t(phk)) + ")" : ""));
+    }
+    if (soil.ocPct != null) {
+      propBits.push(esc(t("soil_lbl_oc")) + " " + soil.ocPct.toFixed(1) + "%");
+    }
+    if (propBits.length) card.appendChild(el("div", "soil-row", propBits.join(" · ")));
+
+    card.appendChild(el("div", "soil-row", esc(t("soil_npk"))));
+    card.appendChild(el("div", "soil-note", esc(t(window.VF_SOIL.noteKey(soil.ph, soil.sandPct)))));
+    box.appendChild(card);
+
+    var srcRow = el("div", "wx-src");
+    var sg = document.createElement("a");
+    sg.href = "https://soilgrids.org";
+    sg.target = "_blank";
+    sg.rel = "noopener";
+    sg.textContent = "SoilGrids (CC BY 4.0)";
+    var shc = document.createElement("a");
+    shc.href = "https://soilhealth.dac.gov.in/";
+    shc.target = "_blank";
+    shc.rel = "noopener";
+    shc.textContent = t("soil_verify");
+    srcRow.appendChild(sg);
+    srcRow.appendChild(document.createTextNode(" · "));
+    srcRow.appendChild(shc);
+    box.appendChild(srcRow);
   }
 
   // ---- mandi prices (Agmarknet daily snapshot, side panel) ---------------

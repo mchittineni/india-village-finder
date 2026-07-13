@@ -1255,6 +1255,26 @@ button.nb-retry:hover {
 .vpop-wx {
   margin-top: 8px;
 }
+/* soil & fertilizer profile (shares the .vpop-wx container) */
+.soil-card {
+  padding: 8px;
+  border-radius: 9px;
+  background: var(--brand-soft, var(--bg));
+}
+.soil-row {
+  font-size: 0.76rem;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.soil-row b {
+  font-weight: 650;
+}
+.soil-note {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
 .wx-now {
   display: flex;
   align-items: center;

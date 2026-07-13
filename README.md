@@ -111,6 +111,12 @@ pipeline keeps them current. Karnataka's and Tamil Nadu's sub-districts are
 - **Groundwater & soil overlays** — optional map layers: **groundwater prospects**
   (Bhuvan/NRSC lithology–geomorphology, classified by well depth & yield) and
   **soil type** (ISRIC SoilGrids WRB class), togglable from the layers control.
+- **Soil & fertilizer profile** — from a pinned village, the point's soil type
+  (WRB group + the Indian common name — black cotton / red / alluvial — plus
+  texture), pH and organic carbon from the SoilGrids 250 m model, with the
+  all-India balanced N-P-K guideline (4:2:1) and an indicative nutrient note
+  (e.g. zinc-deficiency risk in alkaline soil) — always labelled a model
+  estimate to confirm with a Soil Health Card test.
 - **Farmer schemes & farm inputs** — the government schemes a farmer can apply
   for (the state's own + Central, from the national **myScheme** platform, with
   scheme names in all six UI languages and each entry linking to its
@@ -209,6 +215,7 @@ differs by an LGD state code (Andhra Pradesh = `28`, Telangana = `36`, Karnataka
 | Fertilizer reference prices          | Dept. of Fertilizers notifications (curated)                                                                                        | No open live feed exists — iFMS/urvarak.nic.in drops connections and the Soil Health portal blocks automation — so the notified urea MRP / NBS-subsidised DAP price are curated in `config.FARM_INPUTS` per season, with links to the official portals for live stock.                                                                                                       |
 | Weather forecast                     | [Open-Meteo](https://open-meteo.com/) (CC BY 4.0)                                                                                   | National-weather-model aggregator with an open, keyless, CORS-enabled API — fetched live by the browser, never stored.                                                                                                                                                                                                                                                       |
 | Groundwater / soil overlays          | [Bhuvan](https://bhuvan.nrsc.gov.in) (NRSC/ISRO) · [ISRIC SoilGrids](https://soilgrids.org) (CC BY 4.0)                             | Bhuvan's RGNDWM groundwater-prospect maps (1:50K, classified by well depth/yield) and SoilGrids' WRB soil classes, rendered as standard WMS overlays straight from the source servers.                                                                                                                                                                                       |
+| Soil profile (per village)           | [ISRIC SoilGrids](https://soilgrids.org) point API (CC BY 4.0)                                                                      | The 250 m global model queried live by the browser at the village point (WRB classification + topsoil clay/sand/pH/organic carbon); texture, pH class and the nutrient note are derived client-side by standard agronomic rules and clearly framed as indicative — a Soil Health Card test remains the reference.                                                            |
 
 > ℹ️ Government data can lag recent changes. For example, the brand-new AP districts
 > **Markapuram** and **Polavaram** appear in the lists and search but don't yet have
