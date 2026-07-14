@@ -135,10 +135,6 @@ jobs:
           python -m pytest scraper/tests -v | tee /tmp/pytest.txt
           echo "outcome=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
 
-      # meta.json carries a build timestamp that changes every run; only open a
-      # PR when the actual data (villages / mandals / districts / boundaries) moved.
-      # Globs cover every state folder automatically (incl. new ones like Karnataka)
-      # while deliberately excluding meta.json / boundaries_meta.json (timestamps).
       - name: Detect real data changes
         id: changed
         if: steps.overlay.outputs.count != '0'
