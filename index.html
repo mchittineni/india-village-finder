@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Village Finder — Andhra Pradesh, Telangana, Karnataka &amp; Tamil Nadu</title>
+    <title>Village Finder — Andhra Pradesh, Telangana, Karnataka, Tamil Nadu &amp; Kerala</title>
     <meta
       name="description"
-      content="Interactive maps and search for every village in Andhra Pradesh, Telangana, Karnataka and Tamil Nadu, organised by district and mandal/taluk. Data from the Local Government Directory (LGD)."
+      content="Interactive maps and search for every village in Andhra Pradesh, Telangana, Karnataka, Tamil Nadu and Kerala — with weather, soil profile, mandi prices, government schemes and land parcels per village. Data from the Local Government Directory (LGD)."
     />
     <link
       rel="icon"
@@ -22,14 +22,15 @@
         --tg: #0f9d58;
         --ka: #d97706;
         --tn: #dc2626;
+        --kl: #0d9488;
       }
       * {
         box-sizing: border-box;
       }
       body {
         margin: 0;
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+          sans-serif;
         color: var(--ink);
         background: #f6f7f9;
         -webkit-font-smoothing: antialiased;
@@ -60,17 +61,74 @@
       .lede {
         font-size: 1.12rem;
         color: var(--ink2);
-        max-width: 640px;
+        max-width: 680px;
         margin: 0 0 6px;
       }
       .total {
         font-size: 0.95rem;
         color: var(--ink3);
-        margin: 14px 0 38px;
+        margin: 14px 0 34px;
       }
       .total b {
         color: var(--ink);
       }
+      h2.sec {
+        font-size: 1.05rem;
+        letter-spacing: 0.01em;
+        margin: 46px 0 6px;
+      }
+      .sec-sub {
+        font-size: 0.92rem;
+        color: var(--ink2);
+        margin: 0 0 18px;
+      }
+      /* ---- how it works ---- */
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 14px;
+        counter-reset: step;
+      }
+      .step {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 18px 18px 16px;
+        position: relative;
+      }
+      .step::before {
+        counter-increment: step;
+        content: counter(step);
+        display: inline-grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #eaf2ff;
+        color: var(--ap);
+        font-weight: 750;
+        font-size: 0.85rem;
+        margin-bottom: 10px;
+      }
+      .step h3 {
+        margin: 0 0 6px;
+        font-size: 0.98rem;
+      }
+      .step p {
+        margin: 0;
+        font-size: 0.88rem;
+        color: var(--ink2);
+      }
+      .step .eg {
+        display: block;
+        margin-top: 10px;
+        font-size: 0.8rem;
+        color: var(--ink3);
+        background: #f6f7f9;
+        border-radius: 8px;
+        padding: 7px 10px;
+      }
+      /* ---- state cards ---- */
       .cards {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -136,12 +194,30 @@
       .card.tn:hover {
         border-color: var(--tn);
       }
+      .card.kl {
+        border-color: #bfe8e2;
+      }
+      .card.kl .bar {
+        background: var(--kl);
+      }
+      .card.kl:hover {
+        border-color: var(--kl);
+      }
       .card .kicker {
         font-size: 0.74rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.07em;
         color: var(--ink3);
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .card .native {
+        font-weight: 600;
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: 0.82rem;
       }
       .card h2 {
         font-size: 1.5rem;
@@ -151,7 +227,7 @@
       .card .stats {
         display: flex;
         gap: 22px;
-        margin-bottom: 16px;
+        margin-bottom: 14px;
       }
       .card .stat .n {
         font-size: 1.5rem;
@@ -169,6 +245,9 @@
       }
       .card.tn .stat .n {
         color: var(--tn);
+      }
+      .card.kl .stat .n {
+        color: var(--kl);
       }
       .card .stat .l {
         font-size: 0.74rem;
@@ -195,8 +274,36 @@
       .card.tn .go {
         color: var(--tn);
       }
+      .card.kl .go {
+        color: var(--kl);
+      }
+      /* ---- feature grid ---- */
+      .feats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+        gap: 12px;
+      }
+      .feat {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 13px 15px;
+        font-size: 0.88rem;
+      }
+      .feat b {
+        display: block;
+        margin-bottom: 2px;
+      }
+      .feat .src {
+        color: var(--ink3);
+        font-size: 0.78rem;
+      }
+      .feat .ico {
+        font-size: 1.05rem;
+        margin-right: 6px;
+      }
       .meta {
-        margin-top: 42px;
+        margin-top: 46px;
         padding-top: 22px;
         border-top: 1px solid var(--line);
         font-size: 0.86rem;
@@ -226,17 +333,48 @@
       <div class="hero-mark">◴</div>
       <h1>Village Finder</h1>
       <p class="lede">
-        Find any village in <strong>Andhra Pradesh</strong>, <strong>Telangana</strong>,
-        <strong>Karnataka</strong> and <strong>Tamil Nadu</strong> on an interactive map — drill
-        from state to district to mandal/taluk, or search across tens of thousands of villages
-        instantly.
+        Every village in <strong>Andhra Pradesh</strong>, <strong>Telangana</strong>,
+        <strong>Karnataka</strong>, <strong>Tamil Nadu</strong> and <strong>Kerala</strong> on an
+        interactive map — with the things a villager actually needs next to it: today's mandi
+        prices, weather, soil &amp; fertilizer guidance, government schemes and land parcels.
       </p>
       <p class="total" id="total">Loading totals…</p>
 
+      <h2 class="sec">How it works</h2>
+      <p class="sec-sub">Three steps, no login, works on any phone browser.</p>
+      <div class="steps">
+        <div class="step">
+          <h3>Pick your state</h3>
+          <p>
+            Open one of the five state maps below. You can switch state — or switch the whole UI
+            between 7 languages (English, తెలుగు, ಕನ್ನಡ, தமிழ், മലയാളം, हिन्दी, اردو) — from the top
+            bar at any time.
+          </p>
+        </div>
+        <div class="step">
+          <h3>Find your village</h3>
+          <p>
+            Type its name in the search box — English spellings match native-script names too — or
+            drill down district → mandal/taluk → village from the side panel.
+          </p>
+          <span class="eg">e.g. “Kondapalli”, “Vadakara”, “Hosahalli”…</span>
+        </div>
+        <div class="step">
+          <h3>Tap the village</h3>
+          <p>
+            The popup gives one-tap buttons for weather &amp; forecast, soil &amp; fertilizer, mandi
+            prices, government schemes, land parcels with survey numbers, and nearby hospitals,
+            police and offices.
+          </p>
+        </div>
+      </div>
+
+      <h2 class="sec">Choose a state</h2>
+      <p class="sec-sub">Live counts straight from the latest LGD refresh.</p>
       <div class="cards">
         <a class="card ap" href="andhra_pradesh/web/index.html">
           <span class="bar"></span>
-          <div class="kicker">State</div>
+          <div class="kicker"><span>State</span><span class="native">తెలుగు</span></div>
           <h2>Andhra Pradesh</h2>
           <div class="stats">
             <div class="stat">
@@ -257,7 +395,7 @@
 
         <a class="card tg" href="telangana/web/index.html">
           <span class="bar"></span>
-          <div class="kicker">State</div>
+          <div class="kicker"><span>State</span><span class="native">తెలుగు</span></div>
           <h2>Telangana</h2>
           <div class="stats">
             <div class="stat">
@@ -278,7 +416,7 @@
 
         <a class="card ka" href="karnataka/web/index.html">
           <span class="bar"></span>
-          <div class="kicker">State</div>
+          <div class="kicker"><span>State</span><span class="native">ಕನ್ನಡ</span></div>
           <h2>Karnataka</h2>
           <div class="stats">
             <div class="stat">
@@ -299,7 +437,7 @@
 
         <a class="card tn" href="tamil_nadu/web/index.html">
           <span class="bar"></span>
-          <div class="kicker">State</div>
+          <div class="kicker"><span>State</span><span class="native">தமிழ்</span></div>
           <h2>Tamil Nadu</h2>
           <div class="stats">
             <div class="stat">
@@ -317,6 +455,66 @@
           </div>
           <span class="go">Open the map →</span>
         </a>
+
+        <a class="card kl" href="kerala/web/index.html">
+          <span class="bar"></span>
+          <div class="kicker"><span>State</span><span class="native">മലയാളം</span></div>
+          <h2>Kerala</h2>
+          <div class="stats">
+            <div class="stat">
+              <div class="n" id="kl-d">—</div>
+              <div class="l">Districts</div>
+            </div>
+            <div class="stat">
+              <div class="n" id="kl-m">—</div>
+              <div class="l">Taluks</div>
+            </div>
+            <div class="stat">
+              <div class="n" id="kl-v">—</div>
+              <div class="l">Villages</div>
+            </div>
+          </div>
+          <span class="go">Open the map →</span>
+        </a>
+      </div>
+
+      <h2 class="sec">What you get on every village</h2>
+      <p class="sec-sub">
+        All from free, open government and community data — refreshed automatically.
+      </p>
+      <div class="feats">
+        <div class="feat">
+          <b><span class="ico">🌦️</span>Weather &amp; 7-day forecast</b>
+          <span class="src">Open-Meteo agromet model</span>
+        </div>
+        <div class="feat">
+          <b><span class="ico">🧪</span>Soil &amp; fertilizer profile</b>
+          <span class="src">Soil type, pH, N-P-K guide — ISRIC SoilGrids</span>
+        </div>
+        <div class="feat">
+          <b><span class="ico">🌾</span>Mandi prices, daily</b>
+          <span class="src">Agmarknet via data.gov.in</span>
+        </div>
+        <div class="feat">
+          <b><span class="ico">🏛️</span>Schemes for farmers</b>
+          <span class="src">Central + state — myScheme</span>
+        </div>
+        <div class="feat">
+          <b><span class="ico">📐</span>Land parcels &amp; survey numbers</b>
+          <span class="src">State cadastres + FMB portal links</span>
+        </div>
+        <div class="feat">
+          <b><span class="ico">🏥</span>Nearby services</b>
+          <span class="src">Hospitals, police, offices — OpenStreetMap</span>
+        </div>
+        <div class="feat">
+          <b><span class="ico">🗣️</span>7-language interface</b>
+          <span class="src">Native-script village names included</span>
+        </div>
+        <div class="feat">
+          <b><span class="ico">⬇️</span>Download the data</b>
+          <span class="src">CSV per state, on every release</span>
+        </div>
       </div>
 
       <div class="meta">
@@ -325,8 +523,8 @@
           <a href="https://lgdirectory.gov.in" target="_blank" rel="noopener"
             >Local Government Directory (LGD)</a
           >, Ministry of Panchayati Raj, Government of India — via the
-          <a href="https://github.com/ramSeraph/opendata" target="_blank" rel="noopener"
-            >daily open mirror</a
+          <a href="https://data.gov.in" target="_blank" rel="noopener"
+            >Open Government Data platform</a
           >.
         </div>
         <div class="row" id="freshness">
@@ -356,23 +554,21 @@
         }
       }
       (async () => {
-        const [ap, tg, ka, tn] = await Promise.all([
+        const states = await Promise.all([
           load("andhra_pradesh", "ap"),
           load("telangana", "tg"),
           load("karnataka", "ka"),
-          load("tamil_nadu", "tn")
+          load("tamil_nadu", "tn"),
+          load("kerala", "kl")
         ]);
-        const tot =
-          ((ap && ap.c.villages) || 0) +
-          ((tg && tg.c.villages) || 0) +
-          ((ka && ka.c.villages) || 0) +
-          ((tn && tn.c.villages) || 0);
+        const tot = states.reduce((s, st) => s + ((st && st.c.villages) || 0), 0);
+        const date = (states.find((st) => st && st.date) || {}).date || "";
         if (tot)
           document.getElementById("total").innerHTML =
             "<b>" +
             inr(tot) +
-            "</b> villages across four states · updated <b>" +
-            ((ap && ap.date) || (tg && tg.date) || (ka && ka.date) || (tn && tn.date) || "") +
+            "</b> villages across five states · updated <b>" +
+            date +
             "</b> from LGD";
       })();
     </script>
