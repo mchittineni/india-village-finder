@@ -4,7 +4,7 @@ season: Kharif 2026
 update-cadence: each NBS cabinet notification (≈ Apr & Oct)
 ---
 
-# Notified fertilizer rates — Kharif 2026 (Apr–Sep 2026)
+# Notified fertilizer rates Kharif 2026 (Apr–Sep 2026)
 
 Shown in the app's farm-inputs block (`config.FARM_INPUTS`). **Update this
 note and the config together** when the Cabinet notifies new NBS rates.
@@ -18,7 +18,7 @@ note and the config together** when the Cabinet notifies new NBS rates.
 
 Notes:
 
-- Other P&K products (MOP, NPKS complexes) are market-determined under NBS —
+- Other P&K products (MOP, NPKS complexes) are market-determined under NBS
   we deliberately don't publish numbers for them.
 - Sources: PIB / pmindia cabinet releases for the season's NBS rates; urea MRP
   per Dept. of Fertilizers notifications.

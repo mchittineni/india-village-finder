@@ -7,7 +7,25 @@ window.VF_CONFIG = {
   "accentSoft": "#fdeaea",
   "division": "taluk",
   "nativeLang": "ta",
-  "cadastre": null,
+  "cadastre": {
+    "url": "https://pub-f9d4d8c3e04d4318832ab39d095575b6.r2.dev/TNGIS_TN_Cadastrals.pmtiles",
+    "sourceLayer": "TNGIS_TN_Cadastrals",
+    "minZoom": 11,
+    "tileMaxZoom": 14,
+    "fields": {
+      "survey": "survey_number",
+      "villageCode": "lgd_village_code",
+      "id": [
+        "object_id",
+        "id"
+      ]
+    },
+    "attribution": "Cadastre &copy; TNGIS (Tamil Nadu, CC0) via <a href=\"https://github.com/ramSeraph/indian_cadastrals\" target=\"_blank\" rel=\"noopener\">datameet/ramSeraph</a>",
+    "fmb": {
+      "name": "TN e-Services (Patta / FMB)",
+      "url": "https://eservices.tn.gov.in/eservicesnew/index.html"
+    }
+  },
   "mandi": {
     "url": "https://raw.githubusercontent.com/mchittineni/india-village-finder/refs/heads/data/mandi-prices/tamil_nadu.json"
   },
@@ -83,6 +101,11 @@ window.VF_CONFIG = {
       "name": "Karnataka",
       "slug": "karnataka",
       "url": "../../karnataka/web/index.html"
+    },
+    {
+      "name": "Kerala",
+      "slug": "kerala",
+      "url": "../../kerala/web/index.html"
     }
   ],
   "source": {

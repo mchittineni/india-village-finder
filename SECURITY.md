@@ -1,6 +1,6 @@
 # Security Policy
 
-This project is a **static website plus a data pipeline** — there is no server,
+This project is a **static website plus a data pipeline** there is no server,
 login, or user data. The realistic security surface is small, but we still take
 reports seriously.
 
@@ -35,7 +35,7 @@ deploy workflows.
 
 ## Data accuracy ≠ security
 
-Incorrect or outdated village/pincode data is **not** a security issue — please
+Incorrect or outdated village/pincode data is **not** a security issue please
 file a [Data correction issue](../../issues/new?template=data_correction.yml)
 instead. The data originates from the Government of India's Local Government
 Directory and may lag recent administrative changes.

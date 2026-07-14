@@ -58,7 +58,7 @@ ROOT = HERE.parent  # Village Finder/
 CACHE_FILE = Path(os.environ.get("INDICXLIT_CACHE", str(HERE / ".cache" / "indicxlit_cache.json")))
 
 # slug -> language script, and alias -> slug, both from the shared registry
-# (scraper/config.py). IndicXlit supports te/kn/ta.
+# (scraper/config.py). IndicXlit supports te/kn/ta/ml.
 STATES = LANG_BY_SLUG
 ALIAS = {alias: SLUG_BY_CODE[code] for alias, code in _CODE_ALIAS.items()}
 
@@ -68,6 +68,7 @@ STATE_NATIVE = {
     "telangana": "తెలంగాణ",
     "karnataka": "ಕರ್ನಾಟಕ",
     "tamil_nadu": "தமிழ்நாடு",
+    "kerala": "കേരളം",
 }
 
 # Unicode block per script — used to keep only genuine native-script output.
@@ -75,6 +76,7 @@ SCRIPT_RANGE = {
     "te": (0x0C00, 0x0C7F),
     "kn": (0x0C80, 0x0CFF),
     "ta": (0x0B80, 0x0BFF),
+    "ml": (0x0D00, 0x0D7F),
     "hi": (0x0900, 0x097F),
 }
 

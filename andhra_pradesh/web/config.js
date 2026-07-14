@@ -104,6 +104,11 @@ window.VF_CONFIG = {
       "name": "Tamil Nadu",
       "slug": "tamil_nadu",
       "url": "../../tamil_nadu/web/index.html"
+    },
+    {
+      "name": "Kerala",
+      "slug": "kerala",
+      "url": "../../kerala/web/index.html"
     }
   ],
   "source": {

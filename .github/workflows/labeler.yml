@@ -15,9 +15,6 @@ name: Apply GitHub Labels
 on:
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
-  schedule:
-    - cron: "0 4 * * *" # daily 04:00 UTC — catch open PRs missing labels
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -28,7 +25,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Event-driven: label the PR that triggered the run.
   label:
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
@@ -37,36 +33,5 @@ jobs:
       - name: Apply path-based labels
         uses: actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d # v6
         with:
-          configuration-path: .github/labeler.yml
-          sync-labels: true
-
-  # Scheduled / manual sweep: label every OPEN PR that currently has no labels.
-  sweep:
-    if: github.event_name != 'pull_request_target'
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Find open PRs missing labels
-        id: find
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          nums=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open \
-                   --json number,labels \
-                   --jq '.[] | select((.labels | length) == 0) | .number')
-          count=$(printf '%s' "$nums" | grep -c . || true)
-          echo "count=$count" >> "$GITHUB_OUTPUT"
-          {
-            echo "numbers<<__EOF__"
-            printf '%s\n' "$nums"
-            echo "__EOF__"
-          } >> "$GITHUB_OUTPUT"
-          echo "Found ${count} open PR(s) missing labels." >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Apply path-based labels to those PRs
-        if: steps.find.outputs.count != '0'
-        uses: actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d # v6
-        with:
-          pr-number: ${{ steps.find.outputs.numbers }}
           configuration-path: .github/labeler.yml
           sync-labels: true

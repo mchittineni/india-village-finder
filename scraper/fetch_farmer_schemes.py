@@ -46,7 +46,7 @@ CATEGORY = "Agriculture,Rural & Environment"
 # Every UI language of the app (web_template/i18n.js). Scheme names ship in all
 # of them; the longer briefs only in English + the state's own language, to
 # keep the per-state payload small.
-LANGS = ("en", "te", "hi", "kn", "ta", "ur")
+LANGS = ("en", "te", "hi", "kn", "ta", "ml", "ur")
 PAGE = 50
 MAX_SCHEMES = 1000  # sanity cap — a state+central agri list is well under this
 PAUSE = 0.25  # politeness gap between requests, seconds

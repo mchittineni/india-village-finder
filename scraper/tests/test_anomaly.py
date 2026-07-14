@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-STATE_SLUGS = ["andhra_pradesh", "telangana", "karnataka", "tamil_nadu"]
+STATE_SLUGS = ["andhra_pradesh", "telangana", "karnataka", "tamil_nadu", "kerala"]
 COUNT_KEYS = ["districts", "mandals", "villages"]
 
 # Allowed shrink before we flag it. A real LGD reorg can move counts, but a drop

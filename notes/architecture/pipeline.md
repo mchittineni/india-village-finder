@@ -4,8 +4,8 @@ tags: [architecture]
 
 # Data pipeline
 
-One code path builds every state (`scraper/`, registry in `config.py` — AP 28,
-TG 36, KA 29, TN 33). Full script table: [scraper/README](../../scraper/README.md).
+One code path builds every state (`scraper/`, registry in `config.py`: AP 28,
+TG 36, KA 29, TN 33, KL 32). Full script table: [scraper/README](../../scraper/README.md).
 
 ```
 lgd_datagov.py ─(data.gov.in LGD API)→ .cache/raw/*.csv
@@ -20,7 +20,7 @@ Key invariants:
 
 - `pipeline.py` **verifies counts against the live LGD portal** each run and
   records the result in `meta.json` (tests fail a real mismatch).
-- **Sidecar pruning** — files regenerated on slower cadences than the daily
+- **Sidecar pruning**: files regenerated on slower cadences than the daily
   refresh (`names_translit.json`, `regions_native.json`, `coords.json`) are
   pruned against each run's fresh village/mandal codes so a refresh PR stays
   internally consistent. See [[2026-07-13-sidecar-pruning]].

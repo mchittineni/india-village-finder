@@ -20,10 +20,10 @@ dashboards:
 - `config.FARM_INPUTS`: statutory urea MRP + NBS-subsidised DAP price per
   season ([[farm-input-rates]]) + official portal links (iFMS, SHC).
 - Per-village soil comes from the SoilGrids point model with rule-based,
-  clearly-indicative notes ([[soilgrids]]) — never presented as a soil test.
+  clearly-indicative notes ([[soilgrids]]) never presented as a soil test.
 
 **Rejected.** Scraping urvarak/SHC dashboards (undocumented NIC internals,
-geo-fenced, breaks silently — same class as the CGWB exclusion).
+geo-fenced, breaks silently same class as the CGWB exclusion).
 
 **Revisit when** iFMS exposes a stable endpoint or OGD enables an API on the
 fertilizer/SHC datasets.

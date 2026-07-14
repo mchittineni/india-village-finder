@@ -352,6 +352,10 @@
     area: "shape_area",
     id: ["objectid", "objectid_1"]
   };
+  // Whether the cadastre tiles can identify a village (by name or LGD code).
+  // Some sources carry only the survey number (e.g. Bhuvan Kerala) — the layer
+  // still renders with tap popups, but per-village highlight/zoom is hidden.
+  var CAD_MATCHABLE = !!(CAD_FIELDS.village || CAD_FIELDS.villageCode);
   // First present candidate id key for a parcel feature (falls back to survey).
   function parcelId(p) {
     var ids = CAD_FIELDS.id || [];
@@ -1248,7 +1252,7 @@
    */
   function highlightVillageParcels(row) {
     var gl = cadLayer && cadLayer.getMaplibreMap && cadLayer.getMaplibreMap();
-    if (!gl) return;
+    if (!gl || !CAD_MATCHABLE) return;
     var F = CAD_FIELDS;
     var filter;
     if (F.villageCode) {
@@ -2205,8 +2209,10 @@
       "</div>";
 
     // Land parcels — zoom into this village and render its cadastral plots.
+    // Hidden when the tiles can't identify villages (survey-number-only
+    // sources): the button could only ever answer "no parcels found".
     var parcelBtn;
-    if (CFG.cadastre && cadLayer) {
+    if (CFG.cadastre && cadLayer && CAD_MATCHABLE) {
       parcelBtn = el("button", "vpop-nb-btn vpop-parcels-btn", esc(t("show_parcels")));
       wrap.appendChild(parcelBtn);
     }
@@ -2975,7 +2981,9 @@
           ? " ka"
           : CFG.slug === "tamil_nadu"
             ? " tn"
-            : " ap";
+            : CFG.slug === "kerala"
+              ? " kl"
+              : " ap";
     var s = el("div", "stat" + statCls);
     s.appendChild(el("div", "num", num));
     s.appendChild(el("div", "lab", lab));

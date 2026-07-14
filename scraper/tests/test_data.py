@@ -28,9 +28,11 @@ STATES = [
     ("telangana", 36, "Telangana", (5_000, 20_000)),
     ("karnataka", 29, "Karnataka", (20_000, 45_000)),
     ("tamil_nadu", 33, "Tamil Nadu", (10_000, 25_000)),
+    # Kerala's revenue villages are few and large — ~1.4k, not tens of thousands.
+    ("kerala", 32, "Kerala", (1_000, 3_000)),
 ]
-# AP/Telangana/Karnataka/Tamil Nadu lie roughly within this lon/lat box (generous
-# margin). Karnataka reaches the west coast (~74 E) and Tamil Nadu reaches
+# The covered states lie roughly within this lon/lat box (generous margin).
+# Karnataka/Kerala reach the west coast (~74 E) and Tamil Nadu/Kerala reach
 # Kanyakumari (~8 N), so the box is wider/taller than AP/TG alone.
 BBOX = (74.0, 7.5, 86.5, 20.5)  # min_lon, min_lat, max_lon, max_lat
 GEO_COVERAGE_MIN = 0.80  # >=80% of regions should have a matching polygon
@@ -40,6 +42,7 @@ SCRIPT_RANGES = {
     "te": (0x0C00, 0x0C7F),
     "kn": (0x0C80, 0x0CFF),
     "ta": (0x0B80, 0x0BFF),
+    "ml": (0x0D00, 0x0D7F),
     "hi": (0x0900, 0x097F),
 }
 
@@ -343,17 +346,16 @@ def _web_config(slug):
 def test_cadastre_config_shape(state):
     """If a state ships a cadastre layer, its config.js block must be usable: a
     public range-request URL, a source layer, and a `fields` map that names a
-    survey key plus a way to highlight a village (by name or by LGD code)."""
+    survey key. `village` (name-match) or `villageCode` (code-match) enables the
+    per-village highlight/zoom; a survey-only source (Bhuvan Kerala) is valid —
+    the app then renders the layer + popups but hides the per-village button."""
     cad = _web_config(state["slug"]).get("cadastre")
-    if not cad:  # Tamil Nadu (and any future state) may have no parcel layer
+    if not cad:  # a state may ship no parcel layer at all
         return
     assert cad["url"].startswith("https://") and cad["url"].endswith(".pmtiles")
     assert cad["sourceLayer"], "cadastre needs a sourceLayer"
     f = cad.get("fields") or {}
     assert f.get("survey"), "cadastre fields must map a survey key"
-    assert f.get("village") or f.get(
-        "villageCode"
-    ), "cadastre fields need `village` (name-match) or `villageCode` (code-match)"
 
 
 def test_cadastre_config_matches_registry():

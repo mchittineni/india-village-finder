@@ -21,11 +21,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # One isolated job per state, in parallel. Each leg fetches only its own state
-  # from data.gov.in (server-side filter), rebuilds that state's outputs, and
-  # uploads the whole state folder as an artifact. States are independent, so a
-  # hard failure in one leg doesn't block the others (fail-fast: false) — the
-  # aggregate job below assembles whatever succeeded into a single reviewed PR.
   build:
     runs-on: ubuntu-latest
 
@@ -38,6 +33,7 @@ jobs:
           - { key: tg, slug: telangana }
           - { key: ka, slug: karnataka }
           - { key: tn, slug: tamil_nadu }
+          - { key: kl, slug: kerala }
 
     env:
       STATE_KEY: ${{ matrix.state.key }}
@@ -46,9 +42,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      # scraper/osm_names.json lives on the data/osm-names branch (published by
-      # seed-osm-names.yml), not in main — overlay it so the pipeline prefers
-      # the human-verified names. Skipped gracefully while the branch is absent.
       - name: Overlay OSM name seeds
         uses: ./.github/actions/overlay-data-branches
         with:
@@ -60,13 +53,6 @@ jobs:
           node-version: "22"
           requirements-file: scraper/requirements-dev.txt
 
-      # Pulls this state's LGD data from the data.gov.in official API. DATA_GOV_KEY
-      # is a free registered key (repo secret); without it the public sample key
-      # caps pages at 10 rows.
-      # data.gov.in is flaky (transient 502s). pipeline.py retries with backoff;
-      # if the API is still unreachable it exits 75 (EX_TEMPFAIL), which we treat
-      # as a skip — no artifact uploaded, no change lands for this state — rather
-      # than failing the leg. Any other non-zero exit is a real error.
       - name: Refresh village data
         id: refresh
         uses: ./.github/actions/datagov-fetch
@@ -96,9 +82,6 @@ jobs:
         if: steps.bounds.outputs.run == 'true' && steps.refresh.outputs.skipped != 'true'
         run: python scraper/enrich_coords.py --state "$STATE_KEY"
 
-      # The artifact is the whole state folder (regenerated outputs + the committed
-      # files the pipeline preserves, e.g. names_translit.json), so the aggregate
-      # job can overlay it onto a fresh checkout verbatim.
       - name: Upload state artifact
         if: steps.refresh.outputs.skipped != 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -107,10 +90,6 @@ jobs:
           path: ${{ matrix.state.slug }}
           retention-days: 3
 
-  # Assemble every successful state's artifact into one working tree, validate,
-  # and open/update the single data/auto-refresh PR — same review flow as before,
-  # just fed by parallel builds. Runs even if some legs failed (if: always());
-  # a failed leg keeps the workflow red while the healthy states still land.
   aggregate:
     needs: build
     if: always() && needs.build.result != 'cancelled'
@@ -201,23 +180,14 @@ jobs:
           } >> /tmp/pr_body.md
           cat /tmp/pr_body.md >> "$GITHUB_STEP_SUMMARY"
 
-      # A single, fixed branch (data/auto-refresh) means consecutive runs reuse the
-      # SAME pull request: if a previous refresh PR is still open, this updates that
-      # branch in place and refreshes the PR title/body with the latest changes,
-      # rather than opening a second PR. A new PR is only created once the previous
-      # one has been merged or closed.
       - name: Create / update pull request
         id: cpr
         if: steps.changed.outputs.yes == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
-          token: ${{ secrets.DATA_PAT || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           branch: data/auto-refresh
           delete-branch: true
-          # NB: these are git pathspecs, not shell globs — the action passes them
-          # to `git add` verbatim. A wildcard pathspec must match the FULL path
-          # (no leading-directory expansion like literal paths get), so
-          # `*/web/data` matches nothing; `*/web/data/**` matches the files.
           add-paths: |
             */web/data/**
             */data/**
@@ -247,7 +217,7 @@ jobs:
         if: steps.cpr.outputs.pull-request-number
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.DATA_PAT || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
         run: |
           gh api -X POST \

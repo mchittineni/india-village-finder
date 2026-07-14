@@ -1,7 +1,7 @@
 name: Publish outputs to a data branch
 
 description: >
-  Commit the given repo-relative paths to a long-lived data/* branch — the
+  Commit the given repo-relative paths to a long-lived data/* branch the
   landing zone for regenerable artifacts that the site/pipeline consume but
   that don't belong in main's reviewed history (see the README's review-flow
   section). Non-destructive: existing branch content is kept and updated, so
@@ -29,7 +29,6 @@ runs:
 
   steps:
   
-    # Inputs are bound to env, never interpolated into the script (injection).
     - name: Publish
       shell: bash
       env:

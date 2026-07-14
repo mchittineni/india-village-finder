@@ -77,6 +77,7 @@ SCRIPT_RANGE = {
     "te": (0x0C00, 0x0C7F),  # Telugu
     "kn": (0x0C80, 0x0CFF),  # Kannada
     "ta": (0x0B80, 0x0BFF),  # Tamil
+    "ml": (0x0D00, 0x0D7F),  # Malayalam
     "hi": (0x0900, 0x097F),  # Devanagari
 }
 
@@ -584,9 +585,9 @@ def _build_web(state_code, cfg, web: Path, meta):
 # ---------------------------------------------------------------------------
 def main():
     ap = argparse.ArgumentParser(
-        description="Build AP/Telangana/Karnataka/Tamil Nadu village datasets + web apps"
+        description="Build AP/Telangana/Karnataka/Tamil Nadu/Kerala village datasets + web apps"
     )
-    ap.add_argument("--state", choices=["ap", "tg", "ka", "tn", "both"], default="both")
+    ap.add_argument("--state", choices=["ap", "tg", "ka", "tn", "kl", "both"], default="both")
     ap.add_argument("--offline", action="store_true", help="reuse already-extracted raw CSVs")
     ap.add_argument("--no-verify", action="store_true", help="skip live LGD cross-check")
     args = ap.parse_args()

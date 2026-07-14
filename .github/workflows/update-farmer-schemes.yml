@@ -6,10 +6,9 @@ name: Update Farmer Schemes
 # history or needs a reviewed PR. The web app fetches the JSONs from
 # raw.githubusercontent.com (CORS-enabled); see FARMER_SCHEMES_URL in
 # scraper/config.py.
+
 on:
   schedule:
-    # Weekly is plenty — scheme catalogs churn slowly. Off-hour minute per
-    # GitHub's scheduling advice.
     - cron: "37 3 * * 1"
   workflow_dispatch:
 
@@ -33,10 +32,6 @@ jobs:
         with:
           packages: requests
 
-      # Same skip contract as the LGD/mandi fetches: exit 75 = myScheme
-      # temporarily unreachable -> keep last week's snapshot, don't go red.
-      # A rejected API key exits 1 (red): the public frontend key rotated and
-      # PUBLIC_KEY (or the MYSCHEME_API_KEY secret) needs updating.
       - name: Fetch farmer schemes
         id: fetch
         uses: ./.github/actions/datagov-fetch

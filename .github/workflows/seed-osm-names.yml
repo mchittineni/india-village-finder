@@ -1,4 +1,5 @@
 name: Update OSM Native Names
+
 # Harvests human-verified native place names (name:te / name:kn / name:ta) from
 # OpenStreetMap via Overpass and publishes scraper/osm_names.json to the
 # data/osm-names branch, which pipeline runs overlay at build time (the pipeline
@@ -25,7 +26,6 @@ concurrency:
 jobs:
   seed:
     runs-on: ubuntu-latest
-    # Bind the dispatch input to env; never interpolate ${{ inputs.* }} into run:.
 
     env:
       OSM_STATE: ${{ inputs.state || 'all' }}

@@ -2,7 +2,7 @@ name: Setup pipeline environment
 
 description: >
   The Python (+ optional Node) toolchain and dependency install shared by every
-  data workflow. Checkout must run before this action — local actions are
+  data workflow. Checkout must run before this action local actions are
   loaded from the workspace.
 
 inputs:
@@ -38,9 +38,6 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    # Bind inputs to env and reference them as shell vars — never interpolate
-    # ${{ inputs.* }} into run: (textual substitution before the shell parses
-    # it would allow command injection).
     - name: Install dependencies
       if: inputs.requirements-file != '' || inputs.packages != '' || inputs.npm-install == 'true'
       shell: bash

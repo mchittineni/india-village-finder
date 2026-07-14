@@ -10,6 +10,8 @@ name: Update Cadastral PMTiles
 #   andhra-pradesh  APSAC_AP_Cadastrals.pmtiles       (~848 MB)
 #   telangana       TRACGIS_Bhunaksha_Cadastrals.pmtiles (~649 MB)
 #   karnataka       KGISMAPS_KN_Cadastrals.pmtiles    (~1042 MB)
+#   tamil-nadu      TNGIS_TN_Cadastrals.pmtiles       (~824 MB)
+#   kerala          Bhuvan_Kerala_Cadastrals.pmtiles  (~143 MB)
 #
 # Auto-tracking: runs weekly and re-mirrors a state only when its upstream
 # asset's updated_at/size actually changes (the cadastre is refreshed rarely),
@@ -37,14 +39,14 @@ on:
           - andhra-pradesh
           - telangana
           - karnataka
+          - tamil-nadu
+          - kerala
         default: all
       force:
         description: Re-mirror even if upstream is unchanged
         type: boolean
         default: false
 
-# Read-only repo scope; GITHUB_TOKEN just reads the upstream public releases.
-# R2 credentials are injected as secrets at the job level.
 permissions:
   contents: read
 
@@ -54,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
-      fail-fast: false # one state's outage must not cancel the others
+      fail-fast: false
 
       matrix:
         include:
@@ -64,6 +66,10 @@ jobs:
             asset: TRACGIS_Bhunaksha_Cadastrals.pmtiles
           - state: karnataka
             asset: KGISMAPS_KN_Cadastrals.pmtiles
+          - state: tamil-nadu
+            asset: TNGIS_TN_Cadastrals.pmtiles
+          - state: kerala
+            asset: Bhuvan_Kerala_Cadastrals.pmtiles
 
     concurrency:
       group: mirror-cadastrals-${{ matrix.state }}
@@ -80,7 +86,7 @@ jobs:
       STATE: ${{ matrix.state }}
       ONLY_STATE: ${{ github.event.inputs.only_state || 'all' }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
     steps:
       - name: Verify secrets are configured
         run: |
@@ -99,8 +105,6 @@ jobs:
             exit 1
           fi
 
-      # Read the upstream asset's updated_at + size from the GitHub release API
-      # (no download) to drive change-detection.
       - name: Resolve upstream release metadata
         id: up
         run: |
@@ -118,8 +122,6 @@ jobs:
           echo "updated=$up_updated" >> "$GITHUB_OUTPUT"
           echo "size=$up_size"       >> "$GITHUB_OUTPUT"
 
-      # Compare against the version already in R2 (stored in object metadata).
-      # Skip the whole transfer when unchanged and not forced.
       - name: Decide whether to re-mirror
         id: decide
         run: |
@@ -164,37 +166,6 @@ jobs:
             --checksum-algorithm CRC32 \
             --content-type application/octet-stream \
             --metadata "upstream-updated-at=${{ steps.up.outputs.updated }},upstream-size=${{ steps.up.outputs.size }}"
-
-      # CORS is a one-time, bucket-level setting. A least-privilege (Object Read &
-      # Write) R2 token — the right scope for this recurring transfer — CANNOT set
-      # it (PutBucketCors needs an Admin token), so this step is best-effort: it
-      # keeps the policy in sync when run with an admin token, and otherwise just
-      # warns. Set CORS once via the R2 dashboard (see docs/cadastral-hosting.md).
-      - name: Apply CORS policy to bucket (best-effort)
-        if: steps.decide.outputs.run == 'true'
-        continue-on-error: true
-        run: |
-          cat > cors.json <<'JSON'
-          {
-            "CORSRules": [
-              {
-                "AllowedOrigins": ["*"],
-                "AllowedMethods": ["GET", "HEAD"],
-                "AllowedHeaders": ["Range"],
-                "ExposeHeaders": ["Content-Range", "Content-Length", "Accept-Ranges", "ETag"],
-                "MaxAgeSeconds": 86400
-              }
-            ]
-          }
-          JSON
-          if aws s3api put-bucket-cors --bucket "$BUCKET" \
-               --endpoint-url "$R2_ENDPOINT" \
-               --cors-configuration file://cors.json; then
-            echo "CORS policy applied."
-          else
-            echo "::warning::Could not set CORS (object-scoped token can't call PutBucketCors)."
-            echo "Set it once in the R2 dashboard — see docs/cadastral-hosting.md."
-          fi
 
       - name: Summary
         if: steps.decide.outputs.run == 'true'
