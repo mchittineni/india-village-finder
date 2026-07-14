@@ -18,7 +18,7 @@ genuinely new entries on its own schedule.
 
 **Rule going forward.** Any new committed artifact keyed by LGD codes that is
 regenerated less often than daily **must** be added to the pipeline's pruning
-step, and a test must assert its keys ⊆ current codes — otherwise it will
+step, and a test must assert its keys ⊆ current codes otherwise it will
 break the refresh on the next big renumbering wave.
 
 Note: `meta.counts.with_coords` only exists right after `enrich_coords.py`

@@ -1,7 +1,7 @@
 # Data Licence — Government Open Data License – India (GODL-India)
 
 All **data files** in this repository — the CSV, JSON and GeoJSON under
-`andhra_pradesh/`, `telangana/`, `karnataka/`, `tamil_nadu/`, the `data/*` branches
+`andhra_pradesh/`, `telangana/`, `karnataka/`, `tamil_nadu/`, `kerala/`, the `data/*` branches
 (mandi-price snapshots, farmer-scheme snapshots, boundary tiles, parcel indexes,
 OSM name seeds), and any data published in GitHub
 Releases — are derived from Government of India open data and are made available

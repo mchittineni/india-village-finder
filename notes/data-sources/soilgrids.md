@@ -10,7 +10,7 @@ CC BY 4.0, keyless, 250 m global model. Two integrations:
 ## WMS overlay (map layer)
 
 - `https://maps.isric.org/mapserv?map=/map/wrb.map`, layer `MostProbable`
-  (WRB most-probable class). Leaflet must send `STYLES` (it does by default —
+  (WRB most-probable class). Leaflet must send `STYLES` (it does by default
   omitting it yields `MissingParameterValue`).
 - Chosen over NBSS&LUP's Bhuvan soil WMS (outline-only styling, no AP/TS).
 
@@ -23,7 +23,7 @@ CC BY 4.0, keyless, 250 m global model. Two integrations:
   (→ % = /10).
 - CORS `*` on both. Latency: seconds (first query per area can hit ~12 s).
 - **Urban/water pixels are masked** in properties (verified: Guntur town,
-  Trichy town return nulls) while classification usually still resolves —
+  Trichy town return nulls) while classification usually still resolves
   the UI shows whatever is available.
 - Display derivations (texture bucket from clay/sand, pH class, nutrient
   note incl. the alkaline→zinc-deficiency flag) are client-side rules in

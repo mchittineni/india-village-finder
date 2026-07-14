@@ -58,7 +58,7 @@ laptop" convention). It requires these repo **secrets**: `R2_ACCOUNT_ID`,
 
 1. **Create a bucket**, e.g. `village-finder-cadastrals`, and set the four secrets.
 2. **Run the workflow** (Actions → mirror-cadastrals → Run workflow, `only_state:
-   all`, `force: true` the first time) to upload all three PMTiles.
+all`, `force: true` the first time) to upload all three PMTiles.
 3. **Expose it publicly** enable the bucket's **public r2.dev** URL (R2 →
    bucket → Settings → Public access), or attach a **custom domain**. This gives
    an origin like `https://pub-<hash>.r2.dev`.
