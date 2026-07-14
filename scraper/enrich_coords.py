@@ -143,7 +143,7 @@ def enrich(state_code: int, geo_idx) -> dict:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--state", default="both", help="ap | tg | ka | tn | all (alias: both)")
+    ap.add_argument("--state", default="both", help="ap | tg | ka | tn | kl | all (alias: both)")
     args = ap.parse_args()
     print("[geonames] loading place index ...")
     geo_idx = load_geonames()
