@@ -58,6 +58,8 @@ except ImportError:  # pragma: no cover - environment dependent
 
 import difflib
 
+from config import STATES
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 EXTENT = 4096  # MVT tile coordinate extent
@@ -138,9 +140,14 @@ def build_matcher(slug: str):
     return match
 
 
-def aggregate_parcels(pmtiles: Path, source_layer: str):
-    """Scan the z13 tiles and accumulate, per norm(mandal)|norm(village), a lat/lng
-    bbox plus the running sum of parcel centres (for a representative point).
+def aggregate_parcels(pmtiles: Path, source_layer: str, keys=("m_name", "v_name")):
+    """Scan the max-zoom tiles and accumulate, per village key, a lat/lng bbox
+    plus the running sum of parcel centres (for a representative point).
+
+    ``keys`` names the tile properties forming the key: two entries → the
+    name-matched ``norm(mandal)|norm(village)`` path (APSAC-style tiles); one
+    entry → that property IS the LGD village code (TNGIS/KGIS-style tiles), so
+    no name matching is needed downstream.
     Returns {key: [minLat, minLng, maxLat, maxLng, sumCLat, sumCLng, nParcels]}."""
     r = Reader(MmapSource(open(pmtiles, "rb")))
     hdr = r.header()
@@ -180,8 +187,13 @@ def aggregate_parcels(pmtiles: Path, source_layer: str):
             decoded += 1
             for feat in layer["features"]:
                 props = feat["properties"]
-                key = f"{norm(props.get('m_name'))}|{norm(props.get('v_name'))}"
-                if key == "|":
+                if len(keys) == 1:
+                    key = str(props.get(keys[0]) or "").strip()
+                else:
+                    key = f"{norm(props.get(keys[0]))}|{norm(props.get(keys[1]))}"
+                    if key == "|":
+                        key = ""
+                if not key:
                     continue
                 # feature bbox in tile space -> two lng/lat corners
                 mnx = mny = float("inf")
@@ -231,22 +243,52 @@ def main() -> None:
     ap.add_argument("--source-layer", default="APSAC_AP_Cadastrals")
     args = ap.parse_args()
 
-    match = build_matcher(args.slug)
-    boxes = aggregate_parcels(args.pmtiles, args.source_layer)
+    # The registry's cadastre.fields block names the tile properties per source:
+    # `villageCode` (TNGIS/KGIS — key parcels by LGD code directly), or
+    # `village`/`mandal` names (APSAC/TRACGIS — point-in-polygon + name match).
+    # A cadastre without either (Bhuvan Kerala carries only the survey number)
+    # cannot be indexed per village — skip cleanly so the workflow stays green.
+    fields: dict = {}
+    for st in STATES.values():
+        if st["slug"] == args.slug:
+            fields = (st.get("cadastre") or {}).get("fields") or {}
+            break
+    code_field = fields.get("villageCode")
+    if fields and not code_field and not fields.get("village"):
+        print(
+            f"[skip] {args.slug}: cadastre tiles carry no village name or LGD code — "
+            "no per-village index possible"
+        )
+        return
 
     data_dir = ROOT / args.slug / "web" / "data"
     index: dict[str, list] = {}  # code -> parcel bbox (for fitBounds)
     points: dict[str, list] = {}  # code -> representative point (for a village pin)
     matched = 0
-    for key, b in boxes.items():
-        clat, clng = b[4] / b[6], b[5] / b[6]
-        norm_village = key.split("|", 1)[1]
-        code = match(clat, clng, norm_village)
-        if code is None:
-            continue
-        matched += 1
-        index[str(code)] = [round(v, 5) for v in b[:4]]
-        points[str(code)] = [round(clat, 5), round(clng, 5)]
+    if code_field:
+        boxes = aggregate_parcels(args.pmtiles, args.source_layer, keys=(code_field,))
+        villages = json.loads((data_dir / "villages.json").read_text())
+        rows = villages if isinstance(villages, list) else villages.get("rows", [])
+        valid = {str(r[2]) for r in rows}
+        for key, b in boxes.items():
+            if key not in valid:
+                continue
+            matched += 1
+            index[key] = [round(v, 5) for v in b[:4]]
+            points[key] = [round(b[4] / b[6], 5), round(b[5] / b[6], 5)]
+    else:
+        name_keys = (fields.get("mandal") or "m_name", fields.get("village") or "v_name")
+        match = build_matcher(args.slug)
+        boxes = aggregate_parcels(args.pmtiles, args.source_layer, keys=name_keys)
+        for key, b in boxes.items():
+            clat, clng = b[4] / b[6], b[5] / b[6]
+            norm_village = key.split("|", 1)[1]
+            code = match(clat, clng, norm_village)
+            if code is None:
+                continue
+            matched += 1
+            index[str(code)] = [round(v, 5) for v in b[:4]]
+            points[str(code)] = [round(clat, 5), round(clng, 5)]
 
     idx_out = data_dir / "parcels_index.json"
     idx_out.write_text(json.dumps(index, separators=(",", ":")) + "\n")

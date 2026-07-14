@@ -10,6 +10,8 @@ name: Update Cadastral PMTiles
 #   andhra-pradesh  APSAC_AP_Cadastrals.pmtiles       (~848 MB)
 #   telangana       TRACGIS_Bhunaksha_Cadastrals.pmtiles (~649 MB)
 #   karnataka       KGISMAPS_KN_Cadastrals.pmtiles    (~1042 MB)
+#   tamil-nadu      TNGIS_TN_Cadastrals.pmtiles       (~824 MB)
+#   kerala          Bhuvan_Kerala_Cadastrals.pmtiles  (~143 MB)
 #
 # Auto-tracking: runs weekly and re-mirrors a state only when its upstream
 # asset's updated_at/size actually changes (the cadastre is refreshed rarely),
@@ -37,6 +39,8 @@ on:
           - andhra-pradesh
           - telangana
           - karnataka
+          - tamil-nadu
+          - kerala
         default: all
       force:
         description: Re-mirror even if upstream is unchanged
@@ -64,6 +68,10 @@ jobs:
             asset: TRACGIS_Bhunaksha_Cadastrals.pmtiles
           - state: karnataka
             asset: KGISMAPS_KN_Cadastrals.pmtiles
+          - state: tamil-nadu
+            asset: TNGIS_TN_Cadastrals.pmtiles
+          - state: kerala
+            asset: Bhuvan_Kerala_Cadastrals.pmtiles
 
     concurrency:
       group: mirror-cadastrals-${{ matrix.state }}
@@ -80,7 +88,7 @@ jobs:
       STATE: ${{ matrix.state }}
       ONLY_STATE: ${{ github.event.inputs.only_state || 'all' }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
     steps:
       - name: Verify secrets are configured
         run: |
