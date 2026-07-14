@@ -37,12 +37,6 @@ BASE = "https://lgdirectory.gov.in"
 CITIZEN_PAGE = f"{BASE}/globalviewvillageforcitizen.do"
 DWR_CALL = f"{BASE}/dwr/call/plaincall/{{service}}.{{method}}.dwr"
 
-# LGD numeric state codes
-STATE_CODES = {
-    "Andhra Pradesh": 28,
-    "Telangana": 36,
-}
-
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
@@ -196,7 +190,10 @@ def _jsobj_to_python(js: str) -> list[dict[str, Any]]:
 
 
 if __name__ == "__main__":
-    # quick smoke test
+    # quick smoke test — state codes come from the shared registry (config.py)
+    from config import STATES
+
     c = LGDClient()
-    ds = c.districts(STATE_CODES["Andhra Pradesh"])
-    print(f"AP districts: {len(ds)} (sample: {ds[0] if ds else None})")
+    for code, cfg in STATES.items():
+        ds = c.districts(code)
+        print(f"{cfg['name']}: {len(ds)} districts (sample: {ds[0] if ds else None})")
