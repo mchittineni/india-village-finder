@@ -166,6 +166,74 @@ STATES: dict[int, dict] = {
         "accent": "#dc2626",
         "accentSoft": "#fdeaea",
         "division": "taluk",
+        # Cadastral parcels — Tamil Nadu TNGIS extract (CC0) via ramSeraph,
+        # mirrored to R2 (mirror-cadastrals.yml). The tiles carry no place names
+        # but do carry the LGD village code, so the app highlights a selected
+        # village's parcels by code like Karnataka. A minority of features have
+        # corrupted attribute keys from the upstream scrape; the canonical
+        # survey_number / lgd_village_code keys cover the rest.
+        "cadastre": {
+            "url": (
+                "https://pub-f9d4d8c3e04d4318832ab39d095575b6.r2.dev/" "TNGIS_TN_Cadastrals.pmtiles"
+            ),
+            "sourceLayer": "TNGIS_TN_Cadastrals",
+            "minZoom": 11,
+            "tileMaxZoom": 14,
+            "fields": {
+                "survey": "survey_number",
+                "villageCode": "lgd_village_code",
+                "id": ["object_id", "id"],
+            },
+            "attribution": (
+                "Cadastre &copy; TNGIS (Tamil Nadu, CC0) via "
+                '<a href="https://github.com/ramSeraph/indian_cadastrals" '
+                'target="_blank" rel="noopener">datameet/ramSeraph</a>'
+            ),
+            # TN e-Services "View Patta & FMB / Chitta / TSLR Extract" (no URL
+            # prefill — the app copies the parcel identifiers first).
+            "fmb": {
+                "name": "TN e-Services (Patta / FMB)",
+                "url": "https://eservices.tn.gov.in/eservicesnew/index.html",
+            },
+        },
+    },
+    32: {
+        "name": "Kerala",
+        "slug": "kerala",
+        "lang": "ml",
+        "iso": "IN-KL",
+        "accent": "#0d9488",
+        "accentSoft": "#d9f2ef",
+        "division": "taluk",
+        # Cadastral parcels — Bhuvan's Kerala extract (CC0) via ramSeraph,
+        # mirrored to R2. The tiles carry ONLY the survey number (par_num) — no
+        # village name or LGD code — so the app renders the parcel layer and
+        # per-parcel popups, but can't highlight a selected village's parcels
+        # or build the per-village jump index (build_parcels_index skips it).
+        "cadastre": {
+            "url": (
+                "https://pub-f9d4d8c3e04d4318832ab39d095575b6.r2.dev/"
+                "Bhuvan_Kerala_Cadastrals.pmtiles"
+            ),
+            "sourceLayer": "Bhuvan_Kerala_Cadastrals",
+            "minZoom": 11,
+            "tileMaxZoom": 13,
+            "fields": {
+                "survey": "par_num",
+                "id": ["par_num"],
+            },
+            "attribution": (
+                "Cadastre &copy; Bhuvan (NRSC/ISRO, CC0) via "
+                '<a href="https://github.com/ramSeraph/indian_cadastrals" '
+                'target="_blank" rel="noopener">datameet/ramSeraph</a>'
+            ),
+            # Ente Bhoomi (ILIMS) digital survey records — the e-Rekha successor;
+            # no URL prefill, the app copies the parcel identifiers first.
+            "fmb": {
+                "name": "Ente Bhoomi (e-Rekha)",
+                "url": "https://survey.entebhoomi.kerala.gov.in/portal/web/menu/digitalrecords",
+            },
+        },
     },
 }
 
@@ -184,6 +252,8 @@ ALIAS: dict[str, int] = {
     "tamil_nadu": 33,
     "tamilnadu": 33,
     "tamil": 33,
+    "kl": 32,
+    "kerala": 32,
 }
 
 # All-state boundary vector tiles (tiles/boundaries.pmtiles, built by
@@ -222,7 +292,7 @@ MAP_OVERLAYS: list[dict] = [
         "labelKey": "ov_gw",
         "url": "https://bhuvan-vec1.nrsc.gov.in/bhuvan/wms",
         "wms": {
-            "layers": "gw:AP_LGEOM,gw:TS_LGEOM,gw:KA_LGEOM,gw:TN_LGEOM",
+            "layers": "gw:AP_LGEOM,gw:TS_LGEOM,gw:KA_LGEOM,gw:TN_LGEOM,gw:KL_LGEOM",
             "format": "image/png",
             "transparent": True,
             "version": "1.1.1",

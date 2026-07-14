@@ -33,7 +33,8 @@ const STATES = [
   ["andhra_pradesh", "te"],
   ["telangana", "te"],
   ["karnataka", "kn"],
-  ["tamil_nadu", "ta"]
+  ["tamil_nadu", "ta"],
+  ["kerala", "ml"]
 ];
 // Overall floors, set a few points below current so a routine LGD data refresh
 // doesn't trip CI but a real engine regression does.

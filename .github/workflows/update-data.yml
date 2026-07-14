@@ -38,6 +38,7 @@ jobs:
           - { key: tg, slug: telangana }
           - { key: ka, slug: karnataka }
           - { key: tn, slug: tamil_nadu }
+          - { key: kl, slug: kerala }
 
     env:
       STATE_KEY: ${{ matrix.state.key }}

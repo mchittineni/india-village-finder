@@ -48,7 +48,7 @@ SERIES = "Village Finder updates"
 
 INTRO = f"""\
 [**Village Finder**]({SITE}) is an open-source, multilingual map of every
-village in Andhra Pradesh, Telangana, Karnataka and Tamil Nadu — ~68,000
+village in Andhra Pradesh, Telangana, Karnataka, Tamil Nadu and Kerala — ~68,000
 villages from the Government of India's Local Government Directory, with
 live mandi (market) prices, farmer schemes, land parcels, weather and soil
 data on top. The data refreshes itself through reviewed CI pipelines.
