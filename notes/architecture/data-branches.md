@@ -2,7 +2,7 @@
 tags: [architecture]
 ---
 
-# Hybrid data model `data/*` branches vs reviewed PRs
+# Hybrid data model: `data/*` branches vs reviewed PRs
 
 Decision record: [[2026-07-10-hybrid-data-branches]].
 

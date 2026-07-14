@@ -1,4 +1,4 @@
-# 🗺️ Village Finder — Andhra Pradesh, Telangana, Karnataka, Tamil Nadu & Kerala
+# 🗺️ Village Finder - Andhra Pradesh, Telangana, Karnataka, Tamil Nadu & Kerala
 
 [![Build](https://github.com/mchittineni/india-village-finder/actions/workflows/ci.yml/badge.svg)](https://github.com/mchittineni/india-village-finder/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
@@ -12,7 +12,7 @@
 
 Find **any village** in Andhra Pradesh, Telangana, Karnataka, Tamil Nadu or Kerala on an
 interactive map, organised by the official **District → Mandal/Taluk → Village**
-hierarchy — and keep that data fresh automatically.
+hierarchy and keep that data fresh automatically.
 
 > 🌐 **Live site:** <https://mchittineni.github.io/india-village-finder/>
 
@@ -46,11 +46,11 @@ modern web interface or API.
 > Village).
 > More states and a public API are on the roadmap.
 
-|                  | Andhra Pradesh |  Telangana |  Karnataka | Tamil Nadu |    Kerala |
-| ---------------- | -------------: | ---------: | ---------: | ---------: | --------: |
-| Districts        |             28 |         33 |         31 |         38 |        14 |
-| Mandals / Taluks |            688 |        617 |        240 |        317 |        78 |
-| **Villages**     |     **15,314** | **10,075** | **26,319** | **16,332** | **1,357** |
+|                  | Andhra Pradesh | Telangana |  Karnataka | Tamil Nadu |    Kerala |
+| ---------------- | -------------: | --------: | ---------: | ---------: | --------: |
+| Districts        |             28 |        33 |         31 |         38 |        14 |
+| Mandals / Taluks |            688 |       617 |        240 |        317 |        78 |
+| **Villages**     |     **16,355** | **9,074** | **26,198** | **14,711** | **1,357** |
 
 _(Counts come from the latest LGD refresh via the data.gov.in API; the automated
 pipeline keeps them current. Karnataka's, Tamil Nadu's and Kerala's sub-districts
@@ -61,23 +61,23 @@ are few and large by design.)_
 
 ## What you get
 
-- **A visual map** for each state — districts shaded by how many villages they
+- **A visual map** for each state districts shaded by how many villages they
   contain (a _choropleth_). Click a district to zoom into its mandals; click a
   mandal to list its villages; click a village to pin it.
-- **Instant search** across every village, mandal and district — or by **pincode**.
-- **Multilingual UI** — switch the interface between **English, Telugu, Kannada, Tamil,
+- **Instant search** across every village, mandal and district or by **pincode**.
+- **Multilingual UI** switch the interface between **English, Telugu, Kannada, Tamil,
   Malayalam, Hindi and Urdu** (Urdu right-to-left). Place names are also rendered in the chosen
   script via a **morpheme-aware** transliteration engine (it renders common place-name
   suffixes like `-pur`/`-palli`/`-puram` from their canonical spelling, not letter-by-
-  letter). It's still approximate — the canonical English name is always kept on hover
-  and used for search — but its fidelity is **measured against LGD's official names**
+  letter). It's still approximate the canonical English name is always kept on hover
+  and used for search but its fidelity is **measured against LGD's official names**
   (`scraper/translit_eval.mjs`) and guarded in CI.
-- **Native-script names for every village** — when the state's own language is selected,
+- **Native-script names for every village** when the state's own language is selected,
   each village shows its native name resolved as **authoritative in-script spelling →
   neural transliteration → rule-based transliteration**. The current LGD source (the
   data.gov.in feed) doesn't carry the local-script name column, so names are produced by a
   trained neural model (**AI4Bharat IndicXlit**, committed offline as `names_translit.json`),
-  with the rule engine as a final fallback — so **every village still carries a native name**.
+  with the rule engine as a final fallback so **every village still carries a native name**.
   The authoritative path remains first in the order and takes precedence automatically if a
   source that publishes official in-script spellings is wired back in. District, sub-district
   and state names render in native script too (`regions_native.json`). The canonical English
@@ -87,50 +87,50 @@ are few and large by design.)_
 - **Village locations** where we can confidently place them (matched via GeoNames and
   validated against the village's sub-district; coverage varies by state, ~8–17%); the
   rest pin at sub-district (mandal/taluk) level.
-- **Land parcels (all five states)** — an optional cadastral layer showing
+- **Land parcels (all five states)** an optional cadastral layer showing
   individual survey plots (with survey numbers), streamed from a PMTiles vector archive
   and toggled on the map. Select a village to jump to its plots, and filter the parcel
   list by survey number (AP/TG by name, KA/TN by LGD code; Kerala's tiles carry only
   survey numbers, so it gets the layer + popups without the per-village jump). Data is
-  **CC0** from each state's GIS agency (APSAC / TRACGIS / KGIS / TNGIS / Bhuvan — no
+  **CC0** from each state's GIS agency (APSAC / TRACGIS / KGIS / TNGIS / Bhuvan no
   owner/farmer information); the tiles must be served from a CORS-enabled host (see
   [`docs/cadastral-hosting.md`](docs/cadastral-hosting.md)).
-- **Sub-survey / FMB sketch link** — from a parcel popup, one tap copies the parcel's
+- **Sub-survey / FMB sketch link** from a parcel popup, one tap copies the parcel's
   identifiers (survey number, village/mandal/district, GPS) and opens the state's
   official land-records portal (BhuNaksha AP / Bhu Bharati TG / Bhoomi KA) where the
   FMB sketch and sub-division ladder live. (None of the portals accepts URL prefill,
   so the copied details are re-entered there.)
-- **Nearby civic services** — from a pinned village, look up the closest hospitals and
+- **Nearby civic services** from a pinned village, look up the closest hospitals and
   clinics, government offices, and police/post-office/fire stations, with distance and a
   maps link. Fetched on demand from **[OpenStreetMap](https://www.openstreetmap.org)**
   (rural coverage is uneven, so some villages legitimately return nothing).
-- **Agromet weather** — from a pinned village, current conditions plus a 7-day
+- **Agromet weather** from a pinned village, current conditions plus a 7-day
   agricultural forecast (min/max °C, rainfall, rain probability), fetched on demand
   from the keyless **[Open-Meteo](https://open-meteo.com/)** API.
-- **Live mandi prices** — the day's APMC market quotes (commodity / variety, min–max
+- **Live mandi prices** the day's APMC market quotes (commodity / variety, min–max
   and modal ₹/quintal, grouped by market) for the village's district, from the
   Government of India's **Agmarknet** feed. A daily workflow publishes compact
   per-state snapshots that the app fetches at runtime; a district switcher and
   commodity search cover the whole state.
-- **Groundwater & soil overlays** — optional map layers: **groundwater prospects**
+- **Groundwater & soil overlays** optional map layers: **groundwater prospects**
   (Bhuvan/NRSC lithology–geomorphology, classified by well depth & yield) and
   **soil type** (ISRIC SoilGrids WRB class), togglable from the layers control.
-- **Soil & fertilizer profile** — from a pinned village, the point's soil type
-  (WRB group + the Indian common name — black cotton / red / alluvial — plus
+- **Soil & fertilizer profile** from a pinned village, the point's soil type
+  (WRB group + the Indian common name black cotton / red / alluvial plus
   texture), pH and organic carbon from the SoilGrids 250 m model, with the
   all-India balanced N-P-K guideline (4:2:1) and an indicative nutrient note
-  (e.g. zinc-deficiency risk in alkaline soil) — always labelled a model
+  (e.g. zinc-deficiency risk in alkaline soil) always labelled a model
   estimate to confirm with a Soil Health Card test.
-- **Farmer schemes & farm inputs** — the government schemes a farmer can apply
+- **Farmer schemes & farm inputs** the government schemes a farmer can apply
   for (the state's own + Central, from the national **myScheme** platform, with
   scheme names in all six UI languages and each entry linking to its
-  how-to-apply page), refreshed weekly — plus a quick reference of notified
+  how-to-apply page), refreshed weekly plus a quick reference of notified
   fertilizer prices (urea MRP, NBS-subsidised DAP) with links to the official
   fertilizer-stock and Soil Health Card portals.
-- **Fresh data, automatically** — refreshed from the Government of India's
+- **Fresh data, automatically** refreshed from the Government of India's
   **Local Government Directory (LGD)** and proposed as a reviewed pull request,
   so nothing reaches the live site without passing tests and a review.
-- **Five independent state apps** — `andhra_pradesh/`, `telangana/`, `karnataka/`,
+- **Five independent state apps** `andhra_pradesh/`, `telangana/`, `karnataka/`,
   `tamil_nadu/` and `kerala/` each stand on their own and can be hosted separately.
 
 ---
@@ -154,9 +154,9 @@ are few and large by design.)_
 ├── docs/                    # API reference build (JSDoc + pdoc) + hosting notes
 ├── notes/                   # project knowledge vault (Obsidian-compatible Markdown:
 │                            #   data-source dossiers, decision log, architecture maps)
-├── scraper/                 # SHARED tooling — one code path builds all states
+├── scraper/                 # SHARED tooling one code path builds all states
 │   ├── config.py            #   per-state registry: LGD code, language, cadastre/FMB,
-│   │                        #   mandi feed URL, map overlays — add a state HERE
+│   │                        #   mandi feed URL, map overlays add a state HERE
 │   ├── pipeline.py          #   LGD data → per-state village data (JSON + CSV) + web app
 │   ├── lgd_datagov.py       #   fetches LGD data from the data.gov.in open-data API
 │   ├── fetch_mandi_prices.py #  daily Agmarknet mandi-price snapshots (data.gov.in)
@@ -176,7 +176,7 @@ are few and large by design.)_
 │   ├── web_template/        #   single source of truth for the UI (copied per state)
 │   └── requirements*.txt    #   runtime · -dev (pytest) · -translit (offline IndicXlit)
 └── .github/
-    ├── actions/             # local composite actions — steps shared by the workflows
+    ├── actions/             # local composite actions steps shared by the workflows
     │   ├── setup-pipeline/  #   Python (+ optional Node) toolchain + dependency install
     │   ├── datagov-fetch/   #   run an upstream fetch with the exit-75 outage-skip contract
     │   ├── publish-data-branch/ # commit generated files to a data/* branch (no PR)
@@ -207,7 +207,7 @@ differs by an LGD state code (Andhra Pradesh = `28`, Telangana = `36`, Karnataka
 
 | Layer                                | Source                                                                                                                                                         | Why it's trustworthy                                                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Districts, mandals, villages         | **LGD** (`lgdirectory.gov.in`), Ministry of Panchayati Raj                                                                                                     | The official Indian government registry of administrative areas. We read it directly from the **[data.gov.in](https://data.gov.in/) open-data API** (captcha-free, refreshed ~daily) — no third-party mirror.                                                                                                                                                                |
+| Districts, mandals, villages         | **LGD** (`lgdirectory.gov.in`), Ministry of Panchayati Raj                                                                                                     | The official Indian government registry of administrative areas. We read it directly from the **[data.gov.in](https://data.gov.in/) open-data API** (captcha-free, refreshed ~daily) no third-party mirror.                                                                                                                                                                  |
 | Live cross-check                     | LGD's real-time portal                                                                                                                                         | Every build compares its district & mandal counts against the **live** LGD site, so stale data is caught. The result is saved in each `web/data/meta.json`.                                                                                                                                                                                                                  |
 | Map shapes                           | [`ramSeraph/indian_admin_boundaries`](https://github.com/ramSeraph/indian_admin_boundaries)                                                                    | Current (2016/2022) LGD boundary polygons, joined to the village data by LGD code.                                                                                                                                                                                                                                                                                           |
 | Pincodes                             | **LGD** `pincode_villages` mapping                                                                                                                             | Joined to villages by LGD village code (~99.9% coverage).                                                                                                                                                                                                                                                                                                                    |
@@ -269,21 +269,21 @@ python3 -m http.server 8777
 
 Data is **never pushed straight to `main`.** Instead:
 
-1. **`update-data.yml`** runs on a schedule — **daily** for village data, **monthly**
+1. **`update-data.yml`** runs on a schedule **daily** for village data, **monthly**
    for map boundaries (or on demand). A transient data.gov.in outage is retried and,
    worst case, skipped cleanly rather than opening an empty/failed PR.
 2. It rebuilds the data and runs the **test suite**.
 3. It opens a **pull request** whose description is an auto-generated
    [summary of exactly what changed](scraper/changelog.py) (villages added / removed /
    reclassified, with before→after counts).
-4. The PR must be **green** (tests pass — the `data-validation` check) **and approved**
+4. The PR must be **green** (tests pass the `data-validation` check) **and approved**
    by a code owner (and/or GitHub Copilot review) before it can merge.
 5. Merging to `main` triggers **`deploy-pages.yml`**, which publishes the new data to
    the live site.
 
 So the commit history doubles as an auditable, reviewed changelog of the data.
 
-> **The deliberate exception — regenerable artifacts live on `data/*` branches,
+> **The deliberate exception regenerable artifacts live on `data/*` branches,
 > not in `main`:** machine-regenerated outputs whose "review" would only ever be
 > rubber-stamping are published straight to dedicated data branches by their
 > workflows, and overlaid back in where they're consumed:
@@ -298,7 +298,7 @@ So the commit history doubles as an auditable, reviewed changelog of the data.
 >
 > The **LGD village data itself** (and the neural native names, which the daily
 > pipeline prunes and the tests validate against it) stays on the reviewed-PR
-> path above — that's the dataset of record that feeds releases.
+> path above that's the dataset of record that feeds releases.
 
 ### Tests
 
@@ -323,19 +323,19 @@ rebuilds and republishes automatically.
 Every time fresh data is merged, a **GitHub Release** is published with downloadable
 artifacts (`.github/workflows/release.yml`):
 
-- `<state>_villages.csv` — flat village list per state (e.g. `karnataka_villages.csv`),
-  including each village's **native-script name** (`Village (Native)`) — the official LGD
-  spelling where published, else transliteration — with a `Native Source` column marking which.
-- `<state>_data.zip` — the full per-state dataset (JSON + boundary GeoJSON + CSV).
-- `village_data_all.zip` — everything, all states.
+- `<state>_villages.csv` flat village list per state (e.g. `karnataka_villages.csv`),
+  including each village's **native-script name** (`Village (Native)`) the official LGD
+  spelling where published, else transliteration with a `Native Source` column marking which.
+- `<state>_data.zip` the full per-state dataset (JSON + boundary GeoJSON + CSV).
+- `village_data_all.zip` everything, all states.
 
 Grab the newest at **[Releases](https://github.com/mchittineni/india-village-finder/releases/latest)**.
 
 Releases are **semantically versioned** (`vMAJOR.MINOR.PATCH`):
 
-- **patch** — a data refresh of existing states (automatic).
-- **minor** — a new state is added to the project (auto-detected).
-- **major** — only when explicitly requested (`Run workflow → bump: major`).
+- **patch** a data refresh of existing states (automatic).
+- **minor** a new state is added to the project (auto-detected).
+- **major** only when explicitly requested (`Run workflow → bump: major`).
 
 See **[`CHANGELOG.md`](CHANGELOG.md)** for what changed in each release.
 
@@ -343,12 +343,12 @@ See **[`CHANGELOG.md`](CHANGELOG.md)** for what changed in each release.
 
 ## Roadmap
 
-- [ ] **More states** — the pipeline is state-code driven, so [adding one](CONTRIBUTING.md) is small.
+- [ ] **More states** the pipeline is state-code driven, so [adding one](CONTRIBUTING.md) is small.
 - [ ] **Public read-only API** for village / pincode lookup.
 - [ ] **Better coordinate coverage** for villages.
-- [x] **Native-script names everywhere** — authoritative LGD spellings where published, a
+- [x] **Native-script names everywhere** authoritative LGD spellings where published, a
       neural model (IndicXlit) for the rest, covering villages _and_ districts/sub-districts/state.
-- [ ] **Accessibility pass** — keyboard, screen-reader and contrast.
+- [ ] **Accessibility pass** keyboard, screen-reader and contrast.
 
 Have an idea? [Open a feature request](https://github.com/mchittineni/india-village-finder/issues/new?template=feature_request.yml).
 
@@ -356,17 +356,17 @@ Have an idea? [Open a feature request](https://github.com/mchittineni/india-vill
 
 ## Contributing & community
 
-Contributions are welcome — a **data correction** needs no coding, and code changes
+Contributions are welcome a **data correction** needs no coding, and code changes
 are encouraged.
 
-- 📖 **[Contributing guide](CONTRIBUTING.md)** — dev setup, project layout and the PR flow.
-- 🤝 **[Code of Conduct](CODE_OF_CONDUCT.md)** — Contributor Covenant 2.1.
-- 🔐 **[Security policy](SECURITY.md)** — report a vulnerability privately.
-- 🗒️ **[Changelog](CHANGELOG.md)** — what changed in each release.
-- 🐛 **[Open an issue](https://github.com/mchittineni/india-village-finder/issues/new/choose)** — bug, feature or data correction.
-- 📌 **[Good first issues](https://github.com/mchittineni/india-village-finder/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)** — newcomer-friendly.
+- 📖 **[Contributing guide](CONTRIBUTING.md)** dev setup, project layout and the PR flow.
+- 🤝 **[Code of Conduct](CODE_OF_CONDUCT.md)** Contributor Covenant 2.1.
+- 🔐 **[Security policy](SECURITY.md)** report a vulnerability privately.
+- 🗒️ **[Changelog](CHANGELOG.md)** what changed in each release.
+- 🐛 **[Open an issue](https://github.com/mchittineni/india-village-finder/issues/new/choose)** bug, feature or data correction.
+- 📌 **[Good first issues](https://github.com/mchittineni/india-village-finder/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)** newcomer-friendly.
 
-`main` is protected — every change lands through a reviewed, tested pull request.
+`main` is protected every change lands through a reviewed, tested pull request.
 
 ---
 
@@ -375,38 +375,38 @@ are encouraged.
 This project is **dual-licensed**, because it combines original code with government
 open data:
 
-- **Code** (everything in `scraper/` and the web apps) — **MIT License**, see
+- **Code** (everything in `scraper/` and the web apps) **MIT License**, see
   [`LICENSE`](LICENSE).
-- **Data** (all CSV / JSON / GeoJSON files and release artifacts) — **Government Open
+- **Data** (all CSV / JSON / GeoJSON files and release artifacts) **Government Open
   Data License – India (GODL-India)**, see [`DATA_LICENSE.md`](DATA_LICENSE.md). If you
   reuse the data you must keep the attribution to the **Local Government Directory**
   (Ministry of Panchayati Raj, Government of India).
 
-If you use this project in research or a product, please cite it — see
+If you use this project in research or a product, please cite it see
 [`CITATION.cff`](CITATION.cff).
 
 ---
 
 ## Acknowledgements
 
-- **[Local Government Directory (LGD)](https://lgdirectory.gov.in)** — Ministry of
-  Panchayati Raj, Government of India — the authoritative registry of administrative areas,
+- **[Local Government Directory (LGD)](https://lgdirectory.gov.in)** Ministry of
+  Panchayati Raj, Government of India the authoritative registry of administrative areas,
   read via the **[data.gov.in](https://data.gov.in/) open-data API**.
-- **[Agmarknet](https://agmarknet.gov.in/)** — Ministry of Agriculture & Farmers
-  Welfare — daily mandi (APMC market) prices, via the data.gov.in API.
-- **[myScheme](https://www.myscheme.gov.in/)** — Digital India / NeGD — the national
+- **[Agmarknet](https://agmarknet.gov.in/)** Ministry of Agriculture & Farmers
+  Welfare daily mandi (APMC market) prices, via the data.gov.in API.
+- **[myScheme](https://www.myscheme.gov.in/)** Digital India / NeGD the national
   government-scheme discovery platform, source of the farmer-schemes panel.
-- **[@ramSeraph](https://github.com/ramSeraph)** — the
+- **[@ramSeraph](https://github.com/ramSeraph)** the
   [admin-boundary polygons](https://github.com/ramSeraph/indian_admin_boundaries) and
   [cadastral data](https://github.com/ramSeraph/indian_cadastrals) (APSAC / TRACGIS / TNGIS / Bhuvan /
   KGIS extracts) this project builds on.
-- **[GeoNames](https://www.geonames.org/)** — populated-place coordinates.
+- **[GeoNames](https://www.geonames.org/)** populated-place coordinates.
 - **[OpenStreetMap](https://www.openstreetmap.org/copyright)** contributors (ODbL),
   queried via the [Overpass API](https://overpass-api.de/) for nearby civic services
   and native place names.
-- **[Open-Meteo](https://open-meteo.com/)** (CC BY 4.0) — village weather forecasts.
-- **[Bhuvan](https://bhuvan.nrsc.gov.in)** (NRSC/ISRO) — groundwater-prospect map
-  overlay; **[ISRIC SoilGrids](https://soilgrids.org)** (CC BY 4.0) — soil-class overlay.
+- **[Open-Meteo](https://open-meteo.com/)** (CC BY 4.0) village weather forecasts.
+- **[Bhuvan](https://bhuvan.nrsc.gov.in)** (NRSC/ISRO) groundwater-prospect map
+  overlay; **[ISRIC SoilGrids](https://soilgrids.org)** (CC BY 4.0) soil-class overlay.
 - Built with **[Leaflet](https://leafletjs.com)**, **[MapLibre GL](https://maplibre.org)** +
   **[PMTiles](https://protomaps.com/docs/pmtiles)** (cadastre), **[CARTO](https://carto.com)**
   basemaps and **[Fuse.js](https://fusejs.io)**.

@@ -5,10 +5,9 @@ name: Update Mandi Prices
 # so daily price churn never bloats history or needs a reviewed PR. The web
 # app fetches the JSONs from raw.githubusercontent.com (CORS-enabled); see
 # MANDI_PRICES_URL in scraper/config.py.
+
 on:
   schedule:
-    # Agmarknet fills through the Indian trading day; ~16:20 IST catches most
-    # of it. Off-hour minute per GitHub's scheduling advice.
     - cron: "47 10 * * *"
   workflow_dispatch:
 
@@ -32,8 +31,6 @@ jobs:
         with:
           packages: requests
 
-      # Same skip contract as update-data.yml: exit 75 = data.gov.in
-      # temporarily unreachable -> keep yesterday's snapshot, don't go red.
       - name: Fetch today's prices
         id: fetch
         uses: ./.github/actions/datagov-fetch

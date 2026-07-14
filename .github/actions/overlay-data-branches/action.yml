@@ -1,8 +1,7 @@
 name: Overlay data branches
 
 description: >
-  Fetch the given data/* branches and copy their trees over the working tree —
-  how site deploys, releases and pipeline runs consume the regenerable
+  Fetch the given data/* branches and copy their trees over the working tree how site deploys, releases and pipeline runs consume the regenerable
   artifacts that live outside main (published by publish-data-branch).
   Branches that don't exist yet are skipped, so first runs and forks work.
 

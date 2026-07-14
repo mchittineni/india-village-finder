@@ -30,9 +30,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      # Boundary tiles and parcel indexes are regenerable artifacts that live on
-      # data/* branches, not in main — overlay them into the published site.
-      # (Mandi prices are fetched by the browser at runtime, no overlay needed.)
       - name: Overlay data branches into the site
         uses: ./.github/actions/overlay-data-branches
         with:

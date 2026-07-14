@@ -36,9 +36,6 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # Bind dispatch inputs to env and reference them as shell vars, never
-      # interpolate ${{ inputs.* }} directly into a run: script (that substitutes
-      # textually before the shell parses it — a value with `$(...)`/`;` would run).
       SLUG: ${{ inputs.slug }}
       PMTILES_URL: ${{ inputs.pmtiles_url }}
       SOURCE_LAYER: ${{ inputs.source_layer }}

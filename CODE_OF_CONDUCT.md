@@ -47,7 +47,7 @@ an individual is officially representing the community in public spaces.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the project maintainer **[@mchittineni](https://github.com/mchittineni)**
-— privately, via GitHub's
+privately, via GitHub's
 [private vulnerability/report channels](https://github.com/mchittineni/india-village-finder/security)
 or a direct message. All complaints will be reviewed and investigated promptly
 and fairly. Maintainers are obligated to respect the privacy and security of the
