@@ -30,6 +30,6 @@ Conventions (enforced by review, documented in CONTRIBUTING):
   interpolated into `run:`).
 - Upstream outage = **exit 75** = clean skip with a step-summary note; any
   other non-zero exit stays red. A rotated API key (myScheme) exits 1 on
-  purpose — that needs a human.
+  purpose that needs a human.
 - The daily data PR reuses one branch (`data/auto-refresh`) so consecutive
   runs update a single PR in place.

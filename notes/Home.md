@@ -2,7 +2,7 @@
 tags: [moc]
 ---
 
-# Village Finder — knowledge map
+# Village Finder knowledge map
 
 Start here. Each link is a note in this vault; see [README](README.md) for conventions.
 

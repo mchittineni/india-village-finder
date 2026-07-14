@@ -2,7 +2,7 @@
 tags: [architecture]
 ---
 
-# Hybrid data model — `data/*` branches vs reviewed PRs
+# Hybrid data model `data/*` branches vs reviewed PRs
 
 Decision record: [[2026-07-10-hybrid-data-branches]].
 
@@ -21,7 +21,7 @@ the neural names against it, and the daily pipeline prunes them).
 
 Mechanics:
 
-- **Runtime branches** are flat and force-pushed as a single commit each run —
+- **Runtime branches** are flat and force-pushed as a single commit each run
   history never grows. raw.githubusercontent serves them with CORS `*`.
 - **Overlay branches** use the `publish-data-branch` / `overlay-data-branches`
   composites (`.github/actions/`); absent branches are skipped so first runs

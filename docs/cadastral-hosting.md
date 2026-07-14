@@ -1,8 +1,8 @@
-# Cadastral (land-parcel) layer — data hosting
+# Cadastral (land-parcel) layer data hosting
 
 The Andhra Pradesh, Telangana and Karnataka cadastral layers render individual
 land parcels (with survey numbers) from per-state **PMTiles** archives, streamed
-to the browser via HTTP **range requests** — the client only downloads the tiles
+to the browser via HTTP **range requests** the client only downloads the tiles
 for the current view (tens of KB), never the whole file.
 
 - **Datasets** (each from [ramSeraph/indian_cadastrals](https://github.com/ramSeraph/indian_cadastrals), **CC0 1.0**):
@@ -27,7 +27,7 @@ The upstream release URLs serve range requests **but send no CORS headers**, so 
 browser on the deployed site (`*.github.io`) is blocked from reading them. Each
 file is therefore mirrored to a **Cloudflare R2** bucket (S3-compatible, zero
 egress) that answers range requests **with CORS**, and the config URLs point at
-the bucket's public `r2.dev` origin. The mirror runs in CI — see below.
+the bucket's public `r2.dev` origin. The mirror runs in CI see below.
 
 ## Mirror via CI (primary path)
 
@@ -42,14 +42,14 @@ laptop" convention). It requires these repo **secrets**: `R2_ACCOUNT_ID`,
   input or all of them.
 - **Auto-tracking.** Runs **weekly** and on manual dispatch. Each leg reads the
   upstream release's `updated_at`/`size` from the GitHub API and compares them to
-  what it last stored in the R2 object's metadata — if a state's cadastre hasn't
+  what it last stored in the R2 object's metadata if a state's cadastre hasn't
   changed it **skips that transfer** entirely. The cadastre is refreshed rarely,
   so most weekly legs are no-ops. Use the **force** dispatch input to re-mirror
   regardless (e.g. after recreating the bucket).
 - **CORS is not set by CI.** CORS is a one-time, **bucket-level** setting;
   `PutBucketCors` needs an **Admin** R2 token, but the recurring transfer should
   use a least-privilege **Object Read & Write** token. So the workflow's CORS
-  step is best-effort (`continue-on-error`) — set CORS once in the dashboard
+  step is best-effort (`continue-on-error`) set CORS once in the dashboard
   (below), and the object-scoped token warns instead of failing.
 - **The config URL stays a reviewed edit.** The workflow does **not** rewrite
   `scraper/config.py`; pointing the app at the bucket is an explicit change.
@@ -59,10 +59,10 @@ laptop" convention). It requires these repo **secrets**: `R2_ACCOUNT_ID`,
 1. **Create a bucket**, e.g. `village-finder-cadastrals`, and set the four secrets.
 2. **Run the workflow** (Actions → mirror-cadastrals → Run workflow, `only_state:
    all`, `force: true` the first time) to upload all three PMTiles.
-3. **Expose it publicly** — enable the bucket's **public r2.dev** URL (R2 →
+3. **Expose it publicly** enable the bucket's **public r2.dev** URL (R2 →
    bucket → Settings → Public access), or attach a **custom domain**. This gives
    an origin like `https://pub-<hash>.r2.dev`.
-4. **Set CORS once** — R2 → bucket → Settings → CORS Policy → paste:
+4. **Set CORS once** R2 → bucket → Settings → CORS Policy → paste:
    ```json
    [
      {
@@ -74,7 +74,7 @@ laptop" convention). It requires these repo **secrets**: `R2_ACCOUNT_ID`,
      }
    ]
    ```
-5. **Point the app at it** — set each `STATES[<code>]["cadastre"]["url"]` in
+5. **Point the app at it** set each `STATES[<code>]["cadastre"]["url"]` in
    `scraper/config.py` to `https://<origin>/<object>.pmtiles` and re-run the
    build (or regenerate `web/config.js`) so every config picks up the URL.
 6. **Verify** each object honours ranges + CORS:
@@ -126,7 +126,7 @@ and writes `<slug>/web/data/parcels_index.json`. Districts changed in AP's 2022
 reorganisation, so the crosswalk matches on **(mandal, village)** names, not
 district.
 
-Regenerate (heavy — whole-state tile scan, run in CI):
+Regenerate (heavy whole-state tile scan, run in CI):
 
 ```bash
 pip install pmtiles mapbox-vector-tile
@@ -141,7 +141,7 @@ name highlight at runtime.
 
 **Telangana and Karnataka** do not ship a committed `parcels_index.json` yet, so
 their precise-jump path runs entirely at runtime: the app highlights a selected
-village's parcels (TG by name, KA by LGD village code — see `fields` in
+village's parcels (TG by name, KA by LGD village code see `fields` in
 `config.py`), brings the mandal into view and fits to the highlighted plots. A
 per-state index can be generated later to make the jump instant; KA is
 especially clean since its tiles carry the LGD village code directly.
