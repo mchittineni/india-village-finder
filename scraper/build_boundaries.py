@@ -206,7 +206,7 @@ def build(state_code: int, offline: bool):
 
 def main():
     ap = argparse.ArgumentParser(description="Build per-state district/mandal map polygons")
-    ap.add_argument("--state", default="both", help="ap | tg | ka | tn | all (alias: both)")
+    ap.add_argument("--state", default="both", help="ap | tg | ka | tn | kl | all (alias: both)")
     ap.add_argument("--offline", action="store_true")
     args = ap.parse_args()
     for sc in resolve_codes(args.state):

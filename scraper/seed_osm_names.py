@@ -158,7 +158,7 @@ def seed(state_codes, out_path: Path = OSM_NAMES_FILE) -> dict:
 
 def main():
     ap = argparse.ArgumentParser(description="Seed native place names from OpenStreetMap")
-    ap.add_argument("--state", default="all", help="ap | tg | ka | tn | all (default: all)")
+    ap.add_argument("--state", default="all", help="ap | tg | ka | tn | kl | all (default: all)")
     args = ap.parse_args()
     seed(resolve_codes(args.state))
 

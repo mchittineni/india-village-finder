@@ -148,7 +148,7 @@ def build_tiles() -> None:
 
 def main():
     ap = argparse.ArgumentParser(description="Tile all-state boundary polygons into PMTiles")
-    ap.add_argument("--state", default="all", help="ap | tg | ka | tn | all (bounds json scope)")
+    ap.add_argument("--state", default="all", help="ap | tg | ka | tn | kl | all (bounds scope)")
     ap.add_argument("--skip-tiles", action="store_true", help="only write boundary_bounds.json")
     args = ap.parse_args()
     codes = resolve_codes(args.state)

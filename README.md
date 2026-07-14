@@ -253,7 +253,7 @@ python3 -m venv .venv
 > test, not a full build. For real runs register a free key and export it:
 > `export DATA_GOV_KEY=<your-key>` (in CI it's the `DATA_GOV_KEY` repo secret).
 
-Handy flags: `--state ap|tg|ka|tn|both`, `--offline` (reuse cached CSVs), `--no-verify`.
+Handy flags: `--state ap|tg|ka|tn|kl|both`, `--offline` (reuse cached CSVs), `--no-verify`.
 
 **Preview the website locally:**
 

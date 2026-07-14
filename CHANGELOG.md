@@ -12,7 +12,22 @@ release attaches downloadable datasets; see [Releases][releases].
 
 ## [Unreleased]
 
-## [1.5.0]; 2026-07-14
+### Changed
+
+- `regenerate-native-names.yml` reworked for speed: one runner per state
+  (matrix, like the daily refresh), the CPU-only PyTorch wheel instead of the
+  multi-gigabyte CUDA stack, and three caches persisted between runs (the
+  built venv, the IndicXlit model weights, and a per-state transliteration
+  cache keyed by beam width). A rerun only sends never-seen names through the
+  model, so the weekly job drops from 75+ minutes to roughly the largest
+  cold state once, then minutes.
+
+### Fixed
+
+- Kerala (`kl`) added to the dispatch state choices of
+  `regenerate-native-names.yml` and `seed-osm-names.yml` (both are proper
+  dropdowns now) and to the `--state` help text of five scraper scripts and
+  the README pipeline flags; the registry-driven code already handled it.
 
 ### Added
 

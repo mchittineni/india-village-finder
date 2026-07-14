@@ -14,10 +14,12 @@ fallback. The authoritative names.json is NEVER modified.
 Why a SEPARATE, occasional script (not part of pipeline.py)
 -----------------------------------------------------------
 IndicXlit depends on PyTorch + fairseq (multi-GB) and downloads model weights on
-first use. We do NOT want that in the pipeline, in CI, or in the browser. So this
-runs on demand on a workstation and its (small JSON) output is COMMITTED — exactly
-like build_boundaries.py and enrich_coords.py. The map, the CSV build and CI then
-read a plain committed file and never touch PyTorch.
+first use. We do NOT want that in the pipeline's CI path or in the browser. So this
+runs on demand — normally via the regenerate-native-names.yml workflow (one runner
+per state, model + name caches persisted between runs), or on a workstation — and
+its (small JSON) output is COMMITTED, exactly like build_boundaries.py and
+enrich_coords.py. The map, the CSV build and CI then read a plain committed file
+and never touch PyTorch.
 
 Install (separate from the normal pipeline deps)
 ------------------------------------------------
@@ -26,7 +28,7 @@ Install (separate from the normal pipeline deps)
 Run
 ---
     python scraper/enrich_native_names.py                # all states -> names_translit.json
-    python scraper/enrich_native_names.py --state ka     # one state (ap|tg|ka|tn)
+    python scraper/enrich_native_names.py --state ka     # one state (ap|tg|ka|tn|kl)
     python scraper/enrich_native_names.py --regions      # district/mandal/state -> regions_native.json
     python scraper/enrich_native_names.py --eval         # score vs LGD gold, write nothing
 
@@ -331,7 +333,7 @@ def main():
     ap = argparse.ArgumentParser(
         description="Neural (IndicXlit) native village names — generate or evaluate"
     )
-    ap.add_argument("--state", default="all", help="all | ap | tg | ka | tn  (default: all)")
+    ap.add_argument("--state", default="all", help="all | ap | tg | ka | tn | kl  (default: all)")
     ap.add_argument("--beam", type=int, default=4, help="IndicXlit beam width (default 4)")
     ap.add_argument(
         "--eval",

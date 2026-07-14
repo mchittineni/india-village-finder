@@ -1,6 +1,7 @@
 name: Update OSM Native Names
 
-# Harvests human-verified native place names (name:te / name:kn / name:ta) from
+# Harvests human-verified native place names (name:te / name:kn / name:ta /
+# name:ml) from
 # OpenStreetMap via Overpass and publishes scraper/osm_names.json to the
 # data/osm-names branch, which pipeline runs overlay at build time (the pipeline
 # prefers these over the neural transliterator). Overpass is public +
@@ -13,7 +14,9 @@ on:
   workflow_dispatch:
     inputs:
       state:
-        description: "State(s) to harvest: all | ap | tg | ka | tn"
+        description: "State(s) to harvest"
+        type: choice
+        options: [all, ap, tg, ka, tn, kl]
         default: all
 
 permissions:
@@ -29,7 +32,7 @@ jobs:
 
     env:
       OSM_STATE: ${{ inputs.state || 'all' }}
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
