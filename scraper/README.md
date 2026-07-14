@@ -1,4 +1,4 @@
-# scraper/ — shared data pipeline
+# scraper/ shared data pipeline
 
 One code path builds the datasets and map apps for **every** state (Andhra Pradesh =
 LGD state code `28`, Telangana = `36`, Karnataka = `29`, Tamil Nadu = `33`,
@@ -57,7 +57,7 @@ web_template/ ──(copied by pipeline)──> ../<state>/web/{index.html,app.j
 `.cache/` holds the downloaded source dumps and is git-ignored (re-downloaded on demand).
 Edit the UI **only** in `web_template/`; the per-state copies are regenerated.
 
-**Native village names — layered fallback.** `names.json` holds the **authoritative**
+**Native village names layered fallback.** `names.json` holds the **authoritative**
 in-script spelling (script-validated). The current LGD source (data.gov.in) doesn't
 carry the local-script column, so the pipeline fills `names.json` from human-verified
 **seeds** instead — per-village pins in `translit_overrides_by_code.json` (matched by
