@@ -1,16 +1,16 @@
 {
   "state": "Tamil Nadu",
   "state_code": 33,
-  "generated_at": "2026-07-13T05:35:58Z",
+  "generated_at": "2026-07-14T04:52:44Z",
   "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
   "source_mirror": "data.gov.in (Open Government Data platform, LGD API)",
-  "source_date": "13Jul2026",
+  "source_date": "14Jul2026",
   "counts": {
     "districts": 38,
     "mandals": 317,
-    "villages": 16332,
-    "with_pincode": 16332,
-    "with_local_names": 2491
+    "villages": 14711,
+    "with_pincode": 14711,
+    "with_local_names": 2225
   },
   "native_lang": "ta",
   "dropped_villages_without_mandal": 0,
