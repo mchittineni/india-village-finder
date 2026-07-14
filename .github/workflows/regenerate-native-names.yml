@@ -10,6 +10,18 @@ name: Update Transliterated Native Names
 # none of the newer-interpreter shims are needed (Python 3.11+ tightened the
 # dataclass check fairseq/hydra rely on; torch 2.6 flipped torch.load to
 # weights_only=True, which rejects fairseq checkpoints).
+#
+# Kept fast (the repo is public, so runner minutes are free — the wins below cut
+# wall-clock, not billing):
+#   * one matrix leg per state (same shape as update-data.yml), so the slowest
+#     state bounds the run instead of the sum of all five;
+#   * the CPU-only torch wheel (~190 MB instead of the multi-GB CUDA stack — the
+#     runners have no GPU);
+#   * three actions/cache layers: the built venv + downloaded model weights
+#     (immutable key, rebuilt only when the interpreter or this file changes),
+#     and per-state transliteration caches (scraper/.cache, keyed by beam) so a
+#     rerun only sends never-seen names through the model. Cold run ≈ the
+#     largest state; warm weekly runs finish in minutes.
 
 on:
   schedule:
@@ -17,8 +29,10 @@ on:
   workflow_dispatch:
     inputs:
       state:
-        description: "State(s) to regenerate: all | ap | tg | ka | tn"
-        default: "all"
+        description: "State(s) to regenerate"
+        type: choice
+        options: [all, ap, tg, ka, tn, kl]
+        default: all
       beam:
         description: "IndicXlit beam width (higher = better, slower)"
         default: "4"
@@ -32,13 +46,44 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  regenerate:
+  plan:
+    # Turns the dispatch input into the matrix: one leg per state for "all",
+    # a single leg otherwise. Seconds of overhead, keeps every leg identical.
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 5
+    outputs:
+      states: ${{ steps.m.outputs.states }}
+    steps:
+      - name: Build state matrix
+        id: m
+        env:
+          XLIT_STATE: ${{ inputs.state || 'all' }}
+        run: |
+          # keep in sync with scraper/config.py STATES
+          declare -A SLUG=( [ap]=andhra_pradesh [tg]=telangana [ka]=karnataka [tn]=tamil_nadu [kl]=kerala )
+          if [ "$XLIT_STATE" = "all" ]; then KEYS="ap tg ka tn kl"; else KEYS="$XLIT_STATE"; fi
+          json="["
+          for k in $KEYS; do
+            [ -n "${SLUG[$k]:-}" ] || { echo "unknown state: $k" >&2; exit 1; }
+            json+="{\"key\":\"$k\",\"slug\":\"${SLUG[$k]}\"},"
+          done
+          echo "states=${json%,}]" >> "$GITHUB_OUTPUT"
+
+  regenerate:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        state: ${{ fromJSON(needs.plan.outputs.states) }}
 
     env:
-      XLIT_STATE: ${{ inputs.state || 'all' }}
+      STATE_KEY: ${{ matrix.state.key }}
       XLIT_BEAM: ${{ inputs.beam || '4' }}
+      INDICXLIT_CACHE: scraper/.cache/xlit-ci-${{ matrix.state.key }}.json
 
     steps:
       - name: Checkout Repository
@@ -54,32 +99,109 @@ jobs:
         with:
           python-version: "3.10" # fairseq/hydra predate 3.11's stricter dataclass rule
 
-      - name: Install IndicXlit stack (PyTorch + fairseq, offline model)
+      - name: Read exact interpreter version (cache key)
+        id: py
+        run: echo "pyver=$(python -V | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore IndicXlit environment (venv + model weights)
+        id: envcache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/xlit-venv
+            ~/.AI4Bharat_Xlit_Models
+          key: xlit-env-v1-${{ runner.os }}-py${{ steps.py.outputs.pyver }}-${{ hashFiles('.github/workflows/regenerate-native-names.yml') }}
+
+      - name: Install IndicXlit stack (PyTorch + fairseq)
+        if: steps.envcache.outputs.cache-hit != 'true'
         run: |
           set -euxo pipefail
+          python -m venv "$HOME/xlit-venv"
+          PY="$HOME/xlit-venv/bin/python"
           echo "numpy==1.26.4" > /tmp/constraints.txt   # pin so fairseq builds against numpy 1.x
           # omegaconf 2.0.x (a fairseq dep) ships legacy metadata that pip>=24.1 rejects.
-          python -m pip install "pip<24.1"
-          python -m pip install -c /tmp/constraints.txt "numpy==1.26.4" "cython<3" "torch==2.2.2"
+          "$PY" -m pip install "pip<24.1"
+          "$PY" -m pip install -c /tmp/constraints.txt "numpy==1.26.4" "cython<3"
+          # CPU-only wheel: the runners have no GPU and the default Linux wheel drags in CUDA.
+          "$PY" -m pip install -c /tmp/constraints.txt --extra-index-url https://download.pytorch.org/whl/cpu "torch==2.2.2+cpu"
           # fairseq 0.12.2's PyPI sdist omits its clib C++ sources -> build from the git tag.
           git clone --depth 1 --branch v0.12.2 https://github.com/facebookresearch/fairseq.git /tmp/fairseq
-          python -m pip install -c /tmp/constraints.txt --no-build-isolation /tmp/fairseq
-          python -m pip install -c /tmp/constraints.txt ai4bharat-transliteration
-          python -m pip install -r scraper/requirements-dev.txt   # pytest for validation
-          python -c "from ai4bharat.transliteration import XlitEngine; print('IndicXlit import OK')"
+          "$PY" -m pip install -c /tmp/constraints.txt --no-build-isolation /tmp/fairseq
+          "$PY" -m pip install -c /tmp/constraints.txt ai4bharat-transliteration
+
+      - name: Use the IndicXlit venv
+        run: |
+          echo "$HOME/xlit-venv/bin" >> "$GITHUB_PATH"
+          "$HOME/xlit-venv/bin/python" -c "from ai4bharat.transliteration import XlitEngine; print('IndicXlit import OK')"
+
+      - name: Restore transliteration cache (only new names hit the model)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ env.INDICXLIT_CACHE }}
+          key: xlit-names-v1-${{ matrix.state.key }}-beam${{ env.XLIT_BEAM }}-${{ github.run_id }}
+          restore-keys: |
+            xlit-names-v1-${{ matrix.state.key }}-beam${{ env.XLIT_BEAM }}-
 
       - name: Regenerate names_translit.json (villages)
-        run: python scraper/enrich_native_names.py --state "$XLIT_STATE" --beam "$XLIT_BEAM"
+        run: python scraper/enrich_native_names.py --state "$STATE_KEY" --beam "$XLIT_BEAM"
 
       - name: Regenerate regions_native.json (districts/mandals/state)
-        run: python scraper/enrich_native_names.py --regions --state "$XLIT_STATE" --beam "$XLIT_BEAM"
+        run: python scraper/enrich_native_names.py --regions --state "$STATE_KEY" --beam "$XLIT_BEAM"
 
       - name: Report neural accuracy vs LGD gold
         continue-on-error: true
-        run: python scraper/enrich_native_names.py --eval --state "$XLIT_STATE" | tee -a "$GITHUB_STEP_SUMMARY"
+        run: python scraper/enrich_native_names.py --eval --state "$STATE_KEY" --beam "$XLIT_BEAM" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload state artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: names-${{ matrix.state.slug }}
+          path: |
+            ${{ matrix.state.slug }}/web/data/names_translit.json
+            ${{ matrix.state.slug }}/web/data/regions_native.json
+          retention-days: 3
+
+  aggregate:
+    needs: regenerate
+    if: always() && needs.regenerate.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-pipeline
+        with:
+          requirements-file: scraper/requirements-dev.txt
+
+      - name: Download state artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: names-*
+          path: _incoming
+
+      - name: Overlay artifacts onto the working tree
+        id: overlay
+        run: |
+          count=0
+          shopt -s nullglob
+          for d in _incoming/names-*; do
+            slug=$(basename "$d"); slug=${slug#names-}
+            cp "$d"/*.json "$slug/web/data/"
+            count=$((count + 1))
+            echo "overlaid $slug"
+          done
+          rm -rf _incoming
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" = "0" ]; then
+            echo "No state artifacts (all legs skipped/failed) — nothing to do." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Validate data (pytest)
         id: tests
+        if: steps.overlay.outputs.count != '0'
         continue-on-error: true
         run: |
           python -m pytest scraper/tests -q | tee /tmp/pytest.txt
@@ -87,6 +209,7 @@ jobs:
 
       - name: Detect changes to neural names
         id: changed
+        if: steps.overlay.outputs.count != '0'
         run: |
           if [ -n "$(git status --porcelain -- '*/web/data/names_translit.json' '*/web/data/regions_native.json')" ]; then
             echo "yes=true" >> "$GITHUB_OUTPUT"
@@ -112,7 +235,7 @@ jobs:
             Regenerated `web/data/names_translit.json` via `scraper/enrich_native_names.py`
             (AI4Bharat IndicXlit) on GitHub Actions — state(s) `${{ inputs.state || 'all' }}`, beam `${{ inputs.beam || '4' }}`.
 
-            Accuracy vs LGD gold and the pytest result are in the
+            Per-state accuracy vs LGD gold and the pytest result are in the
             [run summary](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
 
             > The committed JSON is read as plain data by the map, the CSV build and CI —

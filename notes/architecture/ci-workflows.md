@@ -16,7 +16,7 @@ Shared steps live as composites in `.github/actions/` (`setup-pipeline`,
 | `seed-osm-names.yml`          | monthly                      | `data/osm-names` branch                                 |
 | `build-boundary-tiles.yml`    | monthly                      | `data/boundary-tiles` branch                            |
 | `build-parcels-index.yml`     | on demand                    | `data/parcels-index` branch (non-destructive per state) |
-| `regenerate-native-names.yml` | weekly/on demand             | reviewed PR (IndicXlit neural names)                    |
+| `regenerate-native-names.yml` | weekly/on demand             | reviewed PR (IndicXlit neural names; per-state matrix)  |
 | `mirror-cadastrals.yml`       | on upstream change           | PMTiles mirrored to Cloudflare R2                       |
 | `ci.yml`                      | every PR/push                | pytest data-validity suite                              |
 | `docs.yml`                    | PRs touching docs            | jsdoc/pdoc build check                                  |
@@ -33,3 +33,8 @@ Conventions (enforced by review, documented in CONTRIBUTING):
   purpose; that needs a human.
 - The daily data PR reuses one branch (`data/auto-refresh`) so consecutive
   runs update a single PR in place.
+- Heavy per-state work (village refresh, neural names) fans out as a matrix
+  leg per state, so the slowest state bounds the wall-clock. The neural-names
+  legs also persist three caches between runs (built venv, model weights,
+  per-state transliteration results), so a rerun only transliterates
+  never-seen names.
