@@ -12,6 +12,43 @@ release attaches downloadable datasets — see [Releases][releases].
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-07-14
+
+### Added
+
+- **Kerala** (LGD state `32`) — the fifth state: 14 districts, 78 taluks and
+  1,357 revenue villages with pincodes, district/taluk boundary polygons,
+  GeoNames coordinates (~17%), CSV export, and its own map app at `kerala/web/`
+  (teal accent, Taluk terminology). Verified against the live LGD portal.
+  Mandi prices, farmer schemes, OSM name seeds and neural names flow in
+  automatically from the existing config-driven workflows.
+- **Malayalam (മലയാളം)** as the seventh UI language across **all** states:
+  a full `DICT.ml` translation set and Malayalam in the rule-based
+  transliteration engine — retroflex t/d as in Kerala's English spellings
+  (Kottayam → കോട്ടയം style), m-only anusvara (Rampur → റാംപൂർ), word-final
+  chillu letters (Kannur → കണ്ണൂർ), a `zh` → ழ/ഴ digraph, and Kerala
+  place-name morphemes (`-kulam`, `-kara`, `-kode`, `-kad`, `-chery`,
+  `-ssery`, `-kavu`) that don't alter other languages' output. Malayalam is
+  wired through every script-validation gate (pipeline, OSM seeds, neural
+  names, review-queue harvest) and IndicXlit's `ml` model.
+- **Land parcels for Tamil Nadu and Kerala** — cadastre blocks for TNGIS
+  (824 MB, survey numbers + LGD village codes → full per-village highlight,
+  jump and FMB flow like Karnataka) and Bhuvan Kerala (143 MB, survey numbers
+  only → parcel layer + tap popups; the per-village button is hidden since the
+  tiles carry no village identity). Both added to the weekly R2 mirror; FMB
+  portals wired: TN e-Services (Patta/FMB) and Kerala's Ente Bhoomi (e-Rekha).
+  `build_parcels_index.py` now also keys directly by LGD village code where
+  tiles carry it (TN/KA) and skips survey-number-only sources cleanly.
+- **Redesigned landing page** — a "How it works" three-step flow (pick a
+  state → find your village → tap for weather/soil/mandi/schemes/parcels), a
+  what-you-get feature grid with data sources, native-language tags on the
+  state cards, and the Kerala card; totals now sum five states.
+
+### Changed
+
+- Groundwater-prospects overlay now includes Bhuvan's `KL_LGEOM` layer
+  (verified live) so the overlay covers Kerala too.
+
 ## [1.4.1] — 2026-07-13
 
 ### Added
@@ -375,7 +412,8 @@ Source` column recording which. Generated via the shared UI engine
 - Community-health files: Contributing guide, Code of Conduct, Security policy,
   and issue / pull-request templates.
 
-[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/mchittineni/india-village-finder/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/mchittineni/india-village-finder/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/mchittineni/india-village-finder/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/mchittineni/india-village-finder/compare/v1.2.12...v1.3.0
