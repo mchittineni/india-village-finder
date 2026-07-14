@@ -16,6 +16,7 @@
   --tg: #0f9d58; /* Telangana accent */
   --ka: #d97706; /* Karnataka accent */
   --tn: #dc2626; /* Tamil Nadu accent */
+  --kl: #0d9488; /* Kerala accent */
   --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.08);
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
   --radius: 14px;
@@ -369,6 +370,9 @@ a {
 }
 .stat.tn .num {
   color: var(--tn);
+}
+.stat.kl .num {
+  color: var(--kl);
 }
 
 .section-label {

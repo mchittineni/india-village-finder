@@ -1,14 +1,16 @@
 /** =====================================================================
-   AP, Telangana, Karnataka & Tamil Nadu Village Finder — i18n
+   AP, Telangana, Karnataka, Tamil Nadu & Kerala Village Finder — i18n
    Exposes window.VF_I18N:
      LANGS              [{code, name, dir}, ...]
      t(lang, key, p)    translate a UI string ({n}-style placeholders)
      translit(lang, s)  best-effort transliteration of a Roman place name
-                        into Telugu / Devanagari / Kannada / Tamil / Urdu script
+                        into Telugu / Devanagari / Kannada / Tamil / Malayalam /
+                        Urdu script
      dirOf(lang)        "ltr" | "rtl"
 
-   Sub-district tier: AP/Telangana call it a "Mandal", Karnataka & Tamil Nadu a
-   "Taluk". Both term families are provided; the app picks one via config.division.
+   Sub-district tier: AP/Telangana call it a "Mandal", Karnataka, Tamil Nadu &
+   Kerala a "Taluk". Both term families are provided; the app picks one via
+   config.division.
 
    NOTE ON TRANSLITERATION
    The official LGD open data only carries *English* place names, so the
@@ -22,7 +24,7 @@
    ===================================================================== */
 /**
  * @typedef {Object} Lang  A selectable UI language.
- * @property {string} code  Language code (en | te | kn | ta | hi | ur).
+ * @property {string} code  Language code (en | te | kn | ta | ml | hi | ur).
  * @property {string} name  Endonym shown in the picker.
  * @property {("ltr"|"rtl")} dir  Text direction.
  */
@@ -904,6 +906,162 @@ window.VF_I18N = (function () {
       soil_grp_sandy: "மணல் மண்",
       soil_grp_calc: "சுண்ணாம்பு மண்",
       soil_grp_shallow: "ஆழமற்ற/கற்கள் நிறைந்த மண்"
+    },
+    ml: {
+      village_finder: "ഗ്രാമ തിരയൽ",
+      search_ph: "ഏതെങ്കിലും ഗ്രാമം, താലൂക്ക് അല്ലെങ്കിൽ ജില്ല തിരയുക…",
+      all_districts: "എല്ലാ ജില്ലകളും",
+      districts: "ജില്ലകൾ",
+      mandals: "മണ്ഡലങ്ങൾ",
+      villages: "ഗ്രാമങ്ങൾ",
+      district: "ജില്ല",
+      mandal: "മണ്ഡലം",
+      village: "ഗ്രാമം",
+      district_word: "ജില്ല",
+      mandal_word: "മണ്ഡലം",
+      taluks: "താലൂക്കുകൾ",
+      taluk: "താലൂക്ക്",
+      taluk_word: "താലൂക്ക്",
+      n_taluks: "{n} താലൂക്കുകൾ",
+      villages_per_taluk: "ഓരോ താലൂക്കിലെയും ഗ്രാമങ്ങൾ",
+      taluk_note:
+        "താലൂക്ക് തലത്തിൽ കാണിച്ചിരിക്കുന്നു — കൃത്യമായ ഗ്രാമ കോർഡിനേറ്റുകൾ ഓപ്പൺ ഡാറ്റയിൽ ഇല്ല.",
+      az: "A → Z",
+      rural: "ഗ്രാമീണം",
+      urban: "നഗരം",
+      results: "ഫലങ്ങൾ",
+      matches: "{n} ഫലങ്ങൾ",
+      no_match: "“{q}” എന്നതുമായി പൊരുത്തപ്പെടുന്ന ഗ്രാമമോ താലൂക്കോ ജില്ലയോ ഇല്ല.",
+      no_villages: "ഈ പ്രദേശത്തിന് ഗ്രാമങ്ങൾ പട്ടികയിൽ ഇല്ല.",
+      villages_per_district: "ഓരോ ജില്ലയിലെയും ഗ്രാമങ്ങൾ",
+      villages_per_mandal: "ഓരോ മണ്ഡലത്തിലെയും ഗ്രാമങ്ങൾ",
+      villages_per_area: "ഓരോ പ്രദേശത്തെയും ഗ്രാമങ്ങൾ",
+      updated: "പുതുക്കിയത്",
+      n_villages: "{n} ഗ്രാമങ്ങൾ",
+      n_mandals: "{n} മണ്ഡലങ്ങൾ",
+      loading_data: "ഡാറ്റ ലോഡ് ചെയ്യുന്നു…",
+      loading_map: "ഭൂപടം ലോഡ് ചെയ്യുന്നു…",
+      data_lgd: "ഡാറ്റ: LGD",
+      mirror: "മിറർ",
+      report_issue: "പ്രശ്നം അറിയിക്കുക",
+      source: "ഉറവിടം",
+      home: "ഹോം — എല്ലാ സംസ്ഥാനങ്ങളും",
+      language: "ഭാഷ",
+      hide_panel: "പാനൽ മറയ്ക്കുക",
+      show_panel: "പാനൽ കാണിക്കുക",
+      clear: "മായ്ക്കുക",
+      currently_viewing: "ഇപ്പോൾ {state} കാണുന്നു",
+      approx_note: "ഏകദേശ സ്ഥാനം (GeoNames വഴി പൊരുത്തപ്പെടുത്തിയത്).",
+      mandal_note:
+        "മണ്ഡല തലത്തിൽ കാണിച്ചിരിക്കുന്നു — കൃത്യമായ ഗ്രാമ കോർഡിനേറ്റുകൾ ഓപ്പൺ ഡാറ്റയിൽ ഇല്ല.",
+      boundary_missing:
+        "{name} എന്നതിന്റെ ഭൂപട അതിർത്തി ഇനിയും പ്രസിദ്ധീകരിച്ചിട്ടില്ല (പുതിയ ജില്ല).",
+      loc_missing: "{name} എന്നതിന്റെ സ്ഥാനം ഇനിയും ഭൂപടത്തിൽ ഇല്ല.",
+      pin_label: "പിൻ",
+      lgd_label: "LGD",
+      parcels_toggle: "ഭൂമി പ്ലോട്ടുകൾ",
+      parcels_zoom_hint: "ഭൂമി പ്ലോട്ടുകൾ കാണാൻ സൂം ഇൻ ചെയ്യുക.",
+      show_parcels: "ഭൂമി പ്ലോട്ടുകൾ കാണിക്കുക",
+      parcels_none: "{name} എന്നതിന് ഭൂമി പ്ലോട്ടുകൾ കണ്ടെത്തിയില്ല.",
+      cadastre_loc_note: "ഭൂമി പ്ലോട്ട് രേഖകളിൽ നിന്നുള്ള സ്ഥാനം.",
+      pl_search_ph: "സർവേ നമ്പർ തിരയുക…",
+      n_parcels: "{n} പ്ലോട്ടുകൾ",
+      pl_empty: "പൊരുത്തപ്പെടുന്ന സർവേ നമ്പറുകൾ ഇല്ല.",
+      parcel_title: "ഭൂമി പ്ലോട്ട്",
+      survey_no: "സർവേ നമ്പർ",
+      parcel_area: "വിസ്തീർണ്ണം: {n} m²",
+      coordinates: "കോർഡിനേറ്റുകൾ:",
+      open_in_maps: "മാപ്സിൽ തുറക്കുക",
+      copy_coords: "പകർത്തുക",
+      coords_copied: "കോർഡിനേറ്റുകൾ പകർത്തി",
+      cad_snapshot_note: "കഡസ്ട്രൽ സ്നാപ്പ്ഷോട്ട് — തത്സമയ ഭൂരേഖകളല്ല.",
+      nb_find: "സമീപ സേവനങ്ങൾ കണ്ടെത്തുക",
+      nb_loading: "സമീപ സേവനങ്ങൾ തിരയുന്നു…",
+      nb_none: "{km} കി.മീ. നുള്ളിൽ ഒന്നും മാപ്പ് ചെയ്തിട്ടില്ല.",
+      nb_err: "ലോഡ് ചെയ്യാനായില്ല — വീണ്ടും ശ്രമിക്കാൻ ടാപ്പ് ചെയ്യുക.",
+      nb_src: "OpenStreetMap വഴി",
+      nb_health: "ആശുപത്രികളും ക്ലിനിക്കുകളും",
+      nb_government: "സർക്കാർ ഓഫീസുകൾ",
+      nb_civic: "പോലീസും സിവിക് സേവനങ്ങളും",
+      km: "{n} കി.മീ.",
+      t_hospital: "ആശുപത്രി",
+      t_clinic: "ക്ലിനിക്ക്",
+      t_police: "പോലീസ് സ്റ്റേഷൻ",
+      t_post_office: "പോസ്റ്റ് ഓഫീസ്",
+      t_fire_station: "ഫയർ സ്റ്റേഷൻ",
+      t_townhall: "ടൗൺ ഹാൾ",
+      t_courthouse: "കോടതി",
+      t_government: "സർക്കാർ ഓഫീസ്",
+      wx_btn: "കാലാവസ്ഥയും പ്രവചനവും",
+      wx_loading: "കാലാവസ്ഥ ലോഡ് ചെയ്യുന്നു…",
+      wx_err: "ലോഡ് ചെയ്യാനായില്ല — വീണ്ടും ശ്രമിക്കാൻ ടാപ്പ് ചെയ്യുക.",
+      wx_humidity: "ആർദ്രത {n}%",
+      wx_wind: "കാറ്റ് {n} കി.മീ/മണിക്കൂർ",
+      wx_mm: "{n} മി.മീ",
+      wx_clear: "തെളിഞ്ഞ ആകാശം",
+      wx_cloudy: "ഭാഗികമായി മേഘാവൃതം",
+      wx_overcast: "മേഘാവൃതം",
+      wx_fog: "മൂടൽമഞ്ഞ്",
+      wx_drizzle: "ചാറ്റൽമഴ",
+      wx_rain: "മഴ",
+      wx_storm: "ഇടിമിന്നലോടു കൂടിയ മഴ",
+      wx_src: "കാലാവസ്ഥ: Open-Meteo",
+      mandi_btn: "മണ്ഡി വിലകൾ",
+      mandi_title: "മണ്ഡി വിലകൾ",
+      mandi_sub: "{district} ജില്ല · ₹/ക്വിന്റൽ",
+      mandi_loading: "വിലകൾ ലോഡ് ചെയ്യുന്നു…",
+      mandi_err: "വിലകൾ ലോഡ് ചെയ്യാനായില്ല — വീണ്ടും ശ്രമിക്കാൻ ടാപ്പ് ചെയ്യുക.",
+      mandi_empty: "പൊരുത്തപ്പെടുന്ന ഉൽപ്പന്നങ്ങൾ ഇല്ല.",
+      mandi_none_district: "{district} ജില്ലയിൽ ഇന്ന് മണ്ഡി വില രേഖപ്പെടുത്തിയിട്ടില്ല.",
+      mandi_search_ph: "ഉൽപ്പന്നം തിരയുക…",
+      mandi_updated: "പുതുക്കിയത് {date} · Agmarknet വഴി data.gov.in",
+      fmb_btn: "സബ്-സർവേ / FMB സ്കെച്ച്",
+      fmb_copied: "സർവേ വിവരങ്ങൾ പകർത്തി — {portal} ൽ ഗ്രാമം തിരഞ്ഞെടുത്ത് അവ നൽകുക.",
+      ov_gw: "ഭൂഗർഭജല സാധ്യതകൾ",
+      ov_soil: "മണ്ണിന്റെ തരം (SoilGrids)",
+      sch_btn: "സർക്കാർ പദ്ധതികൾ",
+      sch_title: "കർഷകർക്കുള്ള പദ്ധതികൾ",
+      sch_sub: "{n} പദ്ധതികൾ",
+      sch_loading: "പദ്ധതികൾ ലോഡ് ചെയ്യുന്നു…",
+      sch_err: "പദ്ധതികൾ ലോഡ് ചെയ്യാനായില്ല — വീണ്ടും ശ്രമിക്കാൻ ടാപ്പ് ചെയ്യുക.",
+      sch_empty: "പൊരുത്തപ്പെടുന്ന പദ്ധതികൾ ഇല്ല.",
+      sch_search_ph: "പദ്ധതികൾ തിരയുക…",
+      sch_central: "കേന്ദ്ര പദ്ധതികൾ",
+      sch_state: "സംസ്ഥാന പദ്ധതികൾ",
+      sch_updated: "പുതുക്കിയത് {date} · myScheme (myscheme.gov.in)",
+      farm_title: "കൃഷി ഇൻപുട്ടുകൾ",
+      farm_note:
+        "യൂറിയയുടെ വില സർക്കാർ നിശ്ചയിച്ചതാണ്; DAP ഉൾപ്പെടെയുള്ള P&K വളങ്ങളുടെ വിലയിൽ NBS സബ്സിഡി ഉൾപ്പെടുന്നു. ലഭ്യത നിങ്ങളുടെ പ്രാദേശിക ഡീലറുമായി ഉറപ്പാക്കുക.",
+      farm_stock_link: "വളം സ്റ്റോക്ക് (iFMS)",
+      farm_shc_link: "സോയിൽ ഹെൽത്ത് കാർഡ്",
+      soil_btn: "മണ്ണും വളവും",
+      soil_loading: "മണ്ണിന്റെ വിവരം വായിക്കുന്നു…",
+      soil_err: "മണ്ണിന്റെ ഡാറ്റ ലോഡ് ചെയ്യാനായില്ല — വീണ്ടും ശ്രമിക്കാൻ ടാപ്പ് ചെയ്യുക.",
+      soil_lbl_type: "മണ്ണിന്റെ തരം",
+      soil_lbl_oc: "ജൈവ കാർബൺ",
+      soil_npk: "സന്തുലിത N-P-K ഉപയോഗ മാർഗ്ഗരേഖ (അഖിലേന്ത്യ): 4:2:1",
+      soil_note_alk:
+        "ക്ഷാര മണ്ണ് — സിങ്കിന്റെ ലഭ്യത കുറയും, സിങ്ക് (Zn) കുറവിനുള്ള സാധ്യത കൂടുതലാണ്; സിങ്ക് സൾഫേറ്റ് ഇടുന്നതിന് മുമ്പ് മണ്ണ് പരിശോധനയിൽ ഉറപ്പാക്കുക.",
+      soil_note_acid:
+        "അമ്ല മണ്ണ് — ഫോസ്ഫറസ് ബന്ധിക്കപ്പെട്ട് ലഭ്യത കുറയും; കുമ്മായം ഇടുന്നത് സഹായിക്കും. മണ്ണ് പരിശോധനയിൽ ഉറപ്പാക്കുക.",
+      soil_note_sandy: "മണൽ മണ്ണ് — നൈട്രജനും പൊട്ടാഷും വേഗം ഒലിച്ചുപോകും; വളം തവണകളായി ഇടുക.",
+      soil_note_ok:
+        "പ്രത്യേക അപകടസാധ്യതയൊന്നും കണ്ടില്ല — നിങ്ങളുടെ സോയിൽ ഹെൽത്ത് കാർഡ് ശുപാർശ പിന്തുടരുക.",
+      soil_verify: "മോഡൽ കണക്കാക്കൽ — സോയിൽ ഹെൽത്ത് കാർഡ് പരിശോധനയിൽ ഉറപ്പാക്കുക",
+      soil_ph_acidic: "അമ്ലം",
+      soil_ph_neutral: "നിഷ്പക്ഷം",
+      soil_ph_alkaline: "ക്ഷാരം",
+      soil_tex_clay: "കളിമണ്ണ്",
+      soil_tex_clayloam: "കളിമണ്ണ്-പശിമ മണ്ണ്",
+      soil_tex_loam: "പശിമ മണ്ണ്",
+      soil_tex_sandyloam: "മണൽ-പശിമ മണ്ണ്",
+      soil_tex_sandy: "മണൽ മണ്ണ്",
+      soil_grp_black: "കറുത്ത പരുത്തി മണ്ണ്",
+      soil_grp_red: "ചെമ്മണ്ണ്",
+      soil_grp_alluvial: "എക്കൽ മണ്ണ്",
+      soil_grp_sandy: "മണൽ മണ്ണ്",
+      soil_grp_calc: "ചുണ്ണാമ്പ് മണ്ണ്",
+      soil_grp_shallow: "ആഴം കുറഞ്ഞ / ചരൽ മണ്ണ്"
     }
   };
 
@@ -912,6 +1070,7 @@ window.VF_I18N = (function () {
     { code: "te", name: "తెలుగు", dir: "ltr" },
     { code: "kn", name: "ಕನ್ನಡ", dir: "ltr" },
     { code: "ta", name: "தமிழ்", dir: "ltr" },
+    { code: "ml", name: "മലയാളം", dir: "ltr" },
     { code: "hi", name: "हिन्दी", dir: "ltr" },
     { code: "ur", name: "اردو", dir: "rtl" }
   ];
@@ -947,64 +1106,82 @@ window.VF_I18N = (function () {
   }
 
   // -------------------------------------------------- transliteration engine
-  // Indic abugida scripts share structure; index by language: te -> 0, hi -> 1, kn -> 2, ta -> 3
-  // Vowels: [te_indep, te_matra, hi_indep, hi_matra, kn_indep, kn_matra, ta_indep, ta_matra]
+  // Indic abugida scripts share structure; index by language:
+  // te -> 0, hi -> 1, kn -> 2, ta -> 3, ml -> 4
+  // Vowels: [te_indep, te_matra, hi_indep, hi_matra, kn_indep, kn_matra,
+  //          ta_indep, ta_matra, ml_indep, ml_matra]
   var V = {
-    a: ["అ", "", "अ", "", "ಅ", "", "அ", ""],
-    aa: ["ఆ", "ా", "आ", "ा", "ಆ", "ಾ", "ஆ", "ா"],
-    i: ["ఇ", "ి", "इ", "ि", "ಇ", "ಿ", "இ", "ி"],
-    ii: ["ఈ", "ీ", "ई", "ी", "ಈ", "ೀ", "ஈ", "ீ"],
-    ee: ["ఈ", "ీ", "ई", "ी", "ಈ", "ೀ", "ஈ", "ீ"],
-    u: ["ఉ", "ు", "उ", "ु", "ಉ", "ು", "உ", "ு"],
-    uu: ["ఊ", "ూ", "ऊ", "ू", "ಊ", "ೂ", "ஊ", "ூ"],
-    oo: ["ఊ", "ూ", "ऊ", "ू", "ಊ", "ೂ", "ஊ", "ூ"],
-    e: ["ఎ", "ె", "ए", "े", "ಎ", "ೆ", "எ", "ெ"],
-    ai: ["ఐ", "ై", "ऐ", "ै", "ಐ", "ೈ", "ஐ", "ை"],
-    o: ["ఒ", "ొ", "ओ", "ो", "ಒ", "ೊ", "ஒ", "ொ"],
-    au: ["ఔ", "ౌ", "औ", "ौ", "ಔ", "ೌ", "ஔ", "ௌ"],
-    ou: ["ఔ", "ౌ", "औ", "ौ", "ಔ", "ೌ", "ஔ", "ௌ"]
+    a: ["అ", "", "अ", "", "ಅ", "", "அ", "", "അ", ""],
+    aa: ["ఆ", "ా", "आ", "ा", "ಆ", "ಾ", "ஆ", "ா", "ആ", "ാ"],
+    i: ["ఇ", "ి", "इ", "ि", "ಇ", "ಿ", "இ", "ி", "ഇ", "ി"],
+    ii: ["ఈ", "ీ", "ई", "ी", "ಈ", "ೀ", "ஈ", "ீ", "ഈ", "ീ"],
+    ee: ["ఈ", "ీ", "ई", "ी", "ಈ", "ೀ", "ஈ", "ீ", "ഈ", "ീ"],
+    u: ["ఉ", "ు", "उ", "ु", "ಉ", "ು", "உ", "ு", "ഉ", "ു"],
+    uu: ["ఊ", "ూ", "ऊ", "ू", "ಊ", "ೂ", "ஊ", "ூ", "ഊ", "ൂ"],
+    oo: ["ఊ", "ూ", "ऊ", "ू", "ಊ", "ೂ", "ஊ", "ூ", "ഊ", "ൂ"],
+    e: ["ఎ", "ె", "ए", "े", "ಎ", "ೆ", "எ", "ெ", "എ", "െ"],
+    ai: ["ఐ", "ై", "ऐ", "ै", "ಐ", "ೈ", "ஐ", "ை", "ഐ", "ൈ"],
+    o: ["ఒ", "ొ", "ओ", "ो", "ಒ", "ೊ", "ஒ", "ொ", "ഒ", "ൊ"],
+    au: ["ఔ", "ౌ", "औ", "ौ", "ಔ", "ೌ", "ஔ", "ௌ", "ഔ", "ൗ"],
+    ou: ["ఔ", "ౌ", "औ", "ौ", "ಔ", "ೌ", "ஔ", "ௌ", "ഔ", "ൗ"]
   };
   // Consonants: [te, hi, kn, ta]. Tamil has a reduced consonant set (no separate
   // voiced/aspirated letters), so several Roman keys map to the same Tamil glyph;
   // Sanskrit/Urdu sounds use the Grantha letters (ஜ ஷ ஸ ஹ க்ஷ).
   var C = {
-    k: ["క", "क", "ಕ", "க"],
-    kh: ["ఖ", "ख", "ಖ", "க"],
-    g: ["గ", "ग", "ಗ", "க"],
-    gh: ["ఘ", "घ", "ಘ", "க"],
-    ch: ["చ", "च", "ಚ", "ச"],
-    chh: ["ఛ", "छ", "ಛ", "ச"],
-    c: ["చ", "च", "ಚ", "ச"],
-    j: ["జ", "ज", "ಜ", "ஜ"],
-    jh: ["ఝ", "झ", "ಝ", "ஜ"],
-    t: ["త", "त", "ತ", "ட"],
-    th: ["థ", "थ", "ಥ", "த"],
-    d: ["ద", "द", "ದ", "ட"],
-    dh: ["ధ", "ध", "ಧ", "த"],
-    n: ["న", "न", "ನ", "ன"],
-    p: ["ప", "प", "ಪ", "ப"],
-    ph: ["ఫ", "फ", "ಫ", "ப"],
-    f: ["ఫ", "फ़", "ಫ", "ப"],
-    b: ["బ", "ब", "ಬ", "ப"],
-    bh: ["భ", "भ", "ಭ", "ப"],
-    m: ["మ", "म", "ಮ", "ம"],
-    y: ["య", "य", "ಯ", "ய"],
-    r: ["ర", "र", "ರ", "ர"],
-    l: ["ల", "ल", "ಲ", "ல"],
-    v: ["వ", "व", "ವ", "வ"],
-    w: ["వ", "व", "ವ", "வ"],
-    sh: ["శ", "श", "ಶ", "ஷ"],
-    s: ["స", "स", "ಸ", "ஸ"],
-    h: ["హ", "ह", "ಹ", "ஹ"],
-    z: ["జ", "ज़", "ಜ", "ஜ"],
-    x: ["క్స", "क्स", "ಕ್ಸ", "க்ஸ"],
-    ksh: ["క్ష", "क्ष", "ಕ್ಷ", "க்ஷ"],
-    gn: ["గ్న", "ग्न", "ಗ್ನ", "க்ன"],
-    jn: ["జ్ఞ", "ज्ञ", "ಜ್ಞ", "ஜ்ஞ"]
+    k: ["క", "क", "ಕ", "க", "ക"],
+    kh: ["ఖ", "ख", "ಖ", "க", "ഖ"],
+    g: ["గ", "ग", "ಗ", "க", "ഗ"],
+    gh: ["ఘ", "घ", "ಘ", "க", "ഘ"],
+    ch: ["చ", "च", "ಚ", "ச", "ച"],
+    chh: ["ఛ", "छ", "ಛ", "ச", "ഛ"],
+    c: ["చ", "च", "ಚ", "ச", "ച"],
+    j: ["జ", "ज", "ಜ", "ஜ", "ജ"],
+    jh: ["ఝ", "झ", "ಝ", "ஜ", "ഝ"],
+    // Kerala English spellings use "t"/"d" for the retroflex row (Kottayam →
+    // കോട്ടയം, Wayanad → വയനാട്) and "th"/"dh" for the dental one (Thrissur →
+    // തൃശ്ശൂർ) — mirror that, like Tamil's ட choice.
+    t: ["త", "त", "ತ", "ட", "ട"],
+    th: ["థ", "थ", "ಥ", "த", "ത"],
+    d: ["ద", "द", "ದ", "ட", "ട"],
+    dh: ["ధ", "ध", "ಧ", "த", "ധ"],
+    n: ["న", "न", "ನ", "ன", "ന"],
+    p: ["ప", "प", "ಪ", "ப", "പ"],
+    ph: ["ఫ", "फ", "ಫ", "ப", "ഫ"],
+    f: ["ఫ", "फ़", "ಫ", "ப", "ഫ"],
+    b: ["బ", "ब", "ಬ", "ப", "ബ"],
+    bh: ["భ", "भ", "ಭ", "ப", "ഭ"],
+    m: ["మ", "म", "ಮ", "ம", "മ"],
+    y: ["య", "य", "ಯ", "ய", "യ"],
+    r: ["ర", "र", "ರ", "ர", "ര"],
+    l: ["ల", "ल", "ಲ", "ல", "ല"],
+    v: ["వ", "व", "ವ", "வ", "വ"],
+    w: ["వ", "व", "ವ", "வ", "വ"],
+    sh: ["శ", "श", "ಶ", "ஷ", "ഷ"],
+    s: ["స", "स", "ಸ", "ஸ", "സ"],
+    h: ["హ", "ह", "ಹ", "ஹ", "ഹ"],
+    z: ["జ", "ज़", "ಜ", "ஜ", "സ"],
+    zh: ["ళ", "ळ", "ಳ", "ழ", "ഴ"],
+    x: ["క్స", "क्स", "ಕ್ಸ", "க்ஸ", "ക്സ"],
+    ksh: ["క్ష", "क्ष", "ಕ್ಷ", "க்ஷ", "ക്ഷ"],
+    gn: ["గ్న", "ग्न", "ಗ್ನ", "க்ன", "ഗ്ന"],
+    jn: ["జ్ఞ", "ज्ञ", "ಜ್ಞ", "ஜ்ஞ", "ജ്ഞ"]
   };
-  var ANUS = ["ం", "ं", "ಂ", ""]; // anusvara (nasal)  [te, hi, kn]; Tamil writes nasals as full consonants
-  var VIRAMA = ["్", "्", "್", "்"]; // virama (halant / Tamil pulli) [te, hi, kn, ta]
-  var SCRIPT_IDX = { te: 0, hi: 1, kn: 2, ta: 3 };
+  // anusvara (nasal) [te, hi, kn, ta, ml]; Tamil writes nasals as full
+  // consonants; Malayalam uses ം for the m-nasal only (ബോംബെ) — see renderIndic.
+  var ANUS = ["ం", "ं", "ಂ", "", "ം"];
+  var VIRAMA = ["్", "्", "್", "்", "്"]; // virama (halant / pulli / chandrakkala)
+  var SCRIPT_IDX = { te: 0, hi: 1, kn: 2, ta: 3, ml: 4 };
+  // Word-final consonant+virama → Malayalam chillu letter (കണ്ണൂര് → കണ്ണൂർ);
+  // final മ് is written as the anusvara (പുറം-style endings).
+  var ML_CHILLU = [
+    [/മ്$/, "ം"],
+    [/ന്$/, "ൻ"],
+    [/ണ്$/, "ൺ"],
+    [/ര്$/, "ർ"],
+    [/ല്$/, "ൽ"],
+    [/ള്$/, "ൾ"]
+  ];
 
   // Urdu (abjad): consonants + long vowels; short vowels omitted.
   var CUR = {
@@ -1114,7 +1291,8 @@ window.VF_I18N = (function () {
     var anus = ANUS[si],
       virama = VIRAMA[si];
     var tamil = lang === "ta";
-    var dravidian = lang === "te" || lang === "kn" || tamil; // drop trailing inherent 'a'
+    var mal = lang === "ml";
+    var dravidian = lang === "te" || lang === "kn" || tamil || mal; // drop trailing inherent 'a'
     var out = "",
       prev = "start";
     for (var i = 0; i < toks.length; i++) {
@@ -1125,10 +1303,12 @@ window.VF_I18N = (function () {
         // (must follow a vowel — an anusvara can't begin a syllable/word). A
         // doubled nasal (nn / mm) is gemination, not an anusvara, so it falls
         // through to the conjunct path (Dimma → దిమ్మ, not దింమ). Tamil has no
-        // anusvara either, so it always uses the consonant + pulli (சென்னை).
+        // anusvara so it always uses consonant + pulli (சென்னை); Malayalam's ം
+        // is an m-sound only (ബോംബെ), so its n keeps the conjunct path (കൊണ്ട).
         if (
           !tamil &&
           (tk === "n" || tk === "m") &&
+          !(mal && tk === "n") &&
           prev === "vowel" &&
           next &&
           C[next] &&
@@ -1151,6 +1331,13 @@ window.VF_I18N = (function () {
       }
     }
     if (prev === "cons" && dravidian) out += virama;
+    // Malayalam writes word-final nasals/liquids as chillu letters (ർ ൻ ൽ …)
+    // and a final m as the anusvara — also correct before a rendered suffix
+    // (മനൽ + കര), so applying per rendered chunk is safe.
+    if (mal) {
+      for (var c = 0; c < ML_CHILLU.length; c++)
+        out = out.replace(ML_CHILLU[c][0], ML_CHILLU[c][1]);
+    }
     return out;
   }
 
@@ -1187,29 +1374,39 @@ window.VF_I18N = (function () {
   // faithful to the official LGD spelling than going letter-by-letter. (Validated
   // against LGD's authoritative names via scraper/translit_eval.mjs.)
   var MORPH = {
-    puram: ["పురం", "पुरम", "ಪುರ", "புரம்"],
-    pur: ["పూర్", "पुर", "ಪುರ", "பூர்"],
-    palle: ["పల్లె", "पल्ले", "ಪಲ್ಲೆ", "பள்ளி"],
-    palli: ["పల్లి", "पल्ली", "ಪಲ್ಲಿ", "பள்ளி"],
-    pally: ["పల్లి", "पल्ली", "ಪಲ್ಲಿ", "பள்ளி"],
-    halli: ["హళ్ళి", "हल्ली", "ಹಳ್ಳಿ", "அள்ளி"],
-    hatti: ["హట్టి", "हट्टी", "ಹಟ್ಟಿ", "அட்டி"],
-    gaon: ["గాంవ్", "गांव", "ಗಾಂವ್", "காவ்"],
-    wadi: ["వాడి", "वाडी", "ವಾಡಿ", "வாடி"],
-    wada: ["వాడ", "वाडा", "ವಾಡ", "வாடா"],
-    vada: ["వాడ", "वाडा", "ವಾಡ", "வாடா"],
-    palayam: ["పాళయం", "पालयम", "ಪಾಳ್ಯ", "பாளையம்"],
-    palem: ["పాలెం", "पालेम", "ಪಾಳೆಂ", "பாளேம்"],
-    gudem: ["గూడెం", "गूडेम", "ಗೂಡೆಂ", "கூடேம்"],
-    guda: ["గూడ", "गूडा", "ಗೂಡ", "குடா"],
-    kunta: ["కుంట", "कुंटा", "ಕುಂಟ", "குந்த"],
-    pettai: ["పేట్టై", "पेट्टै", "ಪೇಟ್ಟೈ", "பேட்டை"],
-    pakkam: ["పాక్కం", "पाक्कम", "ಪಾಕ್ಕಂ", "பாக்கம்"],
-    kuppam: ["కుప్పం", "कुप्पम", "ಕುಪ್ಪಂ", "குப்பம்"],
-    patti: ["పట్టి", "पट्टी", "ಪಟ್ಟಿ", "பட்டி"],
-    peta: ["పేట", "पेठा", "ಪೇಟ", "பேட்டை"],
-    nagar: ["నగర్", "नगर", "ನಗರ", "நகர்"],
-    mangalam: ["మంగళం", "मंगलम", "ಮಂಗಳ", "மங்கலம்"]
+    puram: ["పురం", "पुरम", "ಪುರ", "புரம்", "പുരം"],
+    pur: ["పూర్", "पुर", "ಪುರ", "பூர்", "പൂർ"],
+    palle: ["పల్లె", "पल्ले", "ಪಲ್ಲೆ", "பள்ளி", "പള്ളെ"],
+    palli: ["పల్లి", "पल्ली", "ಪಲ್ಲಿ", "பள்ளி", "പള്ളി"],
+    pally: ["పల్లి", "पल्ली", "ಪಲ್ಲಿ", "பள்ளி", "പള്ളി"],
+    halli: ["హళ్ళి", "हल्ली", "ಹಳ್ಳಿ", "அள்ளி", "ഹള്ളി"],
+    hatti: ["హట్టి", "हट्टी", "ಹಟ್ಟಿ", "அட்டி", "ഹട്ടി"],
+    gaon: ["గాంవ్", "गांव", "ಗಾಂವ್", "காவ்", "ഗാവ്"],
+    wadi: ["వాడి", "वाडी", "ವಾಡಿ", "வாடி", "വാടി"],
+    wada: ["వాడ", "वाडा", "ವಾಡ", "வாடா", "വാഡ"],
+    vada: ["వాడ", "वाडा", "ವಾಡ", "வாடா", "വാഡ"],
+    palayam: ["పాళయం", "पालयम", "ಪಾಳ್ಯ", "பாளையம்", "പാളയം"],
+    palem: ["పాలెం", "पालेम", "ಪಾಳೆಂ", "பாளேம்", "പാലെം"],
+    gudem: ["గూడెం", "गूडेम", "ಗೂಡೆಂ", "கூடேம்", "ഗൂഡെം"],
+    guda: ["గూడ", "गूडा", "ಗೂಡ", "குடா", "ഗൂഡ"],
+    kunta: ["కుంట", "कुंटा", "ಕುಂಟ", "குந்த", "കുണ്ട"],
+    pettai: ["పేట్టై", "पेट्टै", "ಪೇಟ್ಟೈ", "பேட்டை", "പേട്ട"],
+    pakkam: ["పాక్కం", "पाक्कम", "ಪಾಕ್ಕಂ", "பாக்கம்", "പാക്കം"],
+    kuppam: ["కుప్పం", "कुप्पम", "ಕುಪ್ಪಂ", "குப்பம்", "കുപ്പം"],
+    patti: ["పట్టి", "पट्टी", "ಪಟ್ಟಿ", "பட்டி", "പട്ടി"],
+    peta: ["పేట", "पेठा", "ಪೇಟ", "பேட்டை", "പേട്ട"],
+    nagar: ["నగర్", "नगर", "ನಗರ", "நகர்", "നഗർ"],
+    mangalam: ["మంగళం", "मंगलम", "ಮಂಗಳ", "மங்கலம்", "മംഗലം"],
+    // Kerala-specific morphemes. `null` for the other scripts falls through to
+    // plain letter-by-letter rendering there, so adding these keys cannot
+    // change any existing language's output (see the MORPH[suf][si] guard).
+    kulam: [null, null, null, null, "കുളം"],
+    kara: [null, null, null, null, "കര"],
+    kode: [null, null, null, null, "കോട്"],
+    kad: [null, null, null, null, "കാട്"],
+    chery: [null, null, null, null, "ചേരി"],
+    ssery: [null, null, null, null, "ശ്ശേരി"],
+    kavu: [null, null, null, null, "കാവ്"]
   };
   var MORPHKEYS = Object.keys(MORPH).sort(function (a, b) {
     return b.length - a.length;
@@ -1234,8 +1431,10 @@ window.VF_I18N = (function () {
         var nasal = "";
         // A stem-final n/m before the (consonant-initial) suffix nasalises to an
         // anusvara in Telugu/Kannada (e.g. Bheem+pur → భీంపూర్). Tamil has no
-        // anusvara, so it keeps the nasal consonant via the normal path.
-        if (lang !== "ta" && /[aeiou][nm]$/.test(stem.toLowerCase())) {
+        // anusvara, so it keeps the nasal consonant via the normal path;
+        // Malayalam's ം covers only the m sound (Ram+puram → റാംപുരം).
+        var nasalRe = lang === "ml" ? /[aeiou]m$/ : /[aeiou][nm]$/;
+        if (lang !== "ta" && nasalRe.test(stem.toLowerCase())) {
           nasal = ANUS[si];
           stem = stem.slice(0, -1);
         }
@@ -1245,7 +1444,7 @@ window.VF_I18N = (function () {
     return renderIndic(tokenize(lw), lang);
   }
 
-  var SUPPORTED = { te: 1, hi: 1, kn: 1, ta: 1, ur: 1 };
+  var SUPPORTED = { te: 1, hi: 1, kn: 1, ta: 1, ml: 1, ur: 1 };
   var CACHE = {};
   /**
    * Best-effort transliteration of a Roman place name into the target script,
