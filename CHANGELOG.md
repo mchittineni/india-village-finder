@@ -12,6 +12,24 @@ release attaches downloadable datasets; see [Releases][releases].
 
 ## [Unreleased]
 
+## [1.5.2]; 2026-07-15
+
+### Changed
+
+- Updated `.github/workflows/update-data.yml` to run weekly instead of daily.
+- Integrated `.github/workflows/regenerate-native-names.yml` to run directly as a chained reusable workflow after the data refresh completes.
+- Updated the neural native name regeneration workflow to commit and push changes directly to the automated PR branch (`data/auto-refresh`) when chained.
+- Removed the independent scheduled cron trigger from `regenerate-native-names.yml` to prevent duplicate runs on Sundays.
+- Updated README and architecture notes to reflect the new weekly schedule and workflow chaining.
+
+## [1.5.1]; 2026-07-15
+
+### Changed
+
+- **Village counts rebased** by the 15Jul2026 LGD dump, including the first refresh of Kerala's village data.
+
+## [1.5.0]; 2026-07-14
+
 ### Changed
 
 - `regenerate-native-names.yml` reworked for speed: one runner per state
@@ -21,6 +39,8 @@ release attaches downloadable datasets; see [Releases][releases].
   cache keyed by beam width). A rerun only sends never-seen names through the
   model, so the weekly job drops from 75+ minutes to roughly the largest
   cold state once, then minutes.
+- Groundwater-prospects overlay now includes Bhuvan's `KL_LGEOM` layer
+  (verified live) so the overlay covers Kerala too.
 
 ### Fixed
 
@@ -59,10 +79,11 @@ release attaches downloadable datasets; see [Releases][releases].
   what-you-get feature grid with data sources, native-language tags on the
   state cards, and the Kerala card; totals now sum five states.
 
+## [1.4.2]; 2026-07-14
+
 ### Changed
 
-- Groundwater-prospects overlay now includes Bhuvan's `KL_LGEOM` layer
-  (verified live) so the overlay covers Kerala too.
+- **Village counts rebased** by the 14Jul2026 LGD dump.
 
 ## [1.4.1]; 2026-07-13
 
@@ -427,8 +448,11 @@ Source` column recording which. Generated via the shared UI engine
 - Community-health files: Contributing guide, Code of Conduct, Security policy,
   and issue / pull-request templates.
 
-[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.5.0...HEAD
-[1.5.0]: https://github.com/mchittineni/india-village-finder/compare/v1.4.1...v1.5.0
+[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/mchittineni/india-village-finder/compare/v1.5.1...v1.5.2
+[1.5.1]: https://github.com/mchittineni/india-village-finder/compare/v1.5.0...v1.5.1
+[1.5.0]: https://github.com/mchittineni/india-village-finder/compare/v1.4.2...v1.5.0
+[1.4.2]: https://github.com/mchittineni/india-village-finder/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/mchittineni/india-village-finder/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/mchittineni/india-village-finder/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/mchittineni/india-village-finder/compare/v1.2.12...v1.3.0

@@ -9,7 +9,7 @@ Decision record: [[2026-07-10-hybrid-data-branches]].
 Machine-regenerated artifacts whose "review" would only rubber-stamp are
 published straight to dedicated branches; the **LGD village data and neural
 native names stay on the reviewed-PR path** (dataset of record; tests validate
-the neural names against it, and the daily pipeline prunes them).
+the neural names against it, and the weekly pipeline prunes them).
 
 | Branch                | Content                                | Cadence | Consumed via                           |
 | --------------------- | -------------------------------------- | ------- | -------------------------------------- |

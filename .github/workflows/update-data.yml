@@ -2,7 +2,7 @@ name: Update Village Data
 
 on:
   schedule:
-    - cron: "0 2 * * *" # daily   — 02:00 UTC: refresh village data (data.gov.in)
+    - cron: "0 2 * * 0" # weekly  — Sundays 02:00 UTC: refresh village data (data.gov.in)
     - cron: "0 3 1 * *" # monthly — 1st 03:00 UTC: data + boundaries
   workflow_dispatch:
     inputs:
@@ -94,6 +94,8 @@ jobs:
     needs: build
     if: always() && needs.build.result != 'cancelled'
     runs-on: ubuntu-latest
+    outputs:
+      has-changes: ${{ steps.changed.outputs.yes }}
 
     steps:
       - name: Checkout Repository
@@ -224,3 +226,10 @@ jobs:
         if: steps.changed.outputs.yes == 'true'
         run: |
           echo "PR ${{ steps.cpr.outputs.pull-request-url || 'opened (see PRs)' }}"
+
+  regenerate-names:
+    needs: aggregate
+    if: needs.aggregate.outputs.has-changes == 'true'
+    uses: ./.github/workflows/regenerate-native-names.yml
+    with:
+      branch: data/auto-refresh

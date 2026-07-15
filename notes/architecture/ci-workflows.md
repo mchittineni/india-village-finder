@@ -8,21 +8,21 @@ Shared steps live as composites in `.github/actions/` (`setup-pipeline`,
 `datagov-fetch` = the exit-75 outage-skip contract, `publish-data-branch`,
 `overlay-data-branches`); each workflow keeps only its unique logic.
 
-| Workflow                      | Cadence                      | Output                                                  |
-| ----------------------------- | ---------------------------- | ------------------------------------------------------- |
-| `update-data.yml`             | daily (+ monthly boundaries) | **reviewed PR** on `data/auto-refresh`                  |
-| `update-mandi-prices.yml`     | daily 10:47 UTC              | `data/mandi-prices` branch                              |
-| `update-farmer-schemes.yml`   | weekly Mon                   | `data/farmer-schemes` branch                            |
-| `seed-osm-names.yml`          | monthly                      | `data/osm-names` branch                                 |
-| `build-boundary-tiles.yml`    | monthly                      | `data/boundary-tiles` branch                            |
-| `build-parcels-index.yml`     | on demand                    | `data/parcels-index` branch (non-destructive per state) |
-| `regenerate-native-names.yml` | weekly/on demand             | reviewed PR (IndicXlit neural names; per-state matrix)  |
-| `mirror-cadastrals.yml`       | on upstream change           | PMTiles mirrored to Cloudflare R2                       |
-| `ci.yml`                      | every PR/push                | pytest data-validity suite                              |
-| `docs.yml`                    | PRs touching docs            | jsdoc/pdoc build check                                  |
-| `release.yml`                 | data merges                  | versioned GitHub Release (+ data-branch overlays)       |
-| `publish-blog.yml`            | release published            | dev.to blog draft (+ Medium via legacy token)           |
-| `deploy-pages.yml`            | pushes to main               | live site (+ data-branch overlays)                      |
+| Workflow                      | Cadence                                | Output                                                  |
+| ----------------------------- | -------------------------------------- | ------------------------------------------------------- |
+| `update-data.yml`             | weekly (+ monthly boundaries)          | **reviewed PR** on `data/auto-refresh`                  |
+| `update-mandi-prices.yml`     | daily 10:47 UTC                        | `data/mandi-prices` branch                              |
+| `update-farmer-schemes.yml`   | weekly Mon                             | `data/farmer-schemes` branch                            |
+| `seed-osm-names.yml`          | monthly                                | `data/osm-names` branch                                 |
+| `build-boundary-tiles.yml`    | monthly                                | `data/boundary-tiles` branch                            |
+| `build-parcels-index.yml`     | on demand                              | `data/parcels-index` branch (non-destructive per state) |
+| `regenerate-native-names.yml` | triggered by update-data.yml/on demand | reviewed PR (IndicXlit neural names; per-state matrix)  |
+| `mirror-cadastrals.yml`       | on upstream change                     | PMTiles mirrored to Cloudflare R2                       |
+| `ci.yml`                      | every PR/push                          | pytest data-validity suite                              |
+| `docs.yml`                    | PRs touching docs                      | jsdoc/pdoc build check                                  |
+| `release.yml`                 | data merges                            | versioned GitHub Release (+ data-branch overlays)       |
+| `publish-blog.yml`            | release published                      | dev.to blog draft (+ Medium via legacy token)           |
+| `deploy-pages.yml`            | pushes to main                         | live site (+ data-branch overlays)                      |
 
 Conventions (enforced by review, documented in CONTRIBUTING):
 
@@ -31,7 +31,7 @@ Conventions (enforced by review, documented in CONTRIBUTING):
 - Upstream outage = **exit 75** = clean skip with a step-summary note; any
   other non-zero exit stays red. A rotated API key (myScheme) exits 1 on
   purpose; that needs a human.
-- The daily data PR reuses one branch (`data/auto-refresh`) so consecutive
+- The weekly data PR reuses one branch (`data/auto-refresh`) so consecutive
   runs update a single PR in place.
 - Heavy per-state work (village refresh, neural names) fans out as a matrix
   leg per state, so the slowest state bounds the wall-clock. The neural-names
