@@ -24,8 +24,6 @@ name: Update Transliterated Native Names
 #     largest state; warm weekly runs finish in minutes.
 
 on:
-  schedule:
-    - cron: "0 0 * * 0" # weekly — Sundays 00:00 UTC
   workflow_dispatch:
     inputs:
       state:
@@ -36,6 +34,20 @@ on:
       beam:
         description: "IndicXlit beam width (higher = better, slower)"
         default: "4"
+  workflow_call:
+    inputs:
+      state:
+        description: "State(s) to regenerate"
+        type: string
+        default: "all"
+      beam:
+        description: "IndicXlit beam width (higher = better, slower)"
+        type: string
+        default: "4"
+      branch:
+        description: "Target branch for checkout and changes"
+        type: string
+        default: "data/neural-native-names"
 
 permissions:
   contents: write # push the data branch
@@ -88,6 +100,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ inputs.branch || '' }}
 
       - name: Overlay OSM name seeds
         uses: ./.github/actions/overlay-data-branches
@@ -170,6 +184,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ inputs.branch || '' }}
 
       - name: Setup environment
         uses: ./.github/actions/setup-pipeline
@@ -220,7 +236,7 @@ jobs:
 
       - name: Create / update pull request
         id: cpr
-        if: steps.changed.outputs.yes == 'true'
+        if: (inputs.branch == '' || inputs.branch == 'data/neural-native-names') && steps.changed.outputs.yes == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -245,6 +261,20 @@ jobs:
             automated
           reviewers: mchittineni
 
+      - name: Commit and push changes directly
+        if: inputs.branch != '' && inputs.branch != 'data/neural-native-names' && steps.changed.outputs.yes == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add */web/data/names_translit.json */web/data/regions_native.json
+          git commit -m "chore(data): regenerate IndicXlit neural native names"
+          git push origin HEAD:${{ inputs.branch }}
+
       - name: Summary
         if: steps.changed.outputs.yes == 'true'
-        run: echo "PR ${{ steps.cpr.outputs.pull-request-url || 'opened (see PRs)' }}" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          if [ -n "${{ steps.cpr.outputs.pull-request-url }}" ]; then
+            echo "PR ${{ steps.cpr.outputs.pull-request-url }}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Directly pushed changes to branch ${{ inputs.branch }}" >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -182,10 +182,10 @@ are few and large by design.)_
     │   ├── publish-data-branch/ # commit generated files to a data/* branch (no PR)
     │   └── overlay-data-branches/ # copy data/* branch contents over the working tree
     └── workflows/           # each workflow keeps only its unique logic
-        ├── update-data.yml      #   daily data + monthly boundaries refresh → reviewed PR
+        ├── update-data.yml      #   weekly data + monthly boundaries refresh → reviewed PR
         ├── update-mandi-prices.yml # daily Agmarknet snapshots → data/mandi-prices branch
         ├── update-farmer-schemes.yml # weekly myScheme snapshots → data/farmer-schemes branch
-        ├── regenerate-native-names.yml # weekly/on-demand neural names → reviewed PR
+        ├── regenerate-native-names.yml # triggered by update-data.yml/on-demand neural names → PR
         ├── seed-osm-names.yml   #   monthly OSM native-name harvest → data/osm-names branch
         ├── build-parcels-index.yml #  rebuilds the village→parcel indexes → data/parcels-index branch
         ├── build-boundary-tiles.yml # monthly boundary vector tiles → data/boundary-tiles branch
@@ -269,8 +269,8 @@ python3 -m http.server 8777
 
 Data is **never pushed straight to `main`.** Instead:
 
-1. **`update-data.yml`** runs on a schedule **daily** for village data, **monthly**
-   for map boundaries (or on demand). A transient data.gov.in outage is retried and,
+1. **`update-data.yml`** runs on a schedule **weekly** for village data, **monthly**
+   for map boundaries (or on demand). Once complete, it directly invokes **`regenerate-native-names.yml`** to run neural transliterations and add them to the same PR. A transient data.gov.in outage is retried and,
    worst case, skipped cleanly rather than opening an empty/failed PR.
 2. It rebuilds the data and runs the **test suite**.
 3. It opens a **pull request** whose description is an auto-generated
@@ -296,7 +296,7 @@ So the commit history doubles as an auditable, reviewed changelog of the data.
 > | `data/parcels-index`  | per-state `parcels_index.json`, `village_points.json` | Pages deploys + release zips (overlay)      |
 > | `data/osm-names`      | `scraper/osm_names.json` (OSM name seeds)             | pipeline runs, at build time (overlay)      |
 >
-> The **LGD village data itself** (and the neural native names, which the daily
+> The **LGD village data itself** (and the neural native names, which the weekly
 > pipeline prunes and the tests validate against it) stays on the reviewed-PR
 > path above that's the dataset of record that feeds releases.
 
