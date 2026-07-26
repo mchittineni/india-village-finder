@@ -1,16 +1,16 @@
 {
   "state": "Karnataka",
   "state_code": 29,
-  "generated_at": "2026-07-19T05:27:09Z",
+  "generated_at": "2026-07-26T05:37:14Z",
   "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
   "source_mirror": "data.gov.in (Open Government Data platform, LGD API)",
-  "source_date": "19Jul2026",
+  "source_date": "26Jul2026",
   "counts": {
     "districts": 31,
     "mandals": 240,
-    "villages": 27053,
-    "with_pincode": 27053,
-    "with_local_names": 11030
+    "villages": 27284,
+    "with_pincode": 27284,
+    "with_local_names": 11180
   },
   "native_lang": "kn",
   "dropped_villages_without_mandal": 0,
