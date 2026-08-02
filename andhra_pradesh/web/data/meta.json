@@ -1,17 +1,16 @@
 {
   "state": "Andhra Pradesh",
   "state_code": 28,
-  "generated_at": "2026-08-01T05:53:46Z",
+  "generated_at": "2026-08-02T05:30:06Z",
   "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
   "source_mirror": "data.gov.in (Open Government Data platform, LGD API)",
-  "source_date": "01Aug2026",
+  "source_date": "02Aug2026",
   "counts": {
     "districts": 28,
-    "mandals": 686,
-    "villages": 15618,
-    "with_pincode": 15618,
-    "with_local_names": 9559,
-    "with_coords": 2552
+    "mandals": 687,
+    "villages": 15615,
+    "with_pincode": 15615,
+    "with_local_names": 9643
   },
   "native_lang": "te",
   "dropped_villages_without_mandal": 0,
