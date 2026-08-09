@@ -1,16 +1,16 @@
 {
   "state": "Kerala",
   "state_code": 32,
-  "generated_at": "2026-08-02T05:29:59Z",
+  "generated_at": "2026-08-09T03:44:27Z",
   "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
   "source_mirror": "data.gov.in (Open Government Data platform, LGD API)",
-  "source_date": "02Aug2026",
+  "source_date": "09Aug2026",
   "counts": {
     "districts": 14,
     "mandals": 78,
-    "villages": 1360,
-    "with_pincode": 1360,
-    "with_local_names": 404
+    "villages": 1666,
+    "with_pincode": 1666,
+    "with_local_names": 492
   },
   "native_lang": "ml",
   "dropped_villages_without_mandal": 0,
