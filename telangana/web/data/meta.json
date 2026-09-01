@@ -1,16 +1,17 @@
 {
   "state": "Telangana",
   "state_code": 36,
-  "generated_at": "2026-08-30T08:00:11Z",
+  "generated_at": "2026-09-01T08:18:37Z",
   "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
   "source_mirror": "data.gov.in (Open Government Data platform, LGD API)",
-  "source_date": "30Aug2026",
+  "source_date": "01Sep2026",
   "counts": {
     "districts": 33,
-    "mandals": 617,
-    "villages": 9924,
-    "with_pincode": 9924,
-    "with_local_names": 1672
+    "mandals": 616,
+    "villages": 9293,
+    "with_pincode": 9293,
+    "with_local_names": 1544,
+    "with_coords": 737
   },
   "native_lang": "te",
   "dropped_villages_without_mandal": 0,
