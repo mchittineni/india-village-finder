@@ -36,6 +36,7 @@ from config import OSM_NAMES_FILE, STATES, resolve_codes
 ENDPOINTS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
 ]
 # Overpass etiquette requires an identifying User-Agent; the default
 # python-requests UA is rejected outright (HTTP 406) by overpass-api.de.
@@ -63,7 +64,7 @@ def build_query(iso: str, lang: str) -> str:
     """Overpass QL: every settlement in the state's admin area that has both an
     English name and a name in the target script."""
     return (
-        "[out:json][timeout:600];"
+        "[out:json][timeout:180];"
         f'area["ISO3166-2"="{iso}"]->.a;'
         "("
         f'  node["place"~"city|town|village|hamlet"]["name"]["name:{lang}"](area.a);'
@@ -86,7 +87,7 @@ def parse_elements(elements: list[dict], lang: str) -> dict[str, str]:
     return out
 
 
-def fetch_overpass(query: str, session: requests.Session, retries: int = 6) -> list[dict]:
+def fetch_overpass(query: str, session: requests.Session, retries: int = 4) -> list[dict]:
     """POST a query to Overpass, trying each endpoint with backoff. Returns the
     ``elements`` list; raises on total failure.
 
@@ -97,7 +98,7 @@ def fetch_overpass(query: str, session: requests.Session, retries: int = 6) -> l
     for attempt in range(retries):
         endpoint = ENDPOINTS[attempt % len(ENDPOINTS)]
         try:
-            resp = session.post(endpoint, data={"data": query}, headers=HTTP_HEADERS, timeout=600)
+            resp = session.post(endpoint, data={"data": query}, headers=HTTP_HEADERS, timeout=180)
             if resp.status_code in (429, 502, 503, 504):
                 raise requests.HTTPError(f"HTTP {resp.status_code}", response=resp)
             resp.raise_for_status()
