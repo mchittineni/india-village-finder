@@ -698,19 +698,6 @@ a {
   font-size: 0.74rem;
 }
 
-/* Map markers (fallback when no mandal polygons) */
-.bubble {
-  background: var(--brand);
-  color: #fff;
-  border: 2px solid #fff;
-  border-radius: 999px;
-  box-shadow: var(--shadow-sm);
-  display: grid;
-  place-items: center;
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
 /* Selected village row */
 .row.selected {
   border-color: var(--brand);

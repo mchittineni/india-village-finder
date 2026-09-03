@@ -241,8 +241,8 @@
    * @returns {string} Escaped string.
    */
   function esc(s) {
-    return (s || "").replace(/[&<>"]/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    return (s || "").replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
   var CACHE_NAME = "vf-data-cache-v1";
@@ -716,15 +716,6 @@
       var mi = row[1];
       if (villagesByMandal[mi]) villagesByMandal[mi].push(row);
     });
-  }
-
-  /**
-   * Build both region lookups and village groups.
-   * @returns {void}
-   */
-  function indexData() {
-    indexDistricts();
-    indexVillages();
   }
 
   var fuseBuilding = false;
