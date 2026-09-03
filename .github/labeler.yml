@@ -29,6 +29,8 @@ scraper:
   - changed-files:
       - any-glob-to-any-file:
           - "scraper/*.py"
+          - "scraper/*.mjs"
+          - "scraper/*.json"
           - "scraper/requirements*.txt"
 
 tests:
