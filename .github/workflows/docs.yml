@@ -1,10 +1,5 @@
 name: Update API docs
 
-# Validate that the API reference still builds (JSDoc for the web app + pdoc for
-# the Python pipeline) on pull requests, and upload it as a downloadable preview
-# artifact. The live docs are published to GitHub Pages under /docs/api/ by
-# deploy-pages.yml on main — this workflow only build-checks, it never deploys.
-
 on:
   pull_request:
     branches: [main]

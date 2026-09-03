@@ -1,13 +1,5 @@
 name: Update Parcels Index
 
-# Regenerates <slug>/web/data/parcels_index.json — the village -> parcel bbox
-# lookup that lets the map jump precisely to a village's land parcels. The scan
-# reads the whole-state cadastral PMTiles (~850 MB, thousands of tiles), so it
-# runs here rather than on a laptop. Publishes the refreshed index to the
-# data/parcels-index branch (regenerable artifacts live outside main's reviewed
-# history; deploy-pages/release overlay them). The branch is shared by all
-# states — publish-data-branch updates it non-destructively per slug.
-
 on:
   workflow_dispatch:
     inputs:
@@ -25,7 +17,7 @@ on:
         required: true
 
 permissions:
-  contents: write # push the data/parcels-index branch
+  contents: write
 
 concurrency:
   group: build-parcels-index-${{ inputs.slug }}

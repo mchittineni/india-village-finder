@@ -12,9 +12,9 @@ on:
         default: false
 
 permissions:
-  contents: write # push the data branch
-  pull-requests: write # open the PR + request reviewers
-  statuses: write # report the validation status check on the PR
+  contents: write
+  pull-requests: write
+  statuses: write
 
 concurrency:
   group: update-village-data
@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        state: # keep in sync with scraper/config.py STATES
+        state:
           - { key: ap, slug: andhra_pradesh }
           - { key: tg, slug: telangana }
           - { key: ka, slug: karnataka }
@@ -52,6 +52,9 @@ jobs:
         with:
           node-version: "22"
           requirements-file: scraper/requirements-dev.txt
+
+      - name: Harvest verified transliteration review notes
+        run: python scraper/translit_review.py harvest || true
 
       - name: Refresh village data
         id: refresh
@@ -189,6 +192,8 @@ jobs:
           add-paths: |
             */web/data/**
             */data/**
+            scraper/translit_overrides*.json
+            notes/translit-review/**
           commit-message: "chore(data): refresh LGD village data"
           title: "chore(data): LGD village data refresh"
           body-path: /tmp/pr_body.md

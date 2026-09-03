@@ -1,9 +1,5 @@
 name: Deploy to GitHub Pages
 
-# Publishes the site to GitHub Pages: the per-state apps at the root, plus the
-# generated API reference (JSDoc + pdoc) under /docs/api/. A repo has a single
-# Pages site, so the docs ride along as a subpath rather than a second site.
-
 on:
   push:
     branches: [main]

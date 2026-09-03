@@ -1,28 +1,5 @@
 name: Update Transliterated Native Names
 
-# Heavy, on-demand regeneration of the neural native-name layer
-# (web/data/names_translit.json) using AI4Bharat IndicXlit — kept OFF the normal
-# CI/data path because it pulls in PyTorch + fairseq. Runs only when dispatched and
-# opens a PR with the result; it never pushes to main.
-#
-# This deliberately rebuilds the torch/fairseq stack here so the work happens on
-# GitHub's runners, not a developer laptop. Python 3.10 + torch<2.6 are chosen so
-# none of the newer-interpreter shims are needed (Python 3.11+ tightened the
-# dataclass check fairseq/hydra rely on; torch 2.6 flipped torch.load to
-# weights_only=True, which rejects fairseq checkpoints).
-#
-# Kept fast (the repo is public, so runner minutes are free — the wins below cut
-# wall-clock, not billing):
-#   * one matrix leg per state (same shape as update-data.yml), so the slowest
-#     state bounds the run instead of the sum of all five;
-#   * the CPU-only torch wheel (~190 MB instead of the multi-GB CUDA stack — the
-#     runners have no GPU);
-#   * three actions/cache layers: the built venv + downloaded model weights
-#     (immutable key, rebuilt only when the interpreter or this file changes),
-#     and per-state transliteration caches (scraper/.cache, keyed by beam) so a
-#     rerun only sends never-seen names through the model. Cold run ≈ the
-#     largest state; warm weekly runs finish in minutes.
-
 on:
   workflow_dispatch:
     inputs:
@@ -50,8 +27,8 @@ on:
         default: "data/neural-native-names"
 
 permissions:
-  contents: write # push the data branch
-  pull-requests: write # open the PR
+  contents: write
+  pull-requests: write
 
 concurrency:
   group: regenerate-native-names
@@ -59,12 +36,11 @@ concurrency:
 
 jobs:
   plan:
-    # Turns the dispatch input into the matrix: one leg per state for "all",
-    # a single leg otherwise. Seconds of overhead, keeps every leg identical.
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       states: ${{ steps.m.outputs.states }}
+
     steps:
       - name: Build state matrix
         id: m
@@ -111,7 +87,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-pipeline
         with:
-          python-version: "3.10" # fairseq/hydra predate 3.11's stricter dataclass rule
+          python-version: "3.10"
 
       - name: Read exact interpreter version (cache key)
         id: py
@@ -156,6 +132,9 @@ jobs:
           restore-keys: |
             xlit-names-v1-${{ matrix.state.key }}-beam${{ env.XLIT_BEAM }}-
 
+      - name: Harvest verified review notes
+        run: python scraper/translit_review.py harvest || true
+
       - name: Regenerate names_translit.json (villages)
         run: python scraper/enrich_native_names.py --state "$STATE_KEY" --beam "$XLIT_BEAM"
 
@@ -173,6 +152,9 @@ jobs:
           path: |
             ${{ matrix.state.slug }}/web/data/names_translit.json
             ${{ matrix.state.slug }}/web/data/regions_native.json
+            ${{ matrix.state.slug }}/data/names_translit_master.json
+            scraper/translit_overrides*.json
+            notes/translit-review/
           retention-days: 3
 
   aggregate:
@@ -205,7 +187,34 @@ jobs:
           shopt -s nullglob
           for d in _incoming/names-*; do
             slug=$(basename "$d"); slug=${slug#names-}
-            cp "$d"/*.json "$slug/web/data/"
+            if [ -f "$d/$slug/web/data/names_translit.json" ]; then
+              cp "$d/$slug/web/data/names_translit.json" "$slug/web/data/"
+            elif [ -f "$d/names_translit.json" ]; then
+              cp "$d/names_translit.json" "$slug/web/data/"
+            fi
+            if [ -f "$d/$slug/web/data/regions_native.json" ]; then
+              cp "$d/$slug/web/data/regions_native.json" "$slug/web/data/"
+            elif [ -f "$d/regions_native.json" ]; then
+              cp "$d/regions_native.json" "$slug/web/data/"
+            fi
+            if [ -f "$d/$slug/data/names_translit_master.json" ]; then
+              cp "$d/$slug/data/names_translit_master.json" "$slug/data/"
+            elif [ -f "$d/names_translit_master.json" ]; then
+              cp "$d/names_translit_master.json" "$slug/data/"
+            fi
+            if [ -f "$d/scraper/translit_overrides.json" ]; then
+              cp "$d/scraper/translit_overrides.json" scraper/
+            elif [ -f "$d/translit_overrides.json" ]; then
+              cp "$d/translit_overrides.json" scraper/
+            fi
+            if [ -f "$d/scraper/translit_overrides_by_code.json" ]; then
+              cp "$d/scraper/translit_overrides_by_code.json" scraper/
+            elif [ -f "$d/translit_overrides_by_code.json" ]; then
+              cp "$d/translit_overrides_by_code.json" scraper/
+            fi
+            if [ -d "$d/notes/translit-review" ]; then
+              cp -r "$d/notes/translit-review/"* notes/translit-review/
+            fi
             count=$((count + 1))
             echo "overlaid $slug"
           done
@@ -227,7 +236,7 @@ jobs:
         id: changed
         if: steps.overlay.outputs.count != '0'
         run: |
-          if [ -n "$(git status --porcelain -- '*/web/data/names_translit.json' '*/web/data/regions_native.json')" ]; then
+          if [ -n "$(git status --porcelain -- '*/web/data/names_translit.json' '*/web/data/regions_native.json' '*/data/names_translit_master.json' 'scraper/translit_overrides*.json' 'notes/translit-review/')" ]; then
             echo "yes=true" >> "$GITHUB_OUTPUT"
           else
             echo "yes=false" >> "$GITHUB_OUTPUT"
@@ -245,6 +254,9 @@ jobs:
           add-paths: |
             */web/data/names_translit.json
             */web/data/regions_native.json
+            */data/names_translit_master.json
+            scraper/translit_overrides*.json
+            notes/translit-review/**
           commit-message: "chore(data): regenerate IndicXlit neural native names"
           title: "chore(data): regenerate neural native names"
           body: |
@@ -266,7 +278,7 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add */web/data/names_translit.json */web/data/regions_native.json
+          git add */web/data/names_translit.json */web/data/regions_native.json */data/names_translit_master.json scraper/translit_overrides*.json notes/translit-review/
           git commit -m "chore(data): regenerate IndicXlit neural native names"
           git push origin HEAD:${{ inputs.branch }}
 
