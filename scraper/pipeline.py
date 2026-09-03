@@ -50,6 +50,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+# pyrefly: ignore [missing-import]
 from config import (  # shared per-state registry + name seeds + boundary tiles
     ALIAS,
     BOUNDARY_TILES,
@@ -61,7 +62,12 @@ from config import (  # shared per-state registry + name seeds + boundary tiles
     load_code_overrides,
     load_name_seeds,
 )
-from lgd_datagov import DataGovUnavailable, fetch_datagov
+try:
+    # pyrefly: ignore [missing-import]
+    from lgd_datagov import DataGovUnavailable, fetch_datagov
+except ImportError:
+    DataGovUnavailable = Exception  # type: ignore
+    fetch_datagov = None  # type: ignore
 
 HERE = Path(__file__).resolve().parent  # scraper/
 ROOT = HERE.parent  # Village Finder/
@@ -221,6 +227,7 @@ def load_state(paths: dict[str, Path], state_code: int):
 def verify_live(state_code, districts, mandals) -> dict:
     result = {"ran": True, "ok": None, "checks": [], "error": None}
     try:
+        # pyrefly: ignore [missing-import]
         from lgd_client import LGDClient
 
         c = LGDClient()
@@ -634,6 +641,11 @@ def main():
     args = ap.parse_args()
 
     targets = list(STATES) if args.state == "both" else [ALIAS[args.state]]
+    if fetch_datagov is None:
+        raise SystemExit(
+            "The 'requests' package is required to run the pipeline.\n"
+            "Install dependencies: pip install -r scraper/requirements.txt"
+        )
     try:
         paths = fetch_datagov(targets, RAW, args.offline)
     except DataGovUnavailable as e:
