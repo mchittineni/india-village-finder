@@ -1,66 +1,92 @@
 name: Update Parcels Index
 
 on:
+  workflow_run:
+    workflows: ["Update Village Data"]
+    types: [completed]
   workflow_dispatch:
     inputs:
-      slug:
-        description: State slug
-        default: andhra_pradesh
-        required: true
-      pmtiles_url:
-        description: Cadastral PMTiles URL to scan
-        default: https://github.com/ramSeraph/indian_cadastrals/releases/download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles
-        required: true
-      source_layer:
-        description: Vector layer id inside the PMTiles
-        default: APSAC_AP_Cadastrals
-        required: true
+      state:
+        description: "State to index (or all)"
+        type: choice
+        options: [all, andhra_pradesh, telangana, karnataka, tamil_nadu]
+        default: all
 
 permissions:
   contents: write
 
 concurrency:
-  group: build-parcels-index-${{ inputs.slug }}
+  group: build-parcels-index
   cancel-in-progress: false
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    env:
-      SLUG: ${{ inputs.slug }}
-      PMTILES_URL: ${{ inputs.pmtiles_url }}
-      SOURCE_LAYER: ${{ inputs.source_layer }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - slug: andhra_pradesh
+            url: https://github.com/ramSeraph/indian_cadastrals/releases/download/andhra-pradesh/APSAC_AP_Cadastrals.pmtiles
+            layer: APSAC_AP_Cadastrals
+          - slug: telangana
+            url: https://github.com/ramSeraph/indian_cadastrals/releases/download/telangana/TRACGIS_Bhunaksha_Cadastrals.pmtiles
+            layer: TRACGIS_Bhunaksha_Cadastrals
+          - slug: karnataka
+            url: https://github.com/ramSeraph/indian_cadastrals/releases/download/karnataka/KGISMAPS_KN_Cadastrals.pmtiles
+            layer: KGISMAPS_KN_Cadastrals
+          - slug: tamil_nadu
+            url: https://github.com/ramSeraph/indian_cadastrals/releases/download/tamil-nadu/TNGIS_TN_Cadastrals.pmtiles
+            layer: TNGIS_TN_Cadastrals
 
     steps:
+      - name: Check state filter
+        id: filter
+        env:
+          INPUT_STATE: ${{ github.event.inputs.state || 'all' }}
+          CURRENT_SLUG: ${{ matrix.slug }}
+        run: |
+          if [ "$INPUT_STATE" = "all" ] || [ "$INPUT_STATE" = "$CURRENT_SLUG" ]; then
+            echo "match=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "match=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout repository
+        if: steps.filter.outputs.match == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup environment
+        if: steps.filter.outputs.match == 'true'
         uses: ./.github/actions/setup-pipeline
         with:
           packages: pmtiles mapbox-vector-tile shapely
 
       - name: Download cadastral PMTiles
+        if: steps.filter.outputs.match == 'true'
         run: |
           mkdir -p scraper/.cache/cadastrals
-          curl -fSL --retry 3 -o scraper/.cache/cadastrals/cad.pmtiles "$PMTILES_URL"
+          curl -fSL --retry 3 -o scraper/.cache/cadastrals/cad.pmtiles "${{ matrix.url }}"
           head -c 7 scraper/.cache/cadastrals/cad.pmtiles | grep -q PMTiles \
             || { echo "::error::Not a PMTiles archive"; exit 1; }
 
       - name: Build parcels index
+        if: steps.filter.outputs.match == 'true'
         run: |
           python scraper/build_parcels_index.py \
-            --slug "$SLUG" \
+            --slug "${{ matrix.slug }}" \
             --pmtiles scraper/.cache/cadastrals/cad.pmtiles \
-            --source-layer "$SOURCE_LAYER"
+            --source-layer "${{ matrix.layer }}"
 
       - name: Publish to the data/parcels-index branch
+        if: steps.filter.outputs.match == 'true'
         uses: ./.github/actions/publish-data-branch
         with:
           branch: data/parcels-index
-          files: ${{ inputs.slug }}/web/data/parcels_index.json ${{ inputs.slug }}/web/data/village_points.json
-          message: "data: parcels index + village points for ${{ inputs.slug }}"
-          summary: "📇 Published ${{ inputs.slug }} parcels index + village points to data/parcels-index."
+          files: ${{ matrix.slug }}/web/data/parcels_index.json ${{ matrix.slug }}/web/data/village_points.json
+          message: "data: parcels index + village points for ${{ matrix.slug }}"
+          summary: "📇 Published ${{ matrix.slug }} parcels index + village points to data/parcels-index."
           token: ${{ github.token }}

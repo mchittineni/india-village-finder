@@ -1,6 +1,9 @@
 name: Update Cadastral PMTiles
 
 on:
+  workflow_run:
+    workflows: ["Update Village Data"]
+    types: [completed]
   schedule:
     - cron: "0 4 * * 1" # weekly, Mon 04:00 UTC — re-mirror only if upstream moved
   workflow_dispatch:
@@ -26,6 +29,7 @@ permissions:
 
 jobs:
   mirror:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     name: mirror ${{ matrix.state }} to R2
     runs-on: ubuntu-latest
     timeout-minutes: 20

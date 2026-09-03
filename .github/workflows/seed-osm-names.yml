@@ -1,6 +1,9 @@
 name: Update OSM Native Names
 
 on:
+  workflow_run:
+    workflows: ["Update Village Data"]
+    types: [completed]
   schedule:
     - cron: "0 5 1 * *" # monthly — 1st, 05:00 UTC
   workflow_dispatch:
@@ -20,6 +23,7 @@ concurrency:
 
 jobs:
   seed:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
