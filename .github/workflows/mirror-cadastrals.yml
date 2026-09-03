@@ -1,6 +1,5 @@
 name: Update Cadastral PMTiles
 
-
 on:
   schedule:
     - cron: "0 4 * * 1" # weekly, Mon 04:00 UTC — re-mirror only if upstream moved
@@ -29,6 +28,7 @@ jobs:
   mirror:
     name: mirror ${{ matrix.state }} to R2
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     strategy:
       fail-fast: false
