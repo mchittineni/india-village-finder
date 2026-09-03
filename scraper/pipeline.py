@@ -268,6 +268,38 @@ def _csv_cell(value):
     return s
 
 
+def dump_villages_json(path: Path, doc: dict) -> None:
+    """Format villages.json with each row on its own line.
+    Valid standard JSON with identical parsed structure, but allows git to track
+    village modifications line-by-line rather than rewriting a monolithic 500KB+ line."""
+    cols_json = json.dumps(doc["columns"], ensure_ascii=False)
+    lines = ['{"columns":' + cols_json + ',"rows":[']
+    rows = doc.get("rows", [])
+    for i, row in enumerate(rows):
+        comma = "," if i < len(rows) - 1 else ""
+        row_str = json.dumps(row, ensure_ascii=False, separators=(",", ":"))
+        lines.append(f"  {row_str}{comma}")
+    lines.append("]}")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def dump_compact_dict_json(path: Path, d: dict) -> None:
+    """Format dictionary sidecars (names.json, coords.json, etc.) with 1 key-value per line.
+    Enables clean, minimal git diffs without multi-megabyte churn."""
+    if not d:
+        path.write_text("{}\n", encoding="utf-8")
+        return
+    items = sorted(d.items(), key=lambda kv: (int(kv[0]) if kv[0].isdigit() else kv[0]))
+    lines = ["{"]
+    for i, (k, v) in enumerate(items):
+        comma = "," if i < len(items) - 1 else ""
+        k_str = json.dumps(k, ensure_ascii=False)
+        v_str = json.dumps(v, ensure_ascii=False, separators=(",", ":"))
+        lines.append(f"  {k_str}:{v_str}{comma}")
+    lines.append("}")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def build_state(state_code, cfg, districts, mandals, villages, source_date, verify):
     state_dir = ROOT / cfg["slug"]
     web = state_dir / "web"
@@ -320,24 +352,21 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
             seeded = seeds.get(v["name"].strip().lower())
             if seeded and in_script(seeded, state_lang):
                 names_local[str(v["code"])] = seeded
-    rows.sort(key=lambda r: norm(r[0]))
+    # Compound sort (normalized name, village code) guarantees stable, deterministic ordering
+    # across runs, eliminating git churn from duplicate village names.
+    rows.sort(key=lambda r: (norm(r[0]), int(r[2])))
     with_pincode = sum(1 for r in rows if r[4])
 
-    # The current LGD source (data.gov.in) doesn't carry the in-script name column,
-    # so names_local can come back empty. Don't overwrite previously-committed
-    # authoritative names with an empty file — keep them until a source that
-    # publishes them is wired back in. `effective_local` is what actually ends up on
-    # disk (this run's names, or the preserved committed set), used for the map,
-    # the meta count and the CSV so all three stay consistent.
+    # Preserved committed authoritative names are merged with any fresh local names,
+    # pins, or seeds from this run so that previously-harvested translations are never lost.
     names_path = web_data / "names.json"
-    write_names = bool(names_local) or not names_path.exists()
-    if write_names:
-        effective_local = names_local
-    else:
+    existing_local = {}
+    if names_path.exists():
         try:
-            effective_local = json.loads(names_path.read_text(encoding="utf-8"))
+            existing_local = json.loads(names_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            effective_local = {}
+            existing_local = {}
+    effective_local = {**existing_local, **names_local}
 
     regions = {
         "state": cfg["name"],
@@ -378,15 +407,12 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     }
 
     (web_data / "regions.json").write_text(
-        json.dumps(regions, ensure_ascii=False, separators=(",", ":"))
+        json.dumps(regions, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
-    (web_data / "villages.json").write_text(
-        json.dumps(villages_doc, ensure_ascii=False, separators=(",", ":"))
-    )
-    if write_names:
-        names_path.write_text(json.dumps(names_local, ensure_ascii=False, separators=(",", ":")))
-    # else: keep the committed authoritative names.json (this source has no in-script names)
-    (web_data / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
+    dump_villages_json(web_data / "villages.json", villages_doc)
+    if effective_local != existing_local or not names_path.exists():
+        dump_compact_dict_json(names_path, effective_local)
+    (web_data / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     # flat CSV export. Every village gets a name in the state's script: the
     # authoritative LGD spelling where published, else a best-effort
@@ -402,35 +428,40 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     # (and CI) free of the heavy IndicXlit dependency.
     neural_native = {}
     nt_path = web_data / "names_translit.json"
+    nt_master_path = state_dir / "data" / "names_translit_master.json"
+    if nt_master_path.exists():
+        try:
+            neural_native.update(json.loads(nt_master_path.read_text(encoding="utf-8")))
+        except Exception:
+            pass
     if nt_path.exists():
         try:
-            neural_native = json.loads(nt_path.read_text(encoding="utf-8"))
+            neural_native.update(json.loads(nt_path.read_text(encoding="utf-8")))
         except Exception:
-            neural_native = {}
+            pass
 
     # The neural/region native-name and precise-coordinate sidecars are
     # produced by their own slower cadences (weekly IndicXlit workflow,
-    # monthly enrich_coords run) and committed, so a daily LGD refresh can
-    # orphan entries: villages/mandals get renumbered or dropped upstream,
-    # and a village can gain an authoritative name it previously lacked.
-    # Prune them against THIS run's codes so a refresh PR stays internally
-    # consistent (test_data.py enforces these invariants); the slower regen
-    # then fills in entries for genuinely new villages.
+    # monthly enrich_coords run) and committed. We maintain a master store in
+    # <state>/data/*_master.json so temporary omissions or renumbering waves
+    # do not permanently discard expensive enrichments, while emitting pruned
+    # versions to web/data/ to satisfy structural validation tests.
     valid_codes = {str(v["code"]) for v in writable}
     pruned = {
         code: name
         for code, name in neural_native.items()
         if code in valid_codes and code not in effective_local
     }
-    if nt_path.exists() and pruned != neural_native:
-        print(
-            f"[{cfg['slug']}] pruned {len(neural_native) - len(pruned)} stale "
-            f"neural native names"
-        )
-        nt_path.write_text(
-            json.dumps(pruned, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
-        )
+    if neural_native:
+        dump_compact_dict_json(nt_master_path, neural_native)
+    if nt_path.exists() or pruned:
+        if nt_path.exists() and pruned != neural_native:
+            pruned_count = len(neural_native) - len(pruned)
+            if pruned_count > 0:
+                print(f"[{cfg['slug']}] pruned {pruned_count} unmapped neural native names for web")
+        dump_compact_dict_json(nt_path, pruned)
         neural_native = pruned
+
     rn_path = web_data / "regions_native.json"
     if rn_path.exists():
         try:
@@ -447,20 +478,30 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
                 rn[tier] = keep
             if rn_dropped:
                 print(f"[{cfg['slug']}] pruned {rn_dropped} stale native region names")
-                rn_path.write_text(
-                    json.dumps(rn, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
-                )
+            rn_path.write_text(
+                json.dumps(rn, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            )
+
     coords_path = web_data / "coords.json"
+    coords_master_path = state_dir / "data" / "coords_master.json"
+    coords = {}
+    if coords_master_path.exists():
+        try:
+            coords.update(json.loads(coords_master_path.read_text(encoding="utf-8")))
+        except Exception:
+            pass
     if coords_path.exists():
         try:
-            coords = json.loads(coords_path.read_text(encoding="utf-8"))
+            coords.update(json.loads(coords_path.read_text(encoding="utf-8")))
         except Exception:
-            coords = None
-        if coords:
-            keep = {c: ll for c, ll in coords.items() if c in valid_codes}
-            if keep != coords:
-                print(f"[{cfg['slug']}] pruned {len(coords) - len(keep)} stale precise coords")
-                coords_path.write_text(json.dumps(keep, separators=(",", ":")))
+            pass
+    if coords:
+        dump_compact_dict_json(coords_master_path, coords)
+        keep = {c: ll for c, ll in coords.items() if c in valid_codes}
+        if len(coords) != len(keep):
+            print(f"[{cfg['slug']}] pruned {len(coords) - len(keep)} unmapped precise coords for web")
+        dump_compact_dict_json(coords_path, keep)
+
     with open(
         state_dir / "data" / f"{cfg['slug']}_villages.csv", "w", newline="", encoding="utf-8"
     ) as fh:
@@ -481,7 +522,7 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
                 "Status",
             ]
         )
-        for v in sorted(writable, key=lambda x: x["name"]):
+        for v in sorted(writable, key=lambda x: (norm(x["name"]), int(x["code"]))):
             m = m_sorted[m_index[v["mandal_code"]]]
             d = districts[m["district_code"]]
             # Native name priority: this run's LGD local name → the authoritative

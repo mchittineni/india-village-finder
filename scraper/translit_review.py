@@ -56,7 +56,6 @@ from config import (
     load_name_seeds,
     resolve_codes,
 )
-from pipeline import transliterate_batch
 
 VAULT = ROOT / "notes" / "translit-review"
 
@@ -124,6 +123,8 @@ def generate(state_arg: str, limit: int, root: Path = ROOT) -> int:
         seeds = load_name_seeds(lang)
         code_pins = load_code_overrides(lang)
         mandal_names = [m["n"] for m in regions["mandals"]]
+
+        from pipeline import transliterate_batch
 
         rows = [r for r in villages["rows"] if str(r[2]) in neural]
         rules = transliterate_batch(lang, sorted({r[0] for r in rows}))
