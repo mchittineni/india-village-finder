@@ -15,6 +15,7 @@
 
     <link rel="preconnect" href="https://unpkg.com" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="preconnect" href="https://a.basemaps.cartocdn.com" />
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -25,6 +26,7 @@
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
+      defer
     ></script>
     <!-- MapLibre GL + PMTiles: renders the optional cadastral (land-parcel) vector
          layer inside the Leaflet map. Only activates when config.js provides a
@@ -39,28 +41,34 @@
       src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
       integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj"
       crossorigin="anonymous"
+      defer
     ></script>
     <script
       src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"
       integrity="sha384-QfbOCebHNw8pQiPAOd2IFee2v2A5VYZxBk0+JGZ5H+3mfzVIp6zsQNkTsfGJot93"
       crossorigin="anonymous"
+      defer
     ></script>
     <script
       src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"
       integrity="sha384-4CB9Vtol9LN6lGgBCvmPLbUEZwilrqIvPieSRurgAXAB7FVJaLS9n8WyAIA5wjQ+"
       crossorigin="anonymous"
+      defer
     ></script>
     <script
       src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"
       integrity="sha384-PCSoOZTpbkikBEtd/+uV3WNdc676i9KUf01KOA8CnJotvlx8rRrETbDuwdjqTYvt"
       crossorigin="anonymous"
+      defer
     ></script>
-    <script src="i18n.js"></script>
-    <script src="nearby.js"></script>
-    <script src="weather.js"></script>
-    <script src="mandi.js"></script>
-    <script src="schemes.js"></script>
-    <script src="soil.js"></script>
+    <script src="i18n.js" defer></script>
+    <script src="nearby.js" defer></script>
+    <script src="weather.js" defer></script>
+    <script src="mandi.js" defer></script>
+    <script src="schemes.js" defer></script>
+    <script src="soil.js" defer></script>
+    <script src="config.js" defer></script>
+    <script src="app.js" defer></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -249,8 +257,5 @@
         <div id="map-loading" class="map-loading">Loading map…</div>
       </main>
     </div>
-
-    <script src="config.js"></script>
-    <script src="app.js"></script>
   </body>
 </html>
