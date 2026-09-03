@@ -23,6 +23,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     strategy:
       fail-fast: false
@@ -97,6 +98,7 @@ jobs:
     needs: build
     if: always() && needs.build.result != 'cancelled'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     outputs:
       has-changes: ${{ steps.changed.outputs.yes }}
 
@@ -238,3 +240,97 @@ jobs:
     uses: ./.github/workflows/regenerate-native-names.yml
     with:
       branch: data/auto-refresh
+
+  mandi-prices:
+    name: mandi-prices
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-pipeline
+        with:
+          packages: requests
+
+      - name: Fetch mandi prices
+        id: fetch
+        uses: ./.github/actions/datagov-fetch
+        env:
+          DATA_GOV_KEY: ${{ secrets.DATA_GOV_KEY }}
+        with:
+          command: python scraper/fetch_mandi_prices.py --out /tmp/mandi
+          skip-summary: "⏭️ data.gov.in unreachable; mandi snapshot not refreshed."
+
+      - name: Publish to data/mandi-prices branch
+        if: steps.fetch.outputs.skipped != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          auth="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone -q --depth 1 --branch data/mandi-prices "$auth" "$work" 2>/dev/null \
+            || git init -q -b data/mandi-prices "$work"
+          cp /tmp/mandi/*.json "$work"/
+          cd "$work"
+          git add -A
+          if git rev-parse -q --verify HEAD >/dev/null && git diff --cached --quiet; then
+            echo "No mandi price changes today."
+            echo "🧺 Mandi prices unchanged." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "data: mandi prices $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q "$auth" data/mandi-prices
+          echo "🧺 Published $(ls *.json | wc -l) state snapshots to data/mandi-prices." >> "$GITHUB_STEP_SUMMARY"
+
+  farmer-schemes:
+    name: farmer-schemes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-pipeline
+        with:
+          packages: requests
+
+      - name: Fetch farmer schemes
+        id: fetch
+        uses: ./.github/actions/datagov-fetch
+        env:
+          MYSCHEME_API_KEY: ${{ secrets.MYSCHEME_API_KEY }}
+        with:
+          command: python scraper/fetch_farmer_schemes.py --out /tmp/schemes
+          skip-summary: "⏭️ myScheme unreachable; farmer-schemes snapshot not refreshed."
+
+      - name: Publish to data/farmer-schemes branch
+        if: steps.fetch.outputs.skipped != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          auth="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone -q --depth 1 --branch data/farmer-schemes "$auth" "$work" 2>/dev/null \
+            || git init -q -b data/farmer-schemes "$work"
+          cp /tmp/schemes/*.json "$work"/
+          cd "$work"
+          git add -A
+          if git rev-parse -q --verify HEAD >/dev/null && git diff --cached --quiet; then
+            echo "No farmer scheme changes this week."
+            echo "🌾 Farmer schemes unchanged." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "data: farmer schemes $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q "$auth" data/farmer-schemes
+          echo "🌾 Published $(ls *.json | wc -l) state scheme snapshots to data/farmer-schemes." >> "$GITHUB_STEP_SUMMARY"

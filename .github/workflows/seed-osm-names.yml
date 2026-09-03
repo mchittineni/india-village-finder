@@ -21,6 +21,7 @@ concurrency:
 jobs:
   seed:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     env:
       OSM_STATE: ${{ inputs.state || 'all' }}

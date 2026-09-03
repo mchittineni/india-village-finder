@@ -6,13 +6,13 @@ to the browser via HTTP **range requests**; the client only downloads the tiles
 for the current view (tens of KB), never the whole file.
 
 - **Datasets** (each from [ramSeraph/indian_cadastrals](https://github.com/ramSeraph/indian_cadastrals), **CC0 1.0**):
-  | State | Object | Size | Upstream source |
-  |-------|--------|------|-----------------|
-  | Andhra Pradesh | `APSAC_AP_Cadastrals.pmtiles` | ~848 MB | AP State Applications Centre (APSAC) |
-  | Telangana | `TRACGIS_Bhunaksha_Cadastrals.pmtiles` | ~649 MB | TRACGIS / Telangana Bhunaksha |
-  | Karnataka | `KGISMAPS_KN_Cadastrals.pmtiles` | ~1042 MB | Karnataka GIS (KGIS) |
-  | Tamil Nadu | `TNGIS_TN_Cadastrals.pmtiles` | ~824 MB | Tamil Nadu GIS (TNGIS) |
-  | Kerala | `Bhuvan_Kerala_Cadastrals.pmtiles` | ~143 MB | Bhuvan (NRSC/ISRO) |
+  | State          | Object                                 | Size     | Upstream source                      |
+  | -------------- | -------------------------------------- | -------- | ------------------------------------ |
+  | Andhra Pradesh | `APSAC_AP_Cadastrals.pmtiles`          | ~848 MB  | AP State Applications Centre (APSAC) |
+  | Telangana      | `TRACGIS_Bhunaksha_Cadastrals.pmtiles` | ~649 MB  | TRACGIS / Telangana Bhunaksha        |
+  | Karnataka      | `KGISMAPS_KN_Cadastrals.pmtiles`       | ~1042 MB | Karnataka GIS (KGIS)                 |
+  | Tamil Nadu     | `TNGIS_TN_Cadastrals.pmtiles`          | ~824 MB  | Tamil Nadu GIS (TNGIS)               |
+  | Kerala         | `Bhuvan_Kerala_Cadastrals.pmtiles`     | ~143 MB  | Bhuvan (NRSC/ISRO)                   |
 - **Configured in:** `scraper/config.py` → `STATES[<code>]["cadastre"]` (each
   block sets `url`, `sourceLayer` and a per-source `fields` key map; propagated to
   each state's `web/config.js` as `VF_CONFIG.cadastre`).

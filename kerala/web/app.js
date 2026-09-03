@@ -2146,6 +2146,7 @@
     );
     p.appendChild(head);
     p.appendChild(sectionLabel(t("villages"), t("az")));
+    var list = el("div", "list");
     var rows = (villagesByMandal[m.i] || []).slice().sort(function (a, b) {
       return norm(a[0]) < norm(b[0]) ? -1 : 1;
     });

@@ -18,15 +18,24 @@ env:
 jobs:
   tiles:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
-    steps:      
+    steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup environment
         uses: ./.github/actions/setup-pipeline
 
-      - name: Build tippecanoe from source (pinned tag)
+      - name: Cache tippecanoe binary
+        id: cache-tippecanoe
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
+        with:
+          path: /usr/local/bin/tippecanoe
+          key: tippecanoe-${{ env.TIPPECANOE_TAG }}-ubuntu-latest
+
+      - name: Build tippecanoe from source (if not cached)
+        if: steps.cache-tippecanoe.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q libsqlite3-dev zlib1g-dev
@@ -34,7 +43,9 @@ jobs:
             https://github.com/felt/tippecanoe.git /tmp/tippecanoe
           make -C /tmp/tippecanoe -j"$(nproc)"
           sudo make -C /tmp/tippecanoe install
-          tippecanoe --version
+
+      - name: Verify tippecanoe
+        run: tippecanoe --version
 
       - name: Build boundary tiles + bounds indexes
         run: python scraper/build_boundary_tiles.py

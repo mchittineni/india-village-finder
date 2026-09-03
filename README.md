@@ -190,9 +190,7 @@ are few and large by design.)_
     │   ├── publish-data-branch/ # commit generated files to a data/* branch (no PR)
     │   └── overlay-data-branches/ # copy data/* branch contents over the working tree
     └── workflows/           # each workflow keeps only its unique logic
-        ├── update-data.yml      #   weekly data + monthly boundaries refresh → reviewed PR
-        ├── update-mandi-prices.yml # daily Agmarknet snapshots → data/mandi-prices branch
-        ├── update-farmer-schemes.yml # weekly myScheme snapshots → data/farmer-schemes branch
+        ├── update-data.yml      #   weekly unified refresh (villages, mandi prices, farmer schemes, PR)
         ├── regenerate-native-names.yml # triggered by update-data.yml/on-demand neural names → PR
         ├── seed-osm-names.yml   #   monthly OSM native-name harvest → data/osm-names branch
         ├── build-parcels-index.yml #  rebuilds the village→parcel indexes → data/parcels-index branch

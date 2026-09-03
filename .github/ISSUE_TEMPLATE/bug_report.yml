@@ -41,7 +41,7 @@ body:
     attributes:
       label: Page URL (if relevant)
       placeholder: https://mchittineni.github.io/india-village-finder/...
-      
+
   - type: input
     id: env
     attributes:

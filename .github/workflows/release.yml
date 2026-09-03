@@ -24,6 +24,7 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     env:
       BUMP_INPUT: ${{ github.event.inputs.bump }}

@@ -10,15 +10,15 @@ via the generated `config.js` (`window.VF_CONFIG`).
 
 ## Modules (each an IIFE on `window`)
 
-| Module       | Global       | Does                                                                              |
-| ------------ | ------------ | --------------------------------------------------------------------------------- |
-| `app.js`     | —            | map, search, panels, popup wiring                                                 |
-| `i18n.js`    | `VF_I18N`    | 7-language DICT (en/te/hi/kn/ta/ml/ur) + transliteration engine                   |
-| `nearby.js`  | `VF_NEARBY`  | Overpass civic-services lookup                                                    |
-| `weather.js` | `VF_WEATHER` | Open-Meteo current + 7-day forecast ([[open-meteo]])                              |
+| Module       | Global       | Does                                                                             |
+| ------------ | ------------ | -------------------------------------------------------------------------------- |
+| `app.js`     | —            | map, search, panels, popup wiring                                                |
+| `i18n.js`    | `VF_I18N`    | 7-language DICT (en/te/hi/kn/ta/ml/ur) + transliteration engine                  |
+| `nearby.js`  | `VF_NEARBY`  | Overpass civic-services lookup                                                   |
+| `weather.js` | `VF_WEATHER` | Open-Meteo current + 7-day forecast ([[open-meteo]])                             |
 | `mandi.js`   | `VF_MANDI`   | mandi snapshot loader + LGD↔Agmarknet district fuzzy match ([[agmarknet-mandi]]) |
-| `schemes.js` | `VF_SCHEMES` | farmer-schemes snapshot loader/filter ([[myscheme]])                              |
-| `soil.js`    | `VF_SOIL`    | SoilGrids point profile + agronomic classification ([[soilgrids]])                |
+| `schemes.js` | `VF_SCHEMES` | farmer-schemes snapshot loader/filter ([[myscheme]])                             |
+| `soil.js`    | `VF_SOIL`    | SoilGrids point profile + agronomic classification ([[soilgrids]])               |
 
 Cadastre (AP/TG/KA): MapLibre GL + PMTiles inside Leaflet, streamed from R2
 ([[cadastre-ramseraph]]).

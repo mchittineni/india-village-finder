@@ -17,6 +17,7 @@ andhra_pradesh/web/
 telangana/web/
 karnataka/web/
 tamil_nadu/web/
+kerala/web/
 
 # Python is formatted by Black, not Prettier.
 *.py
