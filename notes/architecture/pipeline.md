@@ -18,12 +18,12 @@ fetch_mandi_prices.py (daily) / fetch_farmer_schemes.py (weekly) → data/* bran
 
 Key invariants:
 
-- `pipeline.py` **verifies counts against the live LGD portal** each run and
-  records the result in `meta.json` (tests fail a real mismatch).
-- **Sidecar pruning**: files regenerated on slower cadences than the daily
-  refresh (`names_translit.json`, `regions_native.json`, `coords.json`) are
-  pruned against each run's fresh village/mandal codes so a refresh PR stays
-  internally consistent. See [[2026-07-13-sidecar-pruning]].
+- **Compound stable sorting**: villages are sorted by `(norm(name), int(village_code))`
+  so duplicate village names never shuffle relative positions or create false line deletions.
+- **Sidecar master retention & pruning**: files regenerated on slower cadences than the daily
+  refresh (`names_translit.json`, `coords.json`) are pruned to current codes for web serving, but
+  persist in `<state>/data/*_master.json` archives so temporary upstream omissions never permanently
+  delete enriched coordinates or transliterations. See [[2026-07-13-sidecar-pruning]].
 - The UI is edited **only** in `scraper/web_template/`; per-state copies are
   build artifacts that happen to be committed. `config.js` is fully generated.
 - Upstream outages exit **75** (EX_TEMPFAIL) → CI treats as a clean skip, never
