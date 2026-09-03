@@ -1,8 +1,11 @@
 name: Update Boundary Tiles
 
 on:
+  workflow_run:
+    workflows: ["Update Village Data"]
+    types: [completed]
   schedule:
-    - cron: "0 6 1 * *" # monthly — 1st 06:00 UTC (after the 03:00 boundaries refresh)
+    - cron: "0 6 1 * *" # monthly — 1st 06:00 UTC (after boundaries refresh)
   workflow_dispatch:
 
 permissions:
@@ -17,6 +20,7 @@ env:
 
 jobs:
   tiles:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
