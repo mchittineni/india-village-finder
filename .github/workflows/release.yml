@@ -1,16 +1,5 @@
 name: Update Village Data Release
 
-# Publishes the datasets as a versioned GitHub Release whenever fresh data lands
-# on main (a data-refresh PR merge), or on manual dispatch.
-#
-# Semantic versioning (vMAJOR.MINOR.PATCH):
-#   • PATCH  — a data update to existing states            (automatic default)
-#   • MINOR  — a new state folder is added to the project  (auto-detected)
-#   • MAJOR  — only when explicitly requested              (workflow_dispatch: bump=major)
-#
-# State folders are discovered generically (any `*/web/data/regions.json`), so a
-# new state is picked up automatically — both for packaging and for the version bump.
-
 on:
   push:
     branches: [main]

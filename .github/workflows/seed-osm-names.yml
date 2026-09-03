@@ -1,13 +1,5 @@
 name: Update OSM Native Names
 
-# Harvests human-verified native place names (name:te / name:kn / name:ta /
-# name:ml) from
-# OpenStreetMap via Overpass and publishes scraper/osm_names.json to the
-# data/osm-names branch, which pipeline runs overlay at build time (the pipeline
-# prefers these over the neural transliterator). Overpass is public +
-# rate-limited, so this runs on demand / monthly here rather than on a laptop.
-# The next data refresh applies the names to each state's names.json + CSV.
-
 on:
   schedule:
     - cron: "0 5 1 * *" # monthly — 1st, 05:00 UTC
@@ -20,7 +12,7 @@ on:
         default: all
 
 permissions:
-  contents: write # push the data/osm-names branch
+  contents: write
 
 concurrency:
   group: seed-osm-names

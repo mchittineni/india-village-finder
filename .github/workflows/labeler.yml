@@ -1,17 +1,5 @@
 name: Apply GitHub Labels
 
-# Apply labels to pull requests based on which files they change.
-# Configuration: .github/labeler.yml
-#
-# Two ways it runs:
-#   1. On PR events — labels the PR that triggered the run.
-#   2. On a daily schedule (and on demand) — sweeps any OPEN pull request that
-#      currently has no labels and labels it, so PRs opened before the labeler
-#      existed (or that slipped through) get caught up.
-#
-# pull_request_target gives the label-writing token the right permissions even
-# for fork PRs; the labeler reads the trusted config from the base branch and
-# never runs PR code, so this is safe.
 on:
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]

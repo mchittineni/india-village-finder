@@ -1,20 +1,12 @@
 name: Update Boundary Tiles
 
-# Rebuilds tiles/boundaries.pmtiles (the all-state boundary vector tiles) and the
-# per-state boundary_bounds.json indexes from the committed simplified GeoJSON,
-# then publishes them to the data/boundary-tiles branch (regenerable artifacts
-# live outside main's reviewed history; deploy-pages/release overlay them).
-# Boundaries change rarely, so this runs monthly (after the monthly boundary
-# refresh lands) and on demand — the tiling itself is light, but tippecanoe
-# must be built from source here, so it lives in CI.
-
 on:
   schedule:
     - cron: "0 6 1 * *" # monthly — 1st 06:00 UTC (after the 03:00 boundaries refresh)
   workflow_dispatch:
 
 permissions:
-  contents: write # push the data/boundary-tiles branch
+  contents: write
 
 concurrency:
   group: build-boundary-tiles

@@ -1,19 +1,12 @@
 name: Update Farmer Schemes
 
-# Publishes the weekly myScheme snapshot of government schemes for farmers
-# (one multilingual JSON per state) to the dedicated `data/farmer-schemes`
-# branch — force-pushed as a single commit, so upstream churn never bloats
-# history or needs a reviewed PR. The web app fetches the JSONs from
-# raw.githubusercontent.com (CORS-enabled); see FARMER_SCHEMES_URL in
-# scraper/config.py.
-
 on:
   schedule:
     - cron: "37 3 * * 1"
   workflow_dispatch:
 
 permissions:
-  contents: write # push the data/farmer-schemes branch
+  contents: write
 
 concurrency:
   group: update-farmer-schemes

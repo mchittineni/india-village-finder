@@ -1,18 +1,12 @@
 name: Update Mandi Prices
 
-# Publishes the daily Agmarknet mandi-price snapshots (one JSON per state) to
-# the dedicated `data/mandi-prices` branch — force-pushed as a single commit,
-# so daily price churn never bloats history or needs a reviewed PR. The web
-# app fetches the JSONs from raw.githubusercontent.com (CORS-enabled); see
-# MANDI_PRICES_URL in scraper/config.py.
-
 on:
   schedule:
     - cron: "47 10 * * *"
   workflow_dispatch:
 
 permissions:
-  contents: write # push the data/mandi-prices branch
+  contents: write
 
 concurrency:
   group: update-mandi-prices

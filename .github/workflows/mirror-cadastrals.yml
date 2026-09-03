@@ -1,30 +1,5 @@
 name: Update Cadastral PMTiles
 
-# Mirrors each state's cadastral PMTiles from the upstream community releases
-# (ramSeraph/indian_cadastrals — the only open, CC0 source of the vectorised,
-# survey-numbered parcels; the state GIS servers serve vectors only behind a
-# login) to a Cloudflare R2 bucket (S3-compatible) that answers range requests
-# WITH CORS — which the GitHub release URLs do not.
-#
-# States mirrored (see the matrix below):
-#   andhra-pradesh  APSAC_AP_Cadastrals.pmtiles       (~848 MB)
-#   telangana       TRACGIS_Bhunaksha_Cadastrals.pmtiles (~649 MB)
-#   karnataka       KGISMAPS_KN_Cadastrals.pmtiles    (~1042 MB)
-#   tamil-nadu      TNGIS_TN_Cadastrals.pmtiles       (~824 MB)
-#   kerala          Bhuvan_Kerala_Cadastrals.pmtiles  (~143 MB)
-#
-# Auto-tracking: runs weekly and re-mirrors a state only when its upstream
-# asset's updated_at/size actually changes (the cadastre is refreshed rarely),
-# so most legs are no-ops. Manual dispatch can target one state or all, and
-# `force` re-mirrors regardless.
-#
-# The public bucket URL is wired into scraper/config.py (STATES[*].cadastre.url)
-# as an explicit, reviewed change — this workflow deliberately does not rewrite
-# it. CORS is a one-time bucket setting (see the CORS step / docs) and does not
-# need an admin-scoped token for the recurring transfer.
-#
-# Required repo secrets:
-#   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
 
 on:
   schedule:
