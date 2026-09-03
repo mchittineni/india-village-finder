@@ -57,6 +57,14 @@ from config import (
     resolve_codes,
 )
 
+
+def transliterate_batch(lang: str, names: list[str]) -> dict[str, str]:
+    """Lazy delegation to pipeline.transliterate_batch so harvest avoids heavy imports."""
+    from pipeline import transliterate_batch as _tb
+
+    return _tb(lang, names)
+
+
 VAULT = ROOT / "notes" / "translit-review"
 
 # Unicode block per script, to catch verification typos (wrong keyboard /
@@ -123,8 +131,6 @@ def generate(state_arg: str, limit: int, root: Path = ROOT) -> int:
         seeds = load_name_seeds(lang)
         code_pins = load_code_overrides(lang)
         mandal_names = [m["n"] for m in regions["mandals"]]
-
-        from pipeline import transliterate_batch
 
         rows = [r for r in villages["rows"] if str(r[2]) in neural]
         rules = transliterate_batch(lang, sorted({r[0] for r in rows}))
