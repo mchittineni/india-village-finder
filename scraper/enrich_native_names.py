@@ -51,7 +51,12 @@ import re
 from pathlib import Path
 
 from config import ALIAS as _CODE_ALIAS  # shared per-state registry
-from config import LANG_BY_SLUG, SLUG_BY_CODE, load_name_seeds
+from config import (
+    LANG_BY_SLUG,
+    SLUG_BY_CODE,
+    load_code_overrides,
+    load_name_seeds,
+)
 
 HERE = Path(__file__).resolve().parent  # scraper/
 ROOT = HERE.parent  # Village Finder/
@@ -82,10 +87,43 @@ SCRIPT_RANGE = {
     "hi": (0x0900, 0x097F),
 }
 
+# Common single-letter prefixes in Indian village names (e.g. "A.Kothapalle" -> "ఎ.కొత్తపల్లె").
+# IndicXlit's internal word-splitter frequently mangles single-letter initials or leaks
+# them as Latin; mapping them explicitly ensures high accuracy and prevents data corruption.
+INITIAL_PREFIXES = {
+    "te": {
+        "A": "ఎ", "B": "బి", "C": "సి", "D": "డి", "E": "ఇ", "G": "జి", "H": "హెచ్",
+        "J": "జె", "K": "కె", "L": "ఎల్", "M": "ఎం", "N": "ఎన్", "P": "పి", "R": "ఆర్",
+        "S": "ఎస్", "T": "టి", "V": "వి", "Y": "వై"
+    },
+    "kn": {
+        "A": "ಎ", "B": "ಬಿ", "C": "ಸಿ", "D": "ಡಿ", "E": "ಇ", "G": "ಜಿ", "H": "ಹೆಚ್",
+        "J": "ಜೆ", "K": "ಕೆ", "L": "ಎಲ್", "M": "ಎಂ", "N": "ಎನ್", "P": "ಪಿ", "R": "ಆರ್",
+        "S": "ಎಸ್", "T": "ಟಿ", "V": "ವಿ", "Y": "ವೈ"
+    },
+    "ta": {
+        "A": "அ", "B": "பி", "C": "சி", "D": "டி", "E": "இ", "G": "ஜி",
+        "K": "கே", "M": "எம்", "N": "என்", "P": "பி", "R": "ஆர்", "S": "எஸ்",
+        "T": "டி", "V": "வி"
+    },
+    "ml": {
+        "A": "എ", "B": "ബി", "C": "സി", "D": "ഡി", "E": "ഇ", "G": "ജി",
+        "K": "കെ", "M": "എം", "N": "എൻ", "P": "പി", "R": "ആർ", "S": "എസ്",
+        "T": "ടി", "V": "വി"
+    },
+}
+
 
 def in_script(s: str, lang: str) -> bool:
     lo, hi = SCRIPT_RANGE.get(lang, (0, 0))
-    return any(lo <= ord(c) <= hi for c in s) if s else False
+    if not lo or not s:
+        return False
+    letters = [c for c in s if c.isalpha()]
+    if not letters:
+        return False
+    has_target = any(lo <= ord(c) <= hi for c in letters)
+    has_latin = any(("A" <= c <= "Z" or "a" <= c <= "z") for c in letters)
+    return has_target and not has_latin
 
 
 # --------------------------------------------------------------------------- #
@@ -139,12 +177,14 @@ def _clean_native(s: str) -> str:
 def _xlit_name(engine, lang: str, name: str) -> str:
     """Transliterate a name segment-by-segment. We split on every run of non-letters
     (space, '.', '-', digits) and transliterate each letter-run on its own, preserving
-    the separators. This matters for dotted prefixes like "A.Bandaveedhi": IndicXlit's
-    own word splitter only converts the final segment and lower-cases the rest, leaking
-    a latin "a." — splitting ourselves converts the "A" too."""
+    the separators. Dotted single-letter initials use canonical native letters."""
     out = []
+    lang_prefixes = INITIAL_PREFIXES.get(lang, {})
     for seg in re.split(r"([^A-Za-z]+)", name):
         if seg and re.search(r"[A-Za-z]", seg):
+            if len(seg) == 1 and seg.upper() in lang_prefixes:
+                out.append(lang_prefixes[seg.upper()])
+                continue
             try:
                 cand = engine.translit_word(seg, topk=1).get(lang) or []
                 out.append(_clean_native(cand[0]) if cand else seg)
@@ -174,32 +214,86 @@ def transliterate(lang: str, names, beam: int, cache: dict) -> dict:
     return {n: (seeds.get(n.lower()) or cache.get(f"{lang}:{n.lower()}", "")) for n in uniq}
 
 
+def dump_compact_dict_json(path: Path, d: dict) -> None:
+    """Format dictionary sidecars with 1 key-value per line for clean atomic diffs."""
+    if not d:
+        path.write_text("{}\n", encoding="utf-8")
+        return
+    items = sorted(d.items(), key=lambda kv: (int(kv[0]) if kv[0].isdigit() else kv[0]))
+    lines = ["{"]
+    for i, (k, v) in enumerate(items):
+        comma = "," if i < len(items) - 1 else ""
+        k_str = json.dumps(k, ensure_ascii=False)
+        v_str = json.dumps(v, ensure_ascii=False, separators=(",", ":"))
+        lines.append(f"  {k_str}:{v_str}{comma}")
+    lines.append("}")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 # --------------------------------------------------------------------------- #
 # generate: web/data/names_translit.json (villages WITHOUT an authoritative name)
 # --------------------------------------------------------------------------- #
 def build_state(slug: str, lang: str, beam: int, cache: dict) -> None:
-    web_data = ROOT / slug / "web" / "data"
+    state_dir = ROOT / slug
+    web_data = state_dir / "web" / "data"
     villages = json.loads((web_data / "villages.json").read_text(encoding="utf-8"))["rows"]
     names_path = web_data / "names.json"
     authoritative = (
         json.loads(names_path.read_text(encoding="utf-8")) if names_path.exists() else {}
     )
+    code_pins = load_code_overrides(lang)
+    seeds = load_name_seeds(lang)
 
-    todo = [(str(r[2]), r[0]) for r in villages if str(r[2]) not in authoritative]
-    mapping = transliterate(lang, [en for _, en in todo], beam, cache)
+    # Master store ensures verified transliterations are never lost across refreshes
+    nt_path = web_data / "names_translit.json"
+    nt_master_path = state_dir / "data" / "names_translit_master.json"
+    prev_neural = {}
+    if nt_master_path.exists():
+        try:
+            prev_neural.update(json.loads(nt_master_path.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    if nt_path.exists():
+        try:
+            prev_neural.update(json.loads(nt_path.read_text(encoding="utf-8")))
+        except Exception:
+            pass
 
     out = {}
-    for code, en in todo:
-        nat = mapping.get(en.strip(), "")
-        if nat and in_script(nat, lang):
-            out[code] = nat
+    todo = []
+    for r in villages:
+        code, en = str(r[2]), r[0]
+        if code in authoritative:
+            continue
+        # 1. Per-village code overrides (verified review notes)
+        if code in code_pins and in_script(code_pins[code], lang):
+            out[code] = code_pins[code]
+        # 2. Name-keyed seeds (manual overrides + OSM)
+        elif en.strip().lower() in seeds and in_script(seeds[en.strip().lower()], lang):
+            out[code] = seeds[en.strip().lower()]
+        # 3. Preserved master/existing transliteration
+        elif code in prev_neural and in_script(prev_neural[code], lang):
+            out[code] = prev_neural[code]
+        else:
+            todo.append((code, en))
 
-    (web_data / "names_translit.json").write_text(
-        json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
-    )
+    if todo:
+        mapping = transliterate(lang, [en for _, en in todo], beam, cache)
+        for code, en in todo:
+            nat = mapping.get(en.strip(), "")
+            if nat and in_script(nat, lang):
+                out[code] = nat
+            elif code in prev_neural:
+                out[code] = prev_neural[code]  # Fall back to previous instead of losing translation
+
+    # Persist both master archive and web sidecar
+    master_all = {**prev_neural, **out}
+    dump_compact_dict_json(nt_master_path, master_all)
+    dump_compact_dict_json(nt_path, out)
+
     covered = len(authoritative) + len(out)
     print(
-        f"[{slug}] neural {len(out)}/{len(todo)} -> names_translit.json "
+        f"[{slug}] neural {len(out)}/{len(villages)} -> names_translit.json "
         f"(+{len(authoritative)} authoritative = {covered}/{len(villages)} villages)"
     )
 
@@ -242,13 +336,20 @@ def build_regions(slug: str, lang: str, beam: int) -> None:
         if nat:
             v_native.setdefault(_norm(r[0]), nat)
 
+    seeds = load_name_seeds(lang)
+    existing_rn = _load_json(web_data / "regions_native.json")
+
     out = {"state": STATE_NATIVE.get(slug, ""), "districts": {}, "mandals": {}}
     todo = []  # (tier, code, english) needing the model
     for tier in ("districts", "mandals"):
         for r in reg[tier]:
             code, en = str(r["c"]), r["n"]
-            nat = v_native.get(_norm(en))
-            if nat:
+            nat = (
+                (existing_rn.get(tier) or {}).get(code)
+                or seeds.get(_norm(en))
+                or v_native.get(_norm(en))
+            )
+            if nat and in_script(nat, lang):
                 out[tier][code] = nat
             else:
                 todo.append((tier, code, en))
@@ -261,13 +362,13 @@ def build_regions(slug: str, lang: str, beam: int) -> None:
                 out[tier][code] = nat
 
     (web_data / "regions_native.json").write_text(
-        json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+        json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     total = len(reg["districts"]) + len(reg["mandals"])
     have = len(out["districts"]) + len(out["mandals"])
     print(
         f"[{slug}] regions_native {have}/{total} regions + state "
-        f"({'model' if engine else 'from village data only'})"
+        f"({'model' if engine else 'from village data & seeds only'})"
     )
 
 

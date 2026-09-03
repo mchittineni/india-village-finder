@@ -106,6 +106,7 @@ def fetch_state_records(state_code: int, session: requests.Session) -> list[dict
                 "limit": PAGE,
                 "offset": offset,
                 "filters[stateCode]": state_code,
+                "sort[villageCode]": "asc",
             },
         )
         recs = data.get("records") or []
