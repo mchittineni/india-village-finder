@@ -245,13 +245,37 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
     });
   }
+  var CACHE_NAME = "vf-data-cache-v1";
   /**
-   * Fetch and parse a JSON data file.
+   * Fetch and parse a JSON data file, with high-performance Cache API caching
+   * and background revalidation.
    * @param {string} name  File name under `data/`.
    * @returns {Promise<*>} Parsed JSON.
    */
   async function fetchJSON(name) {
-    var r = await fetch(DATA + name);
+    var url = DATA + name;
+    if ("caches" in window) {
+      try {
+        var cache = await caches.open(CACHE_NAME);
+        var cached = await cache.match(url);
+        if (cached) {
+          // Revalidate in background without blocking current execution
+          fetch(url)
+            .then(function (netRes) {
+              if (netRes && netRes.ok) cache.put(url, netRes);
+            })
+            .catch(function () {});
+          return cached.json();
+        }
+        var res = await fetch(url);
+        if (!res.ok) throw new Error("Failed to load " + name + " (" + res.status + ")");
+        cache.put(url, res.clone()).catch(function () {});
+        return res.json();
+      } catch (cacheErr) {
+        // Fall back to direct fetch if cache fails
+      }
+    }
+    var r = await fetch(url);
     if (!r.ok) throw new Error("Failed to load " + name + " (" + r.status + ")");
     return r.json();
   }
@@ -373,12 +397,14 @@
     btTipEl = null,
     btHoverCode = null;
   var view = { level: "state", d: null, m: null }; // d,m = region objects
+  var stage2Promise = null,
+    stage2Loaded = false;
 
   init();
 
   /**
-   * Bootstrap: apply theme/i18n chrome, load all data files, then build the
-   * index, search, map and the initial district view.
+   * Bootstrap: apply theme/i18n chrome, load essential district files for instant
+   * first paint (~100ms), then stream the large mandals/villages in the background.
    * @returns {Promise<void>}
    */
   async function init() {
@@ -388,17 +414,56 @@
     applyI18n();
     try {
       var EMPTY_FC = { type: "FeatureCollection", features: [] };
+      // Stage 1: Load only regions, district boundaries and meta for immediate map paint
       var res = await Promise.all([
         fetchJSON("regions.json"),
-        fetchJSON("villages.json"),
-        // Vector-tile mode streams boundaries from the shared PMTiles archive, so
-        // the whole-state GeoJSON downloads (the largest payloads) are skipped;
-        // boundary_bounds.json supplies the per-region bboxes getBounds() gave us.
         BT_CFG ? Promise.resolve(EMPTY_FC) : fetchJSON("districts.geojson"),
-        BT_CFG ? Promise.resolve(EMPTY_FC) : fetchJSON("mandals.geojson"),
         fetchJSON("meta.json").catch(function () {
           return null;
         }),
+        BT_CFG
+          ? fetchJSON("boundary_bounds.json").catch(function () {
+              return null;
+            })
+          : Promise.resolve(null)
+      ]);
+      regions = res[0];
+      geoD = res[1];
+      meta = res[2];
+      btBounds = res[3];
+      if (BT_CFG && !btBounds) {
+        BT_CFG = null;
+        geoD = await fetchJSON("districts.geojson");
+      }
+    } catch (e) {
+      $("#map-loading").textContent = "Could not load data: " + e.message;
+      return;
+    }
+    indexDistricts();
+    initMap();
+    showDistrictView(true);
+    setFreshness();
+    wireSearch();
+    wireChrome();
+    wireCadastre();
+    wireMandi();
+    wireSchemes();
+
+    // Stage 2: Hydrate full village lists, large mandal polygons, and sidecars in the background
+    stage2Promise = loadStage2();
+  }
+
+  /**
+   * Stage 2 background loader: fetches the heavy mandal polygons (1.2-3.5MB),
+   * columnar village list, coordinates and sidecars without blocking initial interaction.
+   * @returns {Promise<void>}
+   */
+  async function loadStage2() {
+    var EMPTY_FC = { type: "FeatureCollection", features: [] };
+    try {
+      var res = await Promise.all([
+        fetchJSON("villages.json"),
+        BT_CFG ? Promise.resolve(EMPTY_FC) : fetchJSON("mandals.geojson"),
         fetchJSON("coords.json").catch(function () {
           return {};
         }),
@@ -411,61 +476,43 @@
         fetchJSON("regions_native.json").catch(function () {
           return {};
         }),
-        // Optional: precomputed village -> parcel bbox (only present where a
-        // cadastral layer is configured). { lgdCode: [minLat,minLng,maxLat,maxLng] }
         CFG.cadastre
           ? fetchJSON("parcels_index.json").catch(function () {
               return {};
             })
           : Promise.resolve({}),
-        // Optional: village -> parcel-derived centroid, giving a precise pin to
-        // the many villages GeoNames can't place. { lgdCode: [lat,lng] }
         CFG.cadastre
           ? fetchJSON("village_points.json").catch(function () {
               return {};
             })
-          : Promise.resolve({}),
-        // Vector-tile mode only: {d: {code: bbox}, m: {code: bbox}} with bbox as
-        // [minLat,minLng,maxLat,maxLng] — used for fitBounds/centroids.
-        BT_CFG
-          ? fetchJSON("boundary_bounds.json").catch(function () {
-              return null;
-            })
-          : Promise.resolve(null)
+          : Promise.resolve({})
       ]);
-      regions = res[0];
-      villages = res[1];
-      geoD = res[2];
-      geoM = res[3];
-      meta = res[4];
-      coords = res[5] || {};
-      localNames = res[6] || {};
-      translitNames = res[7] || {};
-      regionNative = res[8] || {};
-      parcelIndex = res[9] || {};
-      villagePoints = res[10] || {};
-      btBounds = res[11];
-      if (BT_CFG && !btBounds) {
-        // Bounds index missing — vector-tile mode can't fit/zoom without it, so
-        // fall back to the classic GeoJSON boundaries (fetched late, one-off).
-        BT_CFG = null;
-        geoD = await fetchJSON("districts.geojson");
-        geoM = await fetchJSON("mandals.geojson");
+      villages = res[0];
+      geoM = res[1];
+      coords = res[2] || {};
+      localNames = res[3] || {};
+      translitNames = res[4] || {};
+      regionNative = res[5] || {};
+      parcelIndex = res[6] || {};
+      villagePoints = res[7] || {};
+
+      indexVillages();
+      stage2Loaded = true;
+
+      // Defer Fuse.js construction to idle time so search setup never hitches the UI
+      if ("requestIdleCallback" in window) {
+        requestIdleCallback(buildFuse);
+      } else {
+        setTimeout(buildFuse, 120);
+      }
+
+      // If user drilled into a mandal while Stage 2 was in-flight, populate its village list
+      if (view.level === "mandal" && view.m) {
+        renderMandalPanel(view.m);
       }
     } catch (e) {
-      $("#map-loading").textContent = "Could not load data: " + e.message;
-      return;
+      console.warn("Background data load encountered an issue:", e);
     }
-    indexData();
-    buildFuse();
-    initMap();
-    showDistrictView(true);
-    setFreshness();
-    wireSearch();
-    wireChrome();
-    wireCadastre();
-    wireMandi();
-    wireSchemes();
   }
 
   // ---- theming + chrome ------------------------------------------------
@@ -636,24 +683,16 @@
 
   // ---- indexing --------------------------------------------------------
   /**
-   * Build code→region lookups, group village rows by mandal, and compute the
-   * district colour breaks.
+   * Build code→district/mandal lookups and compute district colour breaks.
+   * Runs in Stage 1 for instant first paint.
    * @returns {void}
    */
-  function indexData() {
+  function indexDistricts() {
     regions.districts.forEach(function (d) {
       dByCode[d.c] = d;
     });
     regions.mandals.forEach(function (m) {
       mByCode[m.c] = m;
-    });
-    villagesByMandal = regions.mandals.map(function () {
-      return [];
-    });
-    villages.rows.forEach(function (row) {
-      // row: [name, mandalIdx, code, cat, pin]
-      var mi = row[1];
-      if (villagesByMandal[mi]) villagesByMandal[mi].push(row);
     });
     dBreaks = quantileBreaks(
       regions.districts.map(function (d) {
@@ -664,34 +703,66 @@
   }
 
   /**
-   * Build the Fuse.js index. Search always indexes the canonical English names
-   * + PIN (most reliable), regardless of the chosen display language.
+   * Group village rows by mandal once villages.json arrives in Stage 2.
+   * @returns {void}
+   */
+  function indexVillages() {
+    if (!villages || !villages.rows) return;
+    villagesByMandal = regions.mandals.map(function () {
+      return [];
+    });
+    villages.rows.forEach(function (row) {
+      // row: [name, mandalIdx, code, cat, pin]
+      var mi = row[1];
+      if (villagesByMandal[mi]) villagesByMandal[mi].push(row);
+    });
+  }
+
+  /**
+   * Build both region lookups and village groups.
+   * @returns {void}
+   */
+  function indexData() {
+    indexDistricts();
+    indexVillages();
+  }
+
+  var fuseBuilding = false;
+  /**
+   * Build the Fuse.js index lazily / on idle. Search always indexes the canonical
+   * English names + PIN (most reliable), regardless of the chosen display language.
    * @returns {void}
    */
   function buildFuse() {
-    var items = [];
-    regions.districts.forEach(function (d) {
-      items.push({ t: "d", name: d.n, ref: d });
-    });
-    regions.mandals.forEach(function (m) {
-      items.push({ t: "m", name: m.n, ref: m });
-    });
-    villages.rows.forEach(function (row) {
-      items.push({ t: "v", name: row[0], pin: row[4] || "", ref: row });
-    });
-    fuse = new Fuse(items, {
-      keys: [
-        { name: "name", weight: 0.85 },
-        { name: "pin", weight: 0.15 }
-      ],
-      threshold: 0.3,
-      ignoreLocation: true,
-      minMatchCharLength: 2,
-      getFn: function (obj, path) {
-        var v = obj[path] || "";
-        return [v, v.replace(/\s+/g, "")];
-      }
-    });
+    if (fuse || fuseBuilding || !villages || !villages.rows || !regions) return;
+    fuseBuilding = true;
+    try {
+      var items = [];
+      regions.districts.forEach(function (d) {
+        items.push({ t: "d", name: d.n, ref: d });
+      });
+      regions.mandals.forEach(function (m) {
+        items.push({ t: "m", name: m.n, ref: m });
+      });
+      villages.rows.forEach(function (row) {
+        items.push({ t: "v", name: row[0], pin: row[4] || "", ref: row });
+      });
+      fuse = new Fuse(items, {
+        keys: [
+          { name: "name", weight: 0.85 },
+          { name: "pin", weight: 0.15 }
+        ],
+        threshold: 0.3,
+        ignoreLocation: true,
+        minMatchCharLength: 2,
+        getFn: function (obj, path) {
+          var v = obj[path] || "";
+          return [v, v.replace(/\s+/g, "")];
+        }
+      });
+    } finally {
+      fuseBuilding = false;
+    }
   }
 
   // ---- map -------------------------------------------------------------
@@ -1767,11 +1838,18 @@
    * @param {{then: Function}} [opts]  Optional `then` callback run after rendering.
    * @returns {void}
    */
-  function selectDistrict(d, opts) {
+  async function selectDistrict(d, opts) {
     opts = opts || {};
     view = { level: "district", d: d, m: null };
     clearLayers();
-    var feats = geoM.features.filter(function (f) {
+    if (!BT_CFG && (!geoM || !geoM.features || !geoM.features.length)) {
+      renderBreadcrumb();
+      var p = $("#panel");
+      if (p) p.innerHTML = '<div class="panel-loading">' + esc(t("loading_map")) + "…</div>";
+      if (stage2Promise) await stage2Promise;
+    }
+    if (!geoM) geoM = { type: "FeatureCollection", features: [] };
+    var feats = (geoM.features || []).filter(function (f) {
       return f.properties.d === d.c;
     });
     var breaks = quantileBreaks(
@@ -2080,9 +2158,19 @@
     var rows = (villagesByMandal[m.i] || []).slice().sort(function (a, b) {
       return norm(a[0]) < norm(b[0]) ? -1 : 1;
     });
-    var list = el("div", "list");
     if (!rows.length) {
-      list.appendChild(el("div", "empty", esc(t("no_villages"))));
+      if (!stage2Loaded) {
+        list.appendChild(el("div", "panel-loading", esc(t("loading_map")) + "…"));
+        if (stage2Promise) {
+          stage2Promise.then(function () {
+            if (view.level === "mandal" && view.m && view.m.c === m.c) {
+              renderMandalPanel(m, highlightCode);
+            }
+          });
+        }
+      } else {
+        list.appendChild(el("div", "empty", esc(t("no_villages"))));
+      }
     }
     rows.forEach(function (row) {
       var r = el("button", "row clickable");
@@ -2901,6 +2989,9 @@
   function wireSearch() {
     var inp = $("#search"),
       clr = $("#clear-search");
+    inp.addEventListener("focus", function () {
+      if (!fuse && villages) buildFuse();
+    });
     var t2;
     inp.addEventListener("input", function () {
       clr.classList.toggle("hidden", !inp.value);
@@ -2945,6 +3036,21 @@
     if (q.length < 2) {
       restorePanel();
       return;
+    }
+    if (!fuse) {
+      buildFuse();
+      if (!fuse) {
+        var pLoading = $("#panel");
+        if (pLoading)
+          pLoading.innerHTML = '<div class="panel-loading">' + esc(t("loading_map")) + "…</div>";
+        if (stage2Promise) {
+          stage2Promise.then(function () {
+            buildFuse();
+            runSearch(q);
+          });
+        }
+        return;
+      }
     }
     var res = fuse.search(q, { limit: 60 });
     var p = $("#panel");
