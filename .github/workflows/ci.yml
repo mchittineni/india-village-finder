@@ -22,6 +22,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-pipeline
         with:
+          node-version: "22"
           requirements-file: scraper/requirements-dev.txt
 
       - name: Validate data (pytest)
