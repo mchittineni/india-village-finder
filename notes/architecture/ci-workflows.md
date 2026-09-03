@@ -8,21 +8,19 @@ Shared steps live as composites in `.github/actions/` (`setup-pipeline`,
 `datagov-fetch` = the exit-75 outage-skip contract, `publish-data-branch`,
 `overlay-data-branches`); each workflow keeps only its unique logic.
 
-| Workflow                      | Cadence                                | Output                                                  |
-| ----------------------------- | -------------------------------------- | ------------------------------------------------------- |
-| `update-data.yml`             | weekly (+ monthly boundaries)          | **reviewed PR** on `data/auto-refresh`                  |
-| `update-mandi-prices.yml`     | daily 10:47 UTC                        | `data/mandi-prices` branch                              |
-| `update-farmer-schemes.yml`   | weekly Mon                             | `data/farmer-schemes` branch                            |
-| `seed-osm-names.yml`          | monthly                                | `data/osm-names` branch                                 |
-| `build-boundary-tiles.yml`    | monthly                                | `data/boundary-tiles` branch                            |
-| `build-parcels-index.yml`     | on demand                              | `data/parcels-index` branch (non-destructive per state) |
-| `regenerate-native-names.yml` | triggered by update-data.yml/on demand | reviewed PR (IndicXlit neural names; per-state matrix)  |
-| `mirror-cadastrals.yml`       | on upstream change                     | PMTiles mirrored to Cloudflare R2                       |
-| `ci.yml`                      | every PR/push                          | pytest data-validity suite                              |
-| `docs.yml`                    | PRs touching docs                      | jsdoc/pdoc build check                                  |
-| `release.yml`                 | data merges                            | versioned GitHub Release (+ data-branch overlays)       |
-| `publish-blog.yml`            | release published                      | dev.to blog draft (+ Medium via legacy token)           |
-| `deploy-pages.yml`            | pushes to main                         | live site (+ data-branch overlays)                      |
+| Workflow                      | Cadence                                | Output                                                   |
+| ----------------------------- | -------------------------------------- | -------------------------------------------------------- |
+| `update-data.yml`             | weekly unified refresh                 | **reviewed PR** + mandi prices + farmer schemes branches |
+| `seed-osm-names.yml`          | monthly                                | `data/osm-names` branch                                  |
+| `build-boundary-tiles.yml`    | monthly                                | `data/boundary-tiles` branch                             |
+| `build-parcels-index.yml`     | on demand                              | `data/parcels-index` branch (non-destructive per state)  |
+| `regenerate-native-names.yml` | triggered by update-data.yml/on demand | reviewed PR (IndicXlit neural names; per-state matrix)   |
+| `mirror-cadastrals.yml`       | on upstream change                     | PMTiles mirrored to Cloudflare R2                        |
+| `ci.yml`                      | every PR/push                          | pytest data-validity suite + Prettier format check       |
+| `docs.yml`                    | PRs touching docs                      | jsdoc/pdoc build check                                   |
+| `release.yml`                 | data merges                            | versioned GitHub Release (+ data-branch overlays)        |
+| `publish-blog.yml`            | release published                      | dev.to blog draft (+ Medium via legacy token)            |
+| `deploy-pages.yml`            | pushes to main                         | live site (+ data-branch overlays)                       |
 
 Conventions (enforced by review, documented in CONTRIBUTING):
 
