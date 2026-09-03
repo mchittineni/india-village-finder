@@ -586,13 +586,15 @@
         ]);
         const tot = states.reduce((s, st) => s + ((st && st.c.villages) || 0), 0);
         const date = (states.find((st) => st && st.date) || {}).date || "";
-        if (tot)
-          document.getElementById("total").innerHTML =
-            "<b>" +
-            inr(tot) +
-            "</b> villages across five states · updated <b>" +
-            date +
-            "</b> from LGD";
+        if (tot) {
+          const totEl = document.getElementById("total");
+          totEl.textContent = "";
+          const bTot = document.createElement("b");
+          bTot.textContent = inr(tot);
+          const bDate = document.createElement("b");
+          bDate.textContent = date;
+          totEl.append(bTot, " villages across five states · updated ", bDate, " from LGD");
+        }
       })();
     </script>
   </body>
