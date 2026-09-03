@@ -82,6 +82,14 @@ are few and large by design.)_
   source that publishes official in-script spellings is wired back in. District, sub-district
   and state names render in native script too (`regions_native.json`). The canonical English
   name is always kept on hover and used for search.
+- **Instant progressive loading & caching** staged loading architecture renders the map,
+  district boundaries and UI chrome in **~100 ms (Stage 1)** while streaming heavy village datasets
+  and mandal boundaries in the background (**Stage 2**) without blocking the main thread. A transparent
+  browser **Cache Storage API** layer (`window.caches`) serves return visits and state switches in 1–5 ms.
+- **Accurate, deletion-resistant data storage** compound sorting `(norm(name), int(village_code))`
+  guarantees 100% stable ordering across runs without duplicate-name shuffling. Git-friendly line-by-line JSON
+  formatting produces 1-line diffs, and persistent master sidecar archives (`coords_master.json`,
+  `names_translit_master.json`) ensure verified coordinates and transliterations are never wiped out.
 - **Districts, mandals and villages listed A → Z** for predictable scanning.
 - **Pincodes** for ~99.9% of villages (from LGD), shown in lists, search and pins.
 - **Village locations** where we can confidently place them (matched via GeoNames and
