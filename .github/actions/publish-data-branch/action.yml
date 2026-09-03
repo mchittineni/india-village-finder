@@ -28,7 +28,6 @@ runs:
   using: composite
 
   steps:
-  
     - name: Publish
       shell: bash
       env:

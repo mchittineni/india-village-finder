@@ -23,7 +23,6 @@ runs:
   using: composite
 
   steps:
-  
     - name: Run fetch
       id: run
       shell: bash

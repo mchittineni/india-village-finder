@@ -31,7 +31,7 @@ body:
         - Downloads / API
         - Accessibility / mobile
         - Other
-        
+
   - type: textarea
     id: alternatives
     attributes:

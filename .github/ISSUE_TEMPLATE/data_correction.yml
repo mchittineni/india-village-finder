@@ -34,7 +34,7 @@ body:
     id: village
     attributes:
       label: Village (and LGD code if known)
-      
+
   - type: dropdown
     id: kind
     attributes:
@@ -48,7 +48,7 @@ body:
         - Other
     validations:
       required: true
-      
+
   - type: textarea
     id: details
     attributes:
