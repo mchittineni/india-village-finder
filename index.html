@@ -29,8 +29,8 @@
       }
       body {
         margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-          sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         color: var(--ink);
         background: #f6f7f9;
         -webkit-font-smoothing: antialiased;
@@ -338,7 +338,9 @@
         interactive map — with the things a villager actually needs next to it: today's mandi
         prices, weather, soil &amp; fertilizer guidance, government schemes and land parcels.
       </p>
-      <p class="total" id="total">Loading totals…</p>
+      <p class="total" id="total">
+        <b>67,549</b> villages across five states · updated <b>01Sep2026</b> from LGD
+      </p>
 
       <h2 class="sec">How it works</h2>
       <p class="sec-sub">Three steps, no login, works on any phone browser.</p>
@@ -378,15 +380,15 @@
           <h2>Andhra Pradesh</h2>
           <div class="stats">
             <div class="stat">
-              <div class="n" id="ap-d">—</div>
+              <div class="n" id="ap-d">28</div>
               <div class="l">Districts</div>
             </div>
             <div class="stat">
-              <div class="n" id="ap-m">—</div>
+              <div class="n" id="ap-m">688</div>
               <div class="l">Mandals</div>
             </div>
             <div class="stat">
-              <div class="n" id="ap-v">—</div>
+              <div class="n" id="ap-v">15,279</div>
               <div class="l">Villages</div>
             </div>
           </div>
@@ -399,15 +401,15 @@
           <h2>Telangana</h2>
           <div class="stats">
             <div class="stat">
-              <div class="n" id="tg-d">—</div>
+              <div class="n" id="tg-d">33</div>
               <div class="l">Districts</div>
             </div>
             <div class="stat">
-              <div class="n" id="tg-m">—</div>
+              <div class="n" id="tg-m">616</div>
               <div class="l">Mandals</div>
             </div>
             <div class="stat">
-              <div class="n" id="tg-v">—</div>
+              <div class="n" id="tg-v">9,293</div>
               <div class="l">Villages</div>
             </div>
           </div>
@@ -420,15 +422,15 @@
           <h2>Karnataka</h2>
           <div class="stats">
             <div class="stat">
-              <div class="n" id="ka-d">—</div>
+              <div class="n" id="ka-d">31</div>
               <div class="l">Districts</div>
             </div>
             <div class="stat">
-              <div class="n" id="ka-m">—</div>
+              <div class="n" id="ka-m">240</div>
               <div class="l">Taluks</div>
             </div>
             <div class="stat">
-              <div class="n" id="ka-v">—</div>
+              <div class="n" id="ka-v">26,134</div>
               <div class="l">Villages</div>
             </div>
           </div>
@@ -441,15 +443,15 @@
           <h2>Tamil Nadu</h2>
           <div class="stats">
             <div class="stat">
-              <div class="n" id="tn-d">—</div>
+              <div class="n" id="tn-d">38</div>
               <div class="l">Districts</div>
             </div>
             <div class="stat">
-              <div class="n" id="tn-m">—</div>
+              <div class="n" id="tn-m">317</div>
               <div class="l">Taluks</div>
             </div>
             <div class="stat">
-              <div class="n" id="tn-v">—</div>
+              <div class="n" id="tn-v">15,177</div>
               <div class="l">Villages</div>
             </div>
           </div>
@@ -462,15 +464,15 @@
           <h2>Kerala</h2>
           <div class="stats">
             <div class="stat">
-              <div class="n" id="kl-d">—</div>
+              <div class="n" id="kl-d">14</div>
               <div class="l">Districts</div>
             </div>
             <div class="stat">
-              <div class="n" id="kl-m">—</div>
+              <div class="n" id="kl-m">78</div>
               <div class="l">Taluks</div>
             </div>
             <div class="stat">
-              <div class="n" id="kl-v">—</div>
+              <div class="n" id="kl-v">1,666</div>
               <div class="l">Villages</div>
             </div>
           </div>
@@ -541,9 +543,30 @@
       function inr(n) {
         return (n || 0).toLocaleString("en-IN");
       }
+      async function fetchMeta(slug) {
+        const url = slug + "/web/data/meta.json";
+        if ("caches" in window) {
+          try {
+            const cache = await caches.open("vf-meta-cache-v1");
+            const cached = await cache.match(url);
+            if (cached) {
+              fetch(url)
+                .then((res) => {
+                  if (res && res.ok) cache.put(url, res);
+                })
+                .catch(() => {});
+              return cached.json();
+            }
+            const res = await fetch(url);
+            if (res.ok) cache.put(url, res.clone()).catch(() => {});
+            return res.json();
+          } catch (e) {}
+        }
+        return (await fetch(url)).json();
+      }
       async function load(slug, key) {
         try {
-          const m = await (await fetch(slug + "/web/data/meta.json")).json();
+          const m = await fetchMeta(slug);
           const c = m.counts || {};
           document.getElementById(key + "-d").textContent = inr(c.districts);
           document.getElementById(key + "-m").textContent = inr(c.mandals);
