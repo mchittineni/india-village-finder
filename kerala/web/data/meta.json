@@ -1,10 +1,10 @@
 {
   "state": "Kerala",
   "state_code": 32,
-  "generated_at": "2026-09-03T12:51:23Z",
+  "generated_at": "2026-09-06T06:59:07Z",
   "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
   "source_mirror": "data.gov.in (Open Government Data platform, LGD API)",
-  "source_date": "03Sep2026",
+  "source_date": "06Sep2026",
   "counts": {
     "districts": 14,
     "mandals": 78,
