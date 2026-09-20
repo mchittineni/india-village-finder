@@ -1,10 +1,10 @@
 {
   "state": "Tamil Nadu",
   "state_code": 33,
-  "generated_at": "2026-09-13T07:18:52Z",
+  "generated_at": "2026-09-20T07:35:24Z",
   "source": "Local Government Directory (lgdirectory.gov.in), Ministry of Panchayati Raj, Govt. of India",
   "source_mirror": "data.gov.in (Open Government Data platform, LGD API)",
-  "source_date": "13Sep2026",
+  "source_date": "20Sep2026",
   "counts": {
     "districts": 38,
     "mandals": 317,
