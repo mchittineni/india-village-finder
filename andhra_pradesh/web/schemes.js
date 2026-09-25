@@ -1,7 +1,7 @@
 /** =====================================================================
    Village Finder — government schemes for farmers
    Loads the state's weekly myScheme snapshot, published by the
-   update-farmer-schemes workflow to the repo's `data/farmer-schemes` branch
+   farmer-schemes job of update-data.yml to the repo's `data/farmer-schemes` branch
    as one compact JSON per state (state + Central schemes in the
    "Agriculture,Rural & Environment" category, with names localized in every
    UI language), and serves it filtered for the schemes panel.
