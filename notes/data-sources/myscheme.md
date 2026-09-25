@@ -15,7 +15,7 @@ verified: 2026-07-13
 - Query: `q` = JSON list of `{identifier, value}` filters; repeating
   `beneficiaryState` ORs values → state + `"All"` (Central); category
   `"Agriculture,Rural & Environment"`; `lang=` returns localized
-  schemeName/briefDescription for **all six UI languages**.
+  schemeName/briefDescription for **all seven UI languages**.
 - Scheme page: `https://www.myscheme.gov.in/schemes/<slug>`.
 - **Coverage is uneven per state** (2026-07: TN 37 state agri schemes, TG 4,
   KA 2, AP 0 central schemes appear for everyone). Upstream gap, not a bug.
