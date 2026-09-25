@@ -1,18 +1,26 @@
 # Andhra Pradesh Village Finder
 
 Self-contained map app and dataset for **Andhra Pradesh** (28 districts · 688 mandals ·
-16,355 villages).
+17,954 villages, LGD refresh of 20Sep2026).
 
 > **Live:** https://mchittineni.github.io/india-village-finder/andhra_pradesh/web/
 
 ```
 web/                 the map app; open web/index.html
-  app.js, styles.css, index.html, config.js
+  index.html, styles.css, app.js     page, styles, map + panels
+  i18n.js                            7-language UI strings + transliteration
+  nearby.js, weather.js, soil.js     on-demand village lookups
+  mandi.js, schemes.js               mandi-price / farmer-scheme snapshot loaders
+  config.js                          generated per-state config (VF_CONFIG)
   data/
     regions.json     districts + mandals (+ village counts) for the map
     villages.json    compact village list used for search
     meta.json        provenance, counts, live-LGD verification result
+    coords.json      approximate village points (GeoNames, where confident)
+    names.json, names_translit.json, regions_native.json   native-script names
     districts.geojson, mandals.geojson   simplified boundary polygons
+    (parcels_index.json, village_points.json, boundary_bounds.json are overlaid
+     from data/* branches at deploy time)
 data/
   andhra_pradesh_villages.csv   flat export: one row per village
 ```
