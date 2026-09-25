@@ -1,6 +1,6 @@
 # Cadastral (land-parcel) layer: data hosting
 
-The Andhra Pradesh, Telangana and Karnataka cadastral layers render individual
+The cadastral layers of all five states render individual
 land parcels (with survey numbers) from per-state **PMTiles** archives, streamed
 to the browser via HTTP **range requests**; the client only downloads the tiles
 for the current view (tens of KB), never the whole file.
@@ -36,12 +36,13 @@ the bucket's public `r2.dev` origin. The mirror runs in CI; see below.
 
 ## Mirror via CI (primary path)
 
-`.github/workflows/mirror-cadastrals.yml` mirrors **all three states** from the
+`.github/workflows/mirror-cadastrals.yml` mirrors **all five states** from the
 upstream releases into R2 (fits the "run heavy transfers in Actions, not on a
 laptop" convention). It requires these repo **secrets**: `R2_ACCOUNT_ID`,
 `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`.
 
-- **Matrix, per state.** Each state (`andhra-pradesh`, `telangana`, `karnataka`)
+- **Matrix, per state.** Each state (`andhra-pradesh`, `telangana`, `karnataka`,
+  `tamil-nadu`, `kerala`)
   is an independent matrix leg (`fail-fast: false`), so one state's outage never
   cancels the others. Manual dispatch can target one state via the **only_state**
   input or all of them.
@@ -63,7 +64,7 @@ laptop" convention). It requires these repo **secrets**: `R2_ACCOUNT_ID`,
 
 1. **Create a bucket**, e.g. `village-finder-cadastrals`, and set the four secrets.
 2. **Run the workflow** (Actions → mirror-cadastrals → Run workflow, `only_state:
-all`, `force: true` the first time) to upload all three PMTiles.
+all`, `force: true` the first time) to upload all five PMTiles.
 3. **Expose it publicly**: enable the bucket's **public r2.dev** URL (R2 →
    bucket → Settings → Public access), or attach a **custom domain**. This gives
    an origin like `https://pub-<hash>.r2.dev`.
