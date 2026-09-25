@@ -16,7 +16,7 @@
       :root {
         --ink: #0f172a;
         --ink2: #475569;
-        --ink3: #94a3b8;
+        --ink3: #64748b;
         --line: #e6e8ec;
         --ap: #1f6feb;
         --tg: #0f9d58;
@@ -65,7 +65,7 @@
         margin: 0 0 6px;
       }
       .total {
-        font-size: 0.95rem;
+        font-size: 1rem;
         color: var(--ink3);
         margin: 14px 0 34px;
       }
@@ -73,12 +73,19 @@
         color: var(--ink);
       }
       h2.sec {
-        font-size: 1.05rem;
+        font-size: 1.2rem;
         letter-spacing: 0.01em;
         margin: 46px 0 6px;
       }
+      h2.sec.first {
+        margin-top: 30px;
+      }
+      a:focus-visible {
+        outline: 3px solid #2563eb;
+        outline-offset: 3px;
+      }
       .sec-sub {
-        font-size: 0.92rem;
+        font-size: 0.98rem;
         color: var(--ink2);
         margin: 0 0 18px;
       }
@@ -116,13 +123,13 @@
       }
       .step p {
         margin: 0;
-        font-size: 0.88rem;
+        font-size: 0.95rem;
         color: var(--ink2);
       }
       .step .eg {
         display: block;
         margin-top: 10px;
-        font-size: 0.8rem;
+        font-size: 0.88rem;
         color: var(--ink3);
         background: #f6f7f9;
         border-radius: 8px;
@@ -204,7 +211,7 @@
         border-color: var(--kl);
       }
       .card .kicker {
-        font-size: 0.74rem;
+        font-size: 0.8rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.07em;
@@ -217,7 +224,8 @@
         font-weight: 600;
         text-transform: none;
         letter-spacing: 0;
-        font-size: 0.82rem;
+        font-size: 0.95rem;
+        color: var(--ink2);
       }
       .card h2 {
         font-size: 1.5rem;
@@ -250,14 +258,15 @@
         color: var(--kl);
       }
       .card .stat .l {
-        font-size: 0.74rem;
+        font-size: 0.8rem;
         color: var(--ink3);
         text-transform: uppercase;
         letter-spacing: 0.04em;
       }
       .card .go {
-        font-size: 0.92rem;
-        font-weight: 650;
+        font-size: 1rem;
+        font-weight: 700;
+        min-height: 44px;
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -287,8 +296,11 @@
         background: #fff;
         border: 1px solid var(--line);
         border-radius: 12px;
-        padding: 13px 15px;
-        font-size: 0.88rem;
+        padding: 14px 15px;
+        font-size: 0.95rem;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
       }
       .feat b {
         display: block;
@@ -296,17 +308,23 @@
       }
       .feat .src {
         color: var(--ink3);
-        font-size: 0.78rem;
+        font-size: 0.85rem;
       }
       .feat .ico {
-        font-size: 1.05rem;
-        margin-right: 6px;
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: #eaf2ff;
+        color: var(--ap);
       }
       .meta {
         margin-top: 46px;
         padding-top: 22px;
         border-top: 1px solid var(--line);
-        font-size: 0.86rem;
+        font-size: 0.92rem;
         color: var(--ink2);
       }
       .meta a {
@@ -339,39 +357,10 @@
         prices, weather, soil &amp; fertilizer guidance, government schemes and land parcels.
       </p>
       <p class="total" id="total">
-        <b>67,549</b> villages across five states · updated <b>01Sep2026</b> from LGD
+        <b>80,368</b> villages across five states · updated <b>20Sep2026</b> from LGD
       </p>
 
-      <h2 class="sec">How it works</h2>
-      <p class="sec-sub">Three steps, no login, works on any phone browser.</p>
-      <div class="steps">
-        <div class="step">
-          <h3>Pick your state</h3>
-          <p>
-            Open one of the five state maps below. You can switch state — or switch the whole UI
-            between 7 languages (English, తెలుగు, ಕನ್ನಡ, தமிழ், മലയാളം, हिन्दी, اردو) — from the top
-            bar at any time.
-          </p>
-        </div>
-        <div class="step">
-          <h3>Find your village</h3>
-          <p>
-            Type its name in the search box — English spellings match native-script names too — or
-            drill down district → mandal/taluk → village from the side panel.
-          </p>
-          <span class="eg">e.g. “Kondapalli”, “Vadakara”, “Hosahalli”…</span>
-        </div>
-        <div class="step">
-          <h3>Tap the village</h3>
-          <p>
-            The popup gives one-tap buttons for weather &amp; forecast, soil &amp; fertilizer, mandi
-            prices, government schemes, land parcels with survey numbers, and nearby hospitals,
-            police and offices.
-          </p>
-        </div>
-      </div>
-
-      <h2 class="sec">Choose a state</h2>
+      <h2 class="sec first">Choose your state</h2>
       <p class="sec-sub">Live counts straight from the latest LGD refresh.</p>
       <div class="cards">
         <a class="card ap" href="andhra_pradesh/web/index.html">
@@ -388,7 +377,7 @@
               <div class="l">Mandals</div>
             </div>
             <div class="stat">
-              <div class="n" id="ap-v">15,279</div>
+              <div class="n" id="ap-v">17,954</div>
               <div class="l">Villages</div>
             </div>
           </div>
@@ -405,11 +394,11 @@
               <div class="l">Districts</div>
             </div>
             <div class="stat">
-              <div class="n" id="tg-m">616</div>
+              <div class="n" id="tg-m">617</div>
               <div class="l">Mandals</div>
             </div>
             <div class="stat">
-              <div class="n" id="tg-v">9,293</div>
+              <div class="n" id="tg-v">11,285</div>
               <div class="l">Villages</div>
             </div>
           </div>
@@ -430,7 +419,7 @@
               <div class="l">Taluks</div>
             </div>
             <div class="stat">
-              <div class="n" id="ka-v">26,134</div>
+              <div class="n" id="ka-v">30,753</div>
               <div class="l">Villages</div>
             </div>
           </div>
@@ -451,7 +440,7 @@
               <div class="l">Taluks</div>
             </div>
             <div class="stat">
-              <div class="n" id="tn-v">15,177</div>
+              <div class="n" id="tn-v">18,710</div>
               <div class="l">Villages</div>
             </div>
           </div>
@@ -480,42 +469,202 @@
         </a>
       </div>
 
+      <h2 class="sec">How it works</h2>
+      <p class="sec-sub">Three steps, no login, works on any phone browser.</p>
+      <div class="steps">
+        <div class="step">
+          <h3>Pick your state</h3>
+          <p>
+            Open one of the five state maps above. You can switch state — or switch the whole UI
+            between 7 languages (English, తెలుగు, ಕನ್ನಡ, தமிழ், മലയാളം, हिन्दी, اردو) — from the top
+            bar at any time.
+          </p>
+        </div>
+        <div class="step">
+          <h3>Find your village</h3>
+          <p>
+            Type its name in the search box — English spellings match native-script names too —
+            press <b>Near me</b> to jump to where you are, or tap district → mandal/taluk → village.
+          </p>
+          <span class="eg">e.g. “Kondapalli”, “Vadakara”, “Hosahalli”…</span>
+        </div>
+        <div class="step">
+          <h3>Tap what you need</h3>
+          <p>
+            Big buttons on every village open weather &amp; forecast, soil &amp; fertilizer, mandi
+            prices, government schemes, land parcels with survey numbers, and nearby hospitals,
+            police and offices. Use <b>Share</b> to send the village link to anyone.
+          </p>
+        </div>
+      </div>
+
       <h2 class="sec">What you get on every village</h2>
       <p class="sec-sub">
         All from free, open government and community data — refreshed automatically.
       </p>
       <div class="feats">
         <div class="feat">
-          <b><span class="ico">🌦️</span>Weather &amp; 7-day forecast</b>
-          <span class="src">Open-Meteo agromet model</span>
+          <span class="ico" aria-hidden="true"
+            ><svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M8.5 12.5a3.5 3.5 0 1 1 6.3-2.1" />
+              <path d="M17.5 20H9a4 4 0 1 1 .8-7.9A5 5 0 0 1 19 14a3 3 0 0 1-1.5 6Z" /></svg
+          ></span>
+          <div>
+            <b>Weather &amp; 7-day forecast</b>
+            <span class="src">Open-Meteo agromet model</span>
+          </div>
         </div>
         <div class="feat">
-          <b><span class="ico">🧪</span>Soil &amp; fertilizer profile</b>
-          <span class="src">Soil type, pH, N-P-K guide — ISRIC SoilGrids</span>
+          <span class="ico" aria-hidden="true"
+            ><svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 20V10" />
+              <path d="M12 10c0-3.3 2.7-6 6-6 0 3.3-2.7 6-6 6Z" />
+              <path d="M12 13c0-2.8-2.2-5-5-5 0 2.8 2.2 5 5 5Z" />
+              <path d="M7 20h10" /></svg
+          ></span>
+          <div>
+            <b>Soil &amp; fertilizer profile</b>
+            <span class="src">Soil type, pH, N-P-K guide — ISRIC SoilGrids</span>
+          </div>
         </div>
         <div class="feat">
-          <b><span class="ico">🌾</span>Mandi prices, daily</b>
-          <span class="src">Agmarknet via data.gov.in</span>
+          <span class="ico" aria-hidden="true"
+            ><svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 3v18h18" />
+              <path d="m7 15 4-4 3 3 5-6" /></svg
+          ></span>
+          <div>
+            <b>Mandi prices</b>
+            <span class="src">Agmarknet via data.gov.in, weekly snapshot</span>
+          </div>
         </div>
         <div class="feat">
-          <b><span class="ico">🏛️</span>Schemes for farmers</b>
-          <span class="src">Central + state — myScheme</span>
+          <span class="ico" aria-hidden="true"
+            ><svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 21h18" />
+              <path d="M5 21V10M19 21V10M9.5 21V10M14.5 21V10" />
+              <path d="M12 3 3 8h18Z" /></svg
+          ></span>
+          <div>
+            <b>Schemes for farmers</b>
+            <span class="src">Central + state — myScheme</span>
+          </div>
         </div>
         <div class="feat">
-          <b><span class="ico">📐</span>Land parcels &amp; survey numbers</b>
-          <span class="src">State cadastres + FMB portal links</span>
+          <span class="ico" aria-hidden="true"
+            ><svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M3 12h18M12 3v18" /></svg
+          ></span>
+          <div>
+            <b>Land parcels &amp; survey numbers</b>
+            <span class="src">State cadastres + FMB portal links</span>
+          </div>
         </div>
         <div class="feat">
-          <b><span class="ico">🏥</span>Nearby services</b>
-          <span class="src">Hospitals, police, offices — OpenStreetMap</span>
+          <span class="ico" aria-hidden="true"
+            ><svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z" />
+              <path d="M12 7v5M9.5 9.5h5" /></svg
+          ></span>
+          <div>
+            <b>Nearby services</b>
+            <span class="src">Hospitals, police, offices — OpenStreetMap</span>
+          </div>
         </div>
         <div class="feat">
-          <b><span class="ico">🗣️</span>7-language interface</b>
-          <span class="src">Native-script village names included</span>
+          <span class="ico" aria-hidden="true"
+            ><svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 5h9M8.5 3v2M6 5c0 4 3 7 6 8M11 5c0 3-2.5 6.5-6 8" />
+              <path d="m13 21 4-9 4 9M14.5 18h5" /></svg
+          ></span>
+          <div>
+            <b>7-language interface</b>
+            <span class="src">Native-script village names included</span>
+          </div>
         </div>
         <div class="feat">
-          <b><span class="ico">⬇️</span>Download the data</b>
-          <span class="src">CSV per state, on every release</span>
+          <span class="ico" aria-hidden="true"
+            ><svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 3v12M7 10l5 5 5-5" />
+              <path d="M5 21h14" /></svg
+          ></span>
+          <div>
+            <b>Download the data</b>
+            <span class="src">CSV per state, on every release</span>
+          </div>
         </div>
       </div>
 
