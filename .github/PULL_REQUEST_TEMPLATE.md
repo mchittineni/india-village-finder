@@ -16,8 +16,11 @@ Closes #<!-- issue number, if any -->
 
 ## Checklist
 
-- [ ] I ran the tests locally: `python scraper/tests` (`pytest -v`) and they pass
+- [ ] I ran the tests locally: `cd scraper && ./.venv/bin/python -m pytest tests -v` and they pass
+- [ ] Formatting passes: `npm run format:check` (Prettier + Black)
 - [ ] UI changes were made in **`scraper/web_template/`** (not the generated `*/web/` copies)
+- [ ] New UI strings are in **all seven** languages in `i18n.js`, and new controls meet the
+      accessibility floor (≥44 px tap target, visible focus, translated `aria-label`)
 - [ ] I regenerated outputs if needed (`python scraper/pipeline.py --offline --no-verify`)
 - [ ] Docs updated where relevant (README / folder READMEs)
 - [ ] My changes follow the project's data licence (GODL-India) and code licence (MIT)
