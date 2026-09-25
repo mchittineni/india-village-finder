@@ -46,15 +46,15 @@ modern web interface or API.
 > Village).
 > More states and a public API are on the roadmap.
 
-|                  | Andhra Pradesh | Telangana |  Karnataka | Tamil Nadu |    Kerala |
-| ---------------- | -------------: | --------: | ---------: | ---------: | --------: |
-| Districts        |             28 |        33 |         31 |         38 |        14 |
-| Mandals / Taluks |            688 |       617 |        240 |        317 |        78 |
-| **Villages**     |     **16,355** | **9,074** | **26,198** | **14,711** | **1,357** |
+|                  | Andhra Pradesh |  Telangana |  Karnataka | Tamil Nadu |    Kerala |
+| ---------------- | -------------: | ---------: | ---------: | ---------: | --------: |
+| Districts        |             28 |         33 |         31 |         38 |        14 |
+| Mandals / Taluks |            688 |        617 |        240 |        317 |        78 |
+| **Villages**     |     **17,954** | **11,285** | **30,753** | **18,710** | **1,666** |
 
 _(Counts come from the latest LGD refresh via the data.gov.in API; the automated
 pipeline keeps them current. Karnataka's, Tamil Nadu's and Kerala's sub-districts
-are **Taluks**; AP/Telangana's are **Mandals**. Kerala's ~1.4k revenue villages
+are **Taluks**; AP/Telangana's are **Mandals**. Kerala's ~1.7k revenue villages
 are few and large by design.)_
 
 ---
@@ -63,7 +63,21 @@ are few and large by design.)_
 
 - **A visual map** for each state districts shaded by how many villages they
   contain (a _choropleth_). Click a district to zoom into its mandals; click a
-  mandal to list its villages; click a village to pin it.
+  mandal to list its villages; pick a village to pin it and open its **village
+  detail view**: big one-tap tiles for weather, soil & fertilizer, mandi prices,
+  government schemes, nearby services, land parcels, directions and share.
+- **Built for anyone, on any phone** on screens up to 820 px wide the map sits on top
+  with the list below; mandi, schemes and parcel lists open as bottom sheets. Tap
+  targets are at least 44 px, text is 16 px, muted text meets WCAG AA contrast, every
+  control has a visible keyboard focus ring and motion is reduced when the device asks.
+  A short **"How to find your village"** guide greets first-time visitors.
+- **Near me** one tap uses the browser's location (never sent anywhere) to open the
+  mandal/taluk you're standing in, pre-selecting the closest village with a known point.
+- **Shareable village links** every village has its own URL (`…/web/index.html#v=<LGD
+code>`); the **Share** tile uses the phone's share sheet (WhatsApp etc.) or copies it.
+- **Street or satellite base map** OpenStreetMap by default (local-script village and
+  road names), or Esri satellite imagery to recognise your own fields; the choice is
+  remembered.
 - **Instant search** across every village, mandal and district or by **pincode**.
 - **Multilingual UI** switch the interface between **English, Telugu, Kannada, Tamil,
   Malayalam, Hindi and Urdu** (Urdu right-to-left). Place names are also rendered in the chosen
@@ -108,22 +122,22 @@ are few and large by design.)_
   official land-records portal (BhuNaksha AP / Bhu Bharati TG / Bhoomi KA) where the
   FMB sketch and sub-division ladder live. (None of the portals accepts URL prefill,
   so the copied details are re-entered there.)
-- **Nearby civic services** from a pinned village, look up the closest hospitals and
+- **Nearby civic services** from the village detail view, look up the closest hospitals and
   clinics, government offices, and police/post-office/fire stations, with distance and a
   maps link. Fetched on demand from **[OpenStreetMap](https://www.openstreetmap.org)**
   (rural coverage is uneven, so some villages legitimately return nothing).
-- **Agromet weather** from a pinned village, current conditions plus a 7-day
+- **Agromet weather** from the village detail view, current conditions plus a 7-day
   agricultural forecast (min/max °C, rainfall, rain probability), fetched on demand
   from the keyless **[Open-Meteo](https://open-meteo.com/)** API.
-- **Live mandi prices** the day's APMC market quotes (commodity / variety, min–max
-  and modal ₹/quintal, grouped by market) for the village's district, from the
-  Government of India's **Agmarknet** feed. A daily workflow publishes compact
-  per-state snapshots that the app fetches at runtime; a district switcher and
-  commodity search cover the whole state.
+- **Mandi prices** APMC market quotes (commodity / variety, min–max and modal
+  ₹/quintal, grouped by market) for the village's district, from the Government of
+  India's daily **Agmarknet** feed. The weekly `update-data.yml` run publishes compact
+  per-state snapshots that the app fetches at runtime (the panel shows the snapshot
+  date); a district switcher and commodity search cover the whole state.
 - **Groundwater & soil overlays** optional map layers: **groundwater prospects**
   (Bhuvan/NRSC lithology–geomorphology, classified by well depth & yield) and
   **soil type** (ISRIC SoilGrids WRB class), togglable from the layers control.
-- **Soil & fertilizer profile** from a pinned village, the point's soil type
+- **Soil & fertilizer profile** from the village detail view, the point's soil type
   (WRB group + the Indian common name black cotton / red / alluvial plus
   texture), pH and organic carbon from the SoilGrids 250 m model, with the
   all-India balanced N-P-K guideline (4:2:1) and an indicative nutrient note
@@ -131,7 +145,7 @@ are few and large by design.)_
   estimate to confirm with a Soil Health Card test.
 - **Farmer schemes & farm inputs** the government schemes a farmer can apply
   for (the state's own + Central, from the national **myScheme** platform, with
-  scheme names in all six UI languages and each entry linking to its
+  scheme names in all seven UI languages and each entry linking to its
   how-to-apply page), refreshed weekly plus a quick reference of notified
   fertilizer prices (urea MRP, NBS-subsidised DAP) with links to the official
   fertilizer-stock and Soil Health Card portals.
@@ -151,7 +165,8 @@ are few and large by design.)_
 ├── andhra_pradesh/          # self-contained Andhra Pradesh deliverable
 │   ├── data/                #   andhra_pradesh_villages.csv (one row per village)
 │   └── web/                 #   the map app (index.html, app.js, i18n.js, nearby.js,
-│       │                    #   weather.js, mandi.js, schemes.js, styles.css, config.js)
+│       │                    #   weather.js, mandi.js, schemes.js, soil.js, styles.css,
+│       │                    #   config.js)
 │       └── data/            #   regions, villages, meta, coords, names, names_translit,
 │                            #   regions_native (.json) + districts/mandals (.geojson)
 ├── telangana/               # identical structure, for Telangana
@@ -167,7 +182,7 @@ are few and large by design.)_
 │   │                        #   mandi feed URL, map overlays add a state HERE
 │   ├── pipeline.py          #   LGD data → per-state village data (JSON + CSV) + web app
 │   ├── lgd_datagov.py       #   fetches LGD data from the data.gov.in open-data API
-│   ├── fetch_mandi_prices.py #  daily Agmarknet mandi-price snapshots (data.gov.in)
+│   ├── fetch_mandi_prices.py #  Agmarknet mandi-price snapshots (data.gov.in; weekly)
 │   ├── fetch_farmer_schemes.py # weekly myScheme farmer-scheme snapshots (multilingual)
 │   ├── build_boundaries.py  #   LGD polygons → simplified per-state map shapes
 │   ├── build_boundary_tiles.py # all-state boundary polygons → tiles/boundaries.pmtiles
@@ -220,10 +235,10 @@ differs by an LGD state code (Andhra Pradesh = `28`, Telangana = `36`, Karnataka
 | Native village names (authoritative) | **LGD** `Village Name (In Local)` column (when available)                                                                                                      | The state's _own official_ spelling, kept only when genuinely in the state's script. The current data.gov.in LGD feed doesn't include this column, so it contributes nothing today; the path stays first in priority for when a source that publishes it is wired in.                                                                                                        |
 | Native names (neural)                | **AI4Bharat IndicXlit**, generated offline                                                                                                                     | A trained English→Indic model produces the native name for every village/region (`names_translit.json`, `regions_native.json`) — the primary source of native names today. Clearly _approximate_ but markedly better than the rule engine; measured against LGD gold via `enrich_native_names.py --eval`. Committed as plain JSON, so CI and the browser never load PyTorch. |
 | Village coordinates                  | [GeoNames](https://www.geonames.org/) (name match, sub-district-validated)                                                                                     | Best-effort _approximate_ points; only kept when close to the village's mandal/taluk, so coverage is partial (~8–17%).                                                                                                                                                                                                                                                       |
-| Nearby civic services                | [OpenStreetMap](https://www.openstreetmap.org/copyright) via [Overpass](https://overpass-api.de/)                                                              | Live, on-demand lookup of hospitals/offices/police near a pinned village (ODbL).                                                                                                                                                                                                                                                                                             |
+| Nearby civic services                | [OpenStreetMap](https://www.openstreetmap.org/copyright) via [Overpass](https://overpass-api.de/)                                                              | Live, on-demand lookup of hospitals/offices/police near the selected village (ODbL).                                                                                                                                                                                                                                                                                         |
 | Land parcels (cadastre)              | APSAC (AP) / TRACGIS (TG) / KGIS (KA) / TNGIS (TN) / Bhuvan (KL), **CC0**, via [`ramSeraph/indian_cadastrals`](https://github.com/ramSeraph/indian_cadastrals) | Each state GIS agency's own survey-plot extract — the only open, vectorised, survey-numbered source (the agencies' live servers are token-gated).                                                                                                                                                                                                                            |
-| Mandi (APMC) prices                  | **Agmarknet**, Ministry of Agriculture & Farmers Welfare, via the [data.gov.in](https://data.gov.in/) API                                                      | The government's own daily market-arrival price feed; snapshotted per state each day by `update-mandi-prices.yml` (prices are ₹/quintal; not every mandi reports every day).                                                                                                                                                                                                 |
-| Farmer schemes                       | **[myScheme](https://www.myscheme.gov.in/)** (Digital India / NeGD)                                                                                            | The national scheme-discovery platform's own search API; the state's + Central "Agriculture, Rural & Environment" schemes, snapshotted weekly by `update-farmer-schemes.yml` with names in all six UI languages. Coverage varies by state — some state agriculture schemes aren't onboarded there yet.                                                                       |
+| Mandi (APMC) prices                  | **Agmarknet**, Ministry of Agriculture & Farmers Welfare, via the [data.gov.in](https://data.gov.in/) API                                                      | The government's own daily market-arrival price feed; snapshotted per state weekly by the `mandi-prices` job in `update-data.yml` (prices are ₹/quintal; not every mandi reports every day).                                                                                                                                                                                 |
+| Farmer schemes                       | **[myScheme](https://www.myscheme.gov.in/)** (Digital India / NeGD)                                                                                            | The national scheme-discovery platform's own search API; the state's + Central "Agriculture, Rural & Environment" schemes, snapshotted weekly by the `farmer-schemes` job in `update-data.yml` with names in all seven UI languages. Coverage varies by state — some state agriculture schemes aren't onboarded there yet.                                                   |
 | Fertilizer reference prices          | Dept. of Fertilizers notifications (curated)                                                                                                                   | No open live feed exists — iFMS/urvarak.nic.in drops connections and the Soil Health portal blocks automation — so the notified urea MRP / NBS-subsidised DAP price are curated in `config.FARM_INPUTS` per season, with links to the official portals for live stock.                                                                                                       |
 | Weather forecast                     | [Open-Meteo](https://open-meteo.com/) (CC BY 4.0)                                                                                                              | National-weather-model aggregator with an open, keyless, CORS-enabled API — fetched live by the browser, never stored.                                                                                                                                                                                                                                                       |
 | Groundwater / soil overlays          | [Bhuvan](https://bhuvan.nrsc.gov.in) (NRSC/ISRO) · [ISRIC SoilGrids](https://soilgrids.org) (CC BY 4.0)                                                        | Bhuvan's RGNDWM groundwater-prospect maps (1:50K, classified by well depth/yield) and SoilGrids' WRB soil classes, rendered as standard WMS overlays straight from the source servers.                                                                                                                                                                                       |
@@ -296,7 +311,7 @@ So the commit history doubles as an auditable, reviewed changelog of the data.
 >
 > | Branch                | Content                                               | Consumed by                                 |
 > | --------------------- | ----------------------------------------------------- | ------------------------------------------- |
-> | `data/mandi-prices`   | daily Agmarknet price snapshots                       | the app, at runtime (raw.githubusercontent) |
+> | `data/mandi-prices`   | weekly Agmarknet price snapshots                      | the app, at runtime (raw.githubusercontent) |
 > | `data/farmer-schemes` | weekly myScheme farmer-scheme snapshots               | the app, at runtime (raw.githubusercontent) |
 > | `data/boundary-tiles` | `tiles/boundaries.pmtiles` + `boundary_bounds.json`   | Pages deploys + release zips (overlay)      |
 > | `data/parcels-index`  | per-state `parcels_index.json`, `village_points.json` | Pages deploys + release zips (overlay)      |
@@ -354,7 +369,9 @@ See **[`CHANGELOG.md`](CHANGELOG.md)** for what changed in each release.
 - [ ] **Better coordinate coverage** for villages.
 - [x] **Native-script names everywhere** authoritative LGD spellings where published, a
       neural model (IndicXlit) for the rest, covering villages _and_ districts/sub-districts/state.
-- [ ] **Accessibility pass** keyboard, screen-reader and contrast.
+- [x] **Accessibility & ease of use** 44 px touch targets, WCAG AA text contrast,
+      keyboard focus ring, reduced motion, translated labels, phone-first layout.
+- [ ] **Screen-reader audit** of the map itself (region choropleth, parcel layer).
 
 Have an idea? [Open a feature request](https://github.com/mchittineni/india-village-finder/issues/new?template=feature_request.yml).
 
@@ -399,7 +416,7 @@ If you use this project in research or a product, please cite it see
   Panchayati Raj, Government of India the authoritative registry of administrative areas,
   read via the **[data.gov.in](https://data.gov.in/) open-data API**.
 - **[Agmarknet](https://agmarknet.gov.in/)** Ministry of Agriculture & Farmers
-  Welfare daily mandi (APMC market) prices, via the data.gov.in API.
+  Welfare mandi (APMC market) prices, via the data.gov.in API.
 - **[myScheme](https://www.myscheme.gov.in/)** Digital India / NeGD the national
   government-scheme discovery platform, source of the farmer-schemes panel.
 - **[@ramSeraph](https://github.com/ramSeraph)** the
@@ -408,13 +425,14 @@ If you use this project in research or a product, please cite it see
   KGIS extracts) this project builds on.
 - **[GeoNames](https://www.geonames.org/)** populated-place coordinates.
 - **[OpenStreetMap](https://www.openstreetmap.org/copyright)** contributors (ODbL),
-  queried via the [Overpass API](https://overpass-api.de/) for nearby civic services
-  and native place names.
+  the default base map, and queried via the [Overpass API](https://overpass-api.de/)
+  for nearby civic services and native place names.
+- **[Esri World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9)**
+  (Esri, Maxar, Earthstar Geographics) the satellite base map.
 - **[Open-Meteo](https://open-meteo.com/)** (CC BY 4.0) village weather forecasts.
 - **[Bhuvan](https://bhuvan.nrsc.gov.in)** (NRSC/ISRO) groundwater-prospect map
   overlay; **[ISRIC SoilGrids](https://soilgrids.org)** (CC BY 4.0) soil-class overlay.
 - Built with **[Leaflet](https://leafletjs.com)**, **[MapLibre GL](https://maplibre.org)** +
-  **[PMTiles](https://protomaps.com/docs/pmtiles)** (cadastre), **[CARTO](https://carto.com)**
-  basemaps and **[Fuse.js](https://fusejs.io)**.
+  **[PMTiles](https://protomaps.com/docs/pmtiles)** (cadastre) and **[Fuse.js](https://fusejs.io)**.
 
 Provided for educational and research use.
