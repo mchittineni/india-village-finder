@@ -15,7 +15,7 @@
 
     <link rel="preconnect" href="https://unpkg.com" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-    <link rel="preconnect" href="https://a.basemaps.cartocdn.com" />
+    <link rel="preconnect" href="https://tile.openstreetmap.org" />
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -108,31 +108,84 @@
               </svg>
               <select id="lang-select" aria-label="Language"></select>
             </label>
-            <button id="collapse-btn" class="icon-btn" title="Hide panel" aria-label="Hide panel">
-              ‹
+            <button
+              id="collapse-btn"
+              class="icon-btn collapse-btn"
+              title="Hide panel"
+              aria-label="Hide panel"
+              aria-expanded="true"
+              aria-controls="panel"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
             </button>
           </div>
         </header>
 
-        <div class="search-wrap">
-          <svg class="search-ico" viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <path
-              d="M15.8 15.8 21 21M18 10.5A7.5 7.5 0 1 1 3 10.5a7.5 7.5 0 0 1 15 0Z"
+        <div class="search-row">
+          <div class="search-wrap">
+            <svg
+              class="search-ico"
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M15.8 15.8 21 21M18 10.5A7.5 7.5 0 1 1 3 10.5a7.5 7.5 0 0 1 15 0Z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <input
+              id="search"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              enterkeyhint="search"
+              aria-label="Search any village, mandal or district"
+              placeholder="Search any village, mandal or district…"
+            />
+            <button
+              id="clear-search"
+              class="icon-btn hidden"
+              title="Clear"
+              aria-label="Clear search"
+            >
+              ×
+            </button>
+          </div>
+          <button id="near-me" class="near-me" type="button">
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-            />
-          </svg>
-          <input
-            id="search"
-            type="search"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="Search any village, mandal or district…"
-          />
-          <button id="clear-search" class="icon-btn hidden" title="Clear" aria-label="Clear search">
-            ×
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="3.5" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+              <circle cx="12" cy="12" r="7.5" />
+            </svg>
+            <span id="near-me-label">Near me</span>
           </button>
         </div>
 
@@ -253,7 +306,7 @@
           <div id="sch-foot" class="mp-foot"></div>
         </aside>
 
-        <div id="toast" class="toast hidden"></div>
+        <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
         <div id="map-loading" class="map-loading">Loading map…</div>
       </main>
     </div>
