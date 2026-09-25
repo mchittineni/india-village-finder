@@ -27,7 +27,6 @@ User-Agent, and the caller (fetch.py) adds rate limiting + retries.
 from __future__ import annotations
 
 import re
-import time
 import json
 from typing import Any
 

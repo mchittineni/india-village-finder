@@ -13,8 +13,8 @@ fetch localized scheme names for every UI language the app ships (the API
 serves en/hi/te/kn/ta/ur and more via ``lang``).
 
 The output is intentionally NOT committed to main: like the mandi snapshot it
-is regenerable upstream data, so .github/workflows/update-farmer-schemes.yml
-publishes the JSONs weekly to the dedicated `data/farmer-schemes` branch, which
+is regenerable upstream data, so the `farmer-schemes` job of
+.github/workflows/update-data.yml publishes the JSONs weekly to the dedicated `data/farmer-schemes` branch, which
 the app fetches at runtime via raw.githubusercontent.com (CORS-enabled).
 
 Exit codes follow the shared skip contract: 75 (EX_TEMPFAIL) when myScheme is

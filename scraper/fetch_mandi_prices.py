@@ -10,8 +10,8 @@ Each record: state / district / market / commodity / variety / grade /
 arrival_date + min/max/modal price in ₹ per quintal.
 
 The output is intentionally NOT committed to main: prices churn every day, so
-.github/workflows/update-mandi-prices.yml publishes the JSONs to the dedicated
-`data/mandi-prices` branch, which the app fetches at runtime via
+the `mandi-prices` job of .github/workflows/update-data.yml (weekly) publishes
+the JSONs to the dedicated `data/mandi-prices` branch, which the app fetches at runtime via
 raw.githubusercontent.com (CORS-enabled). Rows ship as arrays (see `columns`)
 to keep the payload small; TN alone is ~7k records on a busy day.
 

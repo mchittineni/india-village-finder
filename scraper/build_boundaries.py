@@ -29,7 +29,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import subprocess
 import tempfile
 import datetime as dt
