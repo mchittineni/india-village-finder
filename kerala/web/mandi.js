@@ -1,7 +1,7 @@
 /** =====================================================================
    Village Finder — live mandi (APMC market) commodity prices
-   Loads the state's daily Agmarknet price snapshot, published by the
-   update-mandi-prices workflow to the repo's `data/mandi-prices` branch as
+   Loads the state's Agmarknet price snapshot, published weekly by the
+   mandi-prices job of update-data.yml to the repo's `data/mandi-prices` branch as
    one compact JSON per state (columns + row arrays, ₹/quintal), and serves
    it grouped by district for the prices panel.
 
@@ -18,7 +18,7 @@
    every day.
 
    @module web/mandi
-   @file Daily Agmarknet mandi-price snapshot loader/grouper, exposed as
+   @file Agmarknet mandi-price snapshot loader/grouper, exposed as
    `window.VF_MANDI`.
    ===================================================================== */
 /**
