@@ -32,7 +32,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-pipeline
         with:
-          node-version: "22"
+          node-version: "24"
           requirements-file: scraper/requirements-dev.txt
           npm-install: "true"
 
