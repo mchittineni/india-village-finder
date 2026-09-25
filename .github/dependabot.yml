@@ -4,7 +4,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "semiannually"
     labels: ["ci", "dependencies"]
     commit-message:
       prefix: "ci"
@@ -13,7 +13,7 @@ updates:
   - package-ecosystem: "pip"
     directory: "/scraper"
     schedule:
-      interval: "weekly"
+      interval: "semiannually"
     labels: ["scraper", "dependencies"]
     commit-message:
       prefix: "build"
