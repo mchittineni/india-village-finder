@@ -4,17 +4,17 @@ This is the generated reference for the browser application that powers each sta
 map (`scraper/web_template/`, copied verbatim into every `<state>/web/`). It is a
 dependency-free, vanilla-JS app loaded directly by `index.html`; there is no build step.
 
-It is organised as three modules, each an IIFE that publishes a single global:
+It is organised as seven modules, each an IIFE that publishes a single global:
 
-| Module                                   | Global              | Responsibility                                                                                                                         |
-| ---------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| [`web/app`](module-web_app.html)         | (entry point)       | Loads the JSON/GeoJSON data, renders the Leaflet map, the District → Mandal/Taluk → Village drill-down, search and the village popups. |
-| [`web/i18n`](module-web_i18n.html)       | `window.VF_I18N`    | UI strings in seven languages and the rule-based English→Indic place-name transliteration engine.                                      |
-| [`web/nearby`](module-web_nearby.html)   | `window.VF_NEARBY`  | On-demand OpenStreetMap (Overpass) lookup of civic amenities near a pinned village.                                                    |
-| [`web/weather`](module-web_weather.html) | `window.VF_WEATHER` | Current conditions + 7-day agromet forecast for a pinned village (Open-Meteo).                                                         |
-| [`web/mandi`](module-web_mandi.html)     | `window.VF_MANDI`   | Daily mandi (APMC) commodity prices for the village's district, from the data-branch snapshot.                                         |
-| [`web/schemes`](module-web_schemes.html) | `window.VF_SCHEMES` | Farmer-scheme snapshot (myScheme) loading, filtering and localisation helpers.                                                         |
-| [`web/soil`](module-web_soil.html)       | `window.VF_SOIL`    | Per-village soil profile via the ISRIC SoilGrids point API (classification + properties).                                              |
+| Module                                   | Global              | Responsibility                                                                                                                                                         |
+| ---------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`web/app`](module-web_app.html)         | (entry point)       | Loads the JSON/GeoJSON data, renders the Leaflet map, the District → Mandal/Taluk → Village drill-down, search, the village detail view, Near me and `#v=` deep links. |
+| [`web/i18n`](module-web_i18n.html)       | `window.VF_I18N`    | UI strings in seven languages and the rule-based English→Indic place-name transliteration engine.                                                                      |
+| [`web/nearby`](module-web_nearby.html)   | `window.VF_NEARBY`  | On-demand OpenStreetMap (Overpass) lookup of civic amenities near the selected village.                                                                                |
+| [`web/weather`](module-web_weather.html) | `window.VF_WEATHER` | Current conditions + 7-day agromet forecast for the selected village (Open-Meteo).                                                                                     |
+| [`web/mandi`](module-web_mandi.html)     | `window.VF_MANDI`   | Mandi (APMC) commodity prices for the village's district, from the data-branch snapshot.                                                                               |
+| [`web/schemes`](module-web_schemes.html) | `window.VF_SCHEMES` | Farmer-scheme snapshot (myScheme) loading, filtering and localisation helpers.                                                                                         |
+| [`web/soil`](module-web_soil.html)       | `window.VF_SOIL`    | Per-village soil profile via the ISRIC SoilGrids point API (classification + properties).                                                                              |
 
 The per-state behaviour (which state, accent colour, language, Mandal vs Taluk) is
 injected at load time as `window.VF_CONFIG` from each state's generated `config.js`;
