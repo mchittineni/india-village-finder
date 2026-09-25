@@ -4,6 +4,11 @@ This project is a **static website plus a data pipeline** there is no server,
 login, or user data. The realistic security surface is small, but we still take
 reports seriously.
 
+Privacy notes for the map app: the **Near me** button reads the browser's
+location only after you allow it, uses it entirely on your device (to find your
+mandal/taluk) and never sends it anywhere. `localStorage` holds only UI
+preferences (language, base map, parcel-layer toggle).
+
 ## Supported versions
 
 The deployed site always tracks the latest commit on `main`. Only `main` is

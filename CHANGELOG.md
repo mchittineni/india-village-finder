@@ -12,6 +12,102 @@ release attaches downloadable datasets; see [Releases][releases].
 
 ## [Unreleased]
 
+### Added
+
+- **Village detail view**: selecting a village opens it in the side panel with
+  large one-tap tiles: Weather & forecast, Soil & fertilizer, Mandi prices,
+  Govt schemes, Find nearby services, Show land parcels, Directions (Google
+  Maps, only when the village has a precise point) and Share. Results open in
+  place below the tiles; the map popup is now an info-only label.
+- **Near me**: a button beside search uses browser geolocation (never sent
+  anywhere) to find the mandal/taluk you're in (point-in-polygon on
+  `mandals.geojson`), pre-selects the closest village with a known point and
+  drops a "you are here" dot.
+- **Shareable village links**: `#v=<LGD village code>` opens that village; the
+  hash follows the selection via `history.replaceState`, and the Share tile uses
+  the Web Share API or copies the link.
+- **Satellite base map** (Esri World Imagery) alongside the street map in the
+  layers control; the choice is remembered (`localStorage.vf_base`).
+- **"How to find your village"** help card on each state's first screen.
+- 15 UI strings in all seven languages (`near_me`, `locating`, `loc_denied`,
+  `loc_unavailable`, `loc_outside`, `help_title`, `help_1`–`help_3`,
+  `vd_tools`, `directions`, `share`, `link_copied`, `map_street`,
+  `map_satellite`).
+
+### Changed
+
+- **Phone layout** (≤820 px): the map sits on top (40dvh) with the list below
+  instead of the panel covering the map; the collapse button toggles a bigger
+  map; mandi / schemes / parcel lists open as bottom sheets; state chips,
+  breadcrumb and footer hide once you drill in.
+- **Accessibility**: ≥44 px touch targets, 16 px base text (search no longer
+  zooms on iOS), muted text raised to `#64748b` for WCAG AA contrast, a global
+  `:focus-visible` ring, `prefers-reduced-motion` support, translated
+  `aria-label`s and a `role="status"` toast.
+- The selected mandal is drawn as an outline with a see-through fill so the
+  base map's village names show inside it; the state chips scroll on one line.
+- **Landing page**: the state picker now comes before "How it works", feature
+  icons are inline SVG instead of emoji, and muted text meets AA contrast.
+- Weather, soil and nearby lookups share one loader (`loadInto`) with a single
+  loading / tap-to-retry path.
+
+### Fixed
+
+- **Blank base map**: CARTO's keyless `light_all` tiles now return an "API key
+  required" image, so the map background was empty on the live site. The
+  default base map is now OpenStreetMap's standard tiles.
+
+### Removed
+
+- Dead popup-era code: the trigger-button handling in the weather / soil /
+  nearby loaders, unused CSS (`.badge*`, `.vpop-nb`, `.vpop-wx`,
+  `.vpop-parcels-btn`, popup RTL rules, `--radius`), four unused i18n keys
+  (`rural`, `urban`, `villages_per_area`, `loading_data`), and in the pipeline
+  two unused imports plus the unused `config.CODE_BY_SLUG` lookup.
+
+### Documentation
+
+- README, architecture notes, API intro, cadastral-hosting guide, state READMEs,
+  contributing guide, PR template and security policy updated for the new UI;
+  stale references to the retired `update-mandi-prices.yml` /
+  `update-farmer-schemes.yml` workflows now point at the `mandi-prices` /
+  `farmer-schemes` jobs of `update-data.yml` (which snapshot weekly, not daily);
+  language count corrected to seven; cadastre docs now cover all five states.
+
+## [1.5.18]; 2026-09-20
+
+Covers the automated releases v1.5.3–v1.5.18, which were published by
+`release.yml` without changelog entries. Most were weekly LGD data refreshes
+(village counts now AP 17,954 · TG 11,285 · KA 30,753 · TN 18,710 · KL 1,666 as
+of 20Sep2026) and weekly IndicXlit native-name regenerations. Notable changes:
+
+### Added
+
+- Staged progressive loading: districts paint first (Stage 1) while villages,
+  mandal polygons and sidecars stream in the background (Stage 2), plus a Cache
+  Storage layer for return visits (`9157ae3`, landing `47c9afb`).
+- Deterministic `(norm(name), village_code)` ordering and persistent master
+  sidecars (`coords_master.json`, `names_translit_master.json`) so verified
+  points and names are never wiped by a refresh.
+
+### Changed
+
+- One weekly `update-data.yml` publishes village data (reviewed PR), mandi
+  prices and farmer schemes; boundary tiles, parcel indexes, cadastral mirrors
+  and OSM name seeds now run concurrently after it finishes (#90, #91).
+- CI actions bumped (checkout, cache, labeler, stale, action-gh-release,
+  deploy-pages) and the CI Node version pinned.
+
+### Fixed
+
+- Live-site village list rendering (#90); `transliterate_batch` module export
+  and a guarded data.gov import in the scraper.
+
+### Security
+
+- Landing-page village total rendered with DOM text nodes instead of HTML, and
+  the template's `esc()` hardened.
+
 ## [1.5.2]; 2026-07-15
 
 ### Changed
@@ -448,7 +544,8 @@ Source` column recording which. Generated via the shared UI engine
 - Community-health files: Contributing guide, Code of Conduct, Security policy,
   and issue / pull-request templates.
 
-[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.5.2...HEAD
+[Unreleased]: https://github.com/mchittineni/india-village-finder/compare/v1.5.18...HEAD
+[1.5.18]: https://github.com/mchittineni/india-village-finder/compare/v1.5.2...v1.5.18
 [1.5.2]: https://github.com/mchittineni/india-village-finder/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/mchittineni/india-village-finder/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/mchittineni/india-village-finder/compare/v1.4.2...v1.5.0

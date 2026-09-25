@@ -41,8 +41,15 @@ python3 -m venv .venv
   reviewed PRs to `main`; regenerable artifacts (boundary tiles, parcel indexes,
   OSM name seeds, mandi prices) are published to dedicated `data/*` branches and
   overlaid at deploy/build time; see the README's review-flow section.
-- Preview locally: `python3 -m http.server 8777` from the repo root, then open
-  `http://localhost:8777/`.
+- **UI strings** go through `t()`: add every new key to **all seven** languages in
+  `scraper/web_template/i18n.js` (`tests/test_i18n_parity.py` enforces this).
+- **Accessibility floor** for new UI: ≥44 px tap targets, 16 px text, AA contrast,
+  a visible `:focus-visible` state, translated `aria-label`s, inline SVG icons (no
+  emoji as icons), and it must work at 390 px wide.
+- **Formatting**: run `npm run format` (Prettier + Black); CI fails on
+  `prettier --check`.
+- Preview locally: `python3 scripts/serve.py` from the repo root (supports HTTP range
+  requests for the parcel layer), then open `http://localhost:8000/`.
 
 ### Pull requests
 
@@ -59,7 +66,7 @@ python3 -m venv .venv
 
 Look for [`good first issue`](../../issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 and [`help wanted`](../../issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) labels.
-Ideas: adding a new state, improving village coordinate coverage, accessibility, or a public API.
+Ideas: adding a new state, improving village coordinate coverage, a screen-reader pass over the map layers, or a public API.
 
 ## Code of conduct
 
