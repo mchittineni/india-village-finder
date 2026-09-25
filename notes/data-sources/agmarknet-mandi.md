@@ -11,7 +11,8 @@ verified: 2026-07-13
 - Same `DATA_GOV_KEY` + custom-UA plumbing as [[lgd-datagov]].
 - Volume: ~1.5–7k rows/state/day (TN heaviest); ₹/quintal; not every mandi
   reports every day.
-- Published daily to `data/mandi-prices` (flat, force-pushed) →
+- Published weekly (the `mandi-prices` job of `update-data.yml`) to
+  `data/mandi-prices` (flat, force-pushed) →
   fetched by the app at runtime ([[data-branches]]).
 - **District names differ from LGD** ("Chittor" vs "Chittoor",
   "Dr.B.R.A.Konaseema" vs "Dr. B.R. Ambedkar Konaseema") `mandi.js`
