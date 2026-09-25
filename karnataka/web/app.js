@@ -358,9 +358,13 @@
   var dByCode = {},
     mByCode = {};
   var villagesByMandal = [];
+  var villageByCode = {}; // { lgdCode: VillageRow } — for deep links + "Near me"
+  var meMarker = null; // "you are here" dot from the Near-me lookup
+  // A shared #v=<code> link, captured before the first render resets the hash.
+  var pendingHash = location.hash;
   var dBreaks = [],
     fuse = null;
-  var map, dLayer, mLayer, marker;
+  var map, dLayer, mLayer, marker, baseLayers;
   var cadLayer = null, // MapLibre-GL cadastral (land-parcel) overlay, or null
     cadOn = false, // whether the parcel layer is currently toggled on
     cadPopup = null, // Leaflet popup for a clicked parcel
@@ -506,6 +510,8 @@
         setTimeout(buildFuse, 120);
       }
 
+      // A shared link (#v=<LGD code>) opens straight onto that village.
+      if (openFromHash()) return;
       // If user drilled into a mandal while Stage 2 was in-flight, populate its village list
       if (view.level === "mandal" && view.m) {
         renderMandalPanel(view.m);
@@ -550,9 +556,15 @@
     if (srcHref && CFG.source) srcHref.href = CFG.source.url;
 
     var s = $("#search");
-    if (s) s.placeholder = t("search_ph");
+    if (s) {
+      s.placeholder = t("search_ph");
+      s.setAttribute("aria-label", t("search_ph"));
+    }
     var cb = $("#collapse-btn");
-    if (cb) cb.title = t("hide_panel");
+    if (cb) {
+      cb.title = t($("#app").classList.contains("collapsed") ? "show_panel" : "hide_panel");
+      cb.setAttribute("aria-label", cb.title);
+    }
     var ss = $("#show-sidebar");
     if (ss) ss.title = t("show_panel");
     var cs = $("#clear-search");
@@ -563,6 +575,8 @@
     if (issL) issL.textContent = t("report_issue");
     var srcLink = $("#source-link");
     if (srcLink) srcLink.textContent = t("source");
+    var nb = $("#near-me-label");
+    if (nb) nb.textContent = t("near_me");
     var lw = $("#lang-wrap");
     if (lw) lw.title = t("language");
     var ml = $("#map-loading");
@@ -616,7 +630,7 @@
     if (inSearch) {
       runSearch($("#search").value);
     }
-    if (view.level === "mandal" && view.m) selectMandal(view.m);
+    if (view.level === "mandal" && view.m) selectMandal(view.m, view.v ? view.v[2] : undefined);
     else if (view.level === "district" && view.d) selectDistrict(view.d);
     else showDistrictView(false);
     if (inSearch) runSearch($("#search").value);
@@ -661,17 +675,41 @@
    * @returns {void}
    */
   function wireChrome() {
-    var app = $("#app");
+    // On phones the same button toggles between "map + list" and "big map",
+    // since the panel never fully disappears there (the header stays docked).
     $("#collapse-btn").onclick = function () {
-      app.classList.add("collapsed");
-      $("#show-sidebar").classList.remove("hidden");
-      setTimeout(resizeMap, 320);
+      setCollapsed(!$("#app").classList.contains("collapsed"));
     };
     $("#show-sidebar").onclick = function () {
-      app.classList.remove("collapsed");
-      $("#show-sidebar").classList.add("hidden");
-      setTimeout(resizeMap, 320);
+      setCollapsed(false);
     };
+    var nb = $("#near-me");
+    if (nb) {
+      if (!("geolocation" in navigator)) nb.classList.add("hidden");
+      nb.onclick = nearMe;
+    }
+    window.addEventListener("hashchange", openFromHash);
+  }
+  /**
+   * Collapse / expand the side panel and keep the toggle's label in sync.
+   * @param {boolean} on  Whether the panel should be collapsed.
+   * @returns {void}
+   */
+  function setCollapsed(on) {
+    $("#app").classList.toggle("collapsed", on);
+    $("#show-sidebar").classList.toggle("hidden", !on);
+    var cb = $("#collapse-btn");
+    cb.title = t(on ? "show_panel" : "hide_panel");
+    cb.setAttribute("aria-label", cb.title);
+    cb.setAttribute("aria-expanded", on ? "false" : "true");
+    setTimeout(resizeMap, 320);
+  }
+  /**
+   * True on the phone layout (map on top, panel below).
+   * @returns {boolean}
+   */
+  function isCompact() {
+    return window.matchMedia("(max-width: 820px)").matches;
   }
   /**
    * Tell Leaflet to recompute its size (after a layout change).
@@ -715,6 +753,7 @@
       // row: [name, mandalIdx, code, cat, pin]
       var mi = row[1];
       if (villagesByMandal[mi]) villagesByMandal[mi].push(row);
+      villageByCode[row[2]] = row;
     });
   }
 
@@ -768,12 +807,35 @@
     // Zoom buttons live on the right so they don't collide with the sidebar toggle.
     map = L.map("map", { zoomControl: false, attributionControl: true, minZoom: 5, maxZoom: 18 });
     L.control.zoom({ position: "topright" }).addTo(map);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      subdomains: "abcd",
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    }).addTo(map);
+    // Base maps: OpenStreetMap (village/road names in the local script) and
+    // Esri satellite imagery, so people can recognise their own fields.
+    // (CARTO's keyless basemaps now return an "API key required" tile.)
+    baseLayers = {
+      street: L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }),
+      satellite: L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+          maxZoom: 19,
+          maxNativeZoom: 18,
+          attribution:
+            'Imagery &copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics'
+        }
+      )
+    };
+    var base = "street";
+    try {
+      if (localStorage.getItem("vf_base") === "satellite") base = "satellite";
+    } catch (e) {}
+    baseLayers[base].addTo(map);
+    map.on("baselayerchange", function (e) {
+      try {
+        localStorage.setItem("vf_base", e.layer === baseLayers.satellite ? "satellite" : "street");
+      } catch (err) {}
+    });
     map.createPane("regions");
     map.getPane("regions").style.zIndex = 410;
     // The cadastral canvas needs its own pane ABOVE the region choropleth (410),
@@ -796,7 +858,13 @@
    */
   function initOverlays() {
     var defs = CFG.overlays || [];
-    if (!defs.length) return;
+    var bases = {};
+    bases[esc(t("map_street"))] = baseLayers.street;
+    bases[esc(t("map_satellite"))] = baseLayers.satellite;
+    if (!defs.length) {
+      L.control.layers(bases, null, { position: "topright", collapsed: true }).addTo(map);
+      return;
+    }
     // Between the region choropleth (410) and the cadastre (420): overlays
     // should paint over the district fills but never hide land parcels.
     map.createPane("overlays");
@@ -813,7 +881,7 @@
       if (o.attribution) params.attribution = o.attribution;
       entries[esc(t(o.labelKey || o.id))] = L.tileLayer.wms(o.url, params);
     });
-    L.control.layers(null, entries, { position: "topright", collapsed: true }).addTo(map);
+    L.control.layers(bases, entries, { position: "topright", collapsed: true }).addTo(map);
   }
 
   /**
@@ -1776,6 +1844,7 @@
    */
   function showDistrictView(fit) {
     view = { level: "state", d: null, m: null };
+    setHash(null);
     clearLayers();
     if (BT_CFG) {
       btShowState();
@@ -1832,6 +1901,7 @@
   async function selectDistrict(d, opts) {
     opts = opts || {};
     view = { level: "district", d: d, m: null };
+    setHash(null);
     clearLayers();
     if (!BT_CFG && (!geoM || !geoM.features || !geoM.features.length)) {
       renderBreadcrumb();
@@ -1953,12 +2023,13 @@
       renderMandalPanel(m, highlightCode);
       return;
     }
-    // de-emphasise siblings, highlight selected mandal
+    // de-emphasise siblings; outline the selected mandal with a see-through
+    // fill so the base map's village names and roads show inside it
     Object.keys(mLayerByCode).forEach(function (c) {
       var lyr = mLayerByCode[c];
       lyr.setStyle(
         +c === m.c
-          ? { weight: 2.6, color: "#0f172a", fillOpacity: 0.9 }
+          ? { weight: 3, color: "#0f172a", fillOpacity: 0.08 }
           : { weight: 0.8, color: "#ffffff", fillOpacity: 0.35 }
       );
     });
@@ -1991,6 +2062,8 @@
   function renderBreadcrumb() {
     var bc = $("#breadcrumb");
     bc.innerHTML = "";
+    // Lets the phone layout drop chrome (state chips, footer) once you drill in.
+    $("#app").setAttribute("data-level", view.v ? "village" : view.level);
     /**
      * Append one breadcrumb segment.
      * @param {string} label  Crumb text.
@@ -2022,7 +2095,15 @@
     }
     if (view.m) {
       sep();
-      crumb(rmand(view.m), true);
+      var vm = view.m;
+      crumb(rmand(vm), !view.v, function () {
+        setHash(null);
+        selectMandal(vm);
+      });
+    }
+    if (view.v) {
+      sep();
+      crumb(vname(view.v), true);
     }
   }
 
@@ -2038,12 +2119,19 @@
     var totV = c.districts.reduce(function (a, d) {
       return a + d.vc;
     }, 0);
+    // First-visit guidance: the three ways in, in plain words.
+    var help = el("div", "help-card");
+    help.appendChild(el("div", "help-title", esc(t("help_title"))));
+    var ol = el("ol", "help-steps");
+    [t("help_1"), t("help_2", { tier: t(DIV + "_word") }), t("help_3")].forEach(function (s) {
+      ol.appendChild(el("li", null, esc(s)));
+    });
+    help.appendChild(ol);
+    p.appendChild(help);
     var grid = el("div", "stat-grid");
     grid.appendChild(stat(fmt(c.districts.length), t("districts")));
     grid.appendChild(stat(fmt(c.mandals.length), tdivs()));
-    var sv = stat(fmt(totV), t("villages"));
-    sv.style.gridColumn = "1 / -1";
-    grid.appendChild(sv);
+    grid.appendChild(stat(fmt(totV), t("villages")));
     p.appendChild(grid);
 
     p.appendChild(sectionLabel(t("districts"), t("az")));
@@ -2218,8 +2306,8 @@
 
   /**
    * Pin the selected village at its precise GeoNames point when we have a
-   * confident one, otherwise at the centre of its mandal, and show a popup
-   * (with the on-demand nearby-services trigger).
+   * confident one, otherwise at the centre of its mandal, label it on the map
+   * and open the village detail view in the side panel.
    * @param {VillageRow} row  The village record.
    * @param {Mandal} m  The parent mandal.
    * @returns {void}
@@ -2251,17 +2339,11 @@
         popupAnchor: [0, -18]
       })
     }).addTo(map);
-    var pin = row[4]
-      ? '<span class="vpop-code">' + esc(t("pin_label")) + " " + esc(row[4]) + "</span>"
-      : "";
     var note = cadPt ? t("cadastre_loc_note") : precise ? t("approx_note") : t(DIV + "_note");
+    // The map popup is a compact label; everything you can *do* for the village
+    // lives in the side panel (big tap targets, room for results on phones).
     var wrap = el("div", "vpop");
     wrap.setAttribute("dir", I18N.dirOf(LANG));
-    // Keep clicks on the interactive popup content (nearby button, retry, links)
-    // from bubbling to the map, which would otherwise auto-close the popup.
-    wrap.addEventListener("click", function (ev) {
-      ev.stopPropagation();
-    });
     wrap.innerHTML =
       '<div class="vpop-name" title="' +
       esc(row[0]) +
@@ -2270,110 +2352,422 @@
       "</div>" +
       '<div class="vpop-meta">' +
       esc(rmand(m)) +
-      " " +
-      esc(t(DIV + "_word")) +
       " · " +
       esc(rdist(d)) +
-      " " +
-      esc(t("district_word")) +
-      "</div>" +
-      '<div class="vpop-tags">' +
-      pin +
-      '<span class="vpop-code">' +
-      esc(t("lgd_label")) +
-      " " +
-      row[2] +
-      "</span></div>" +
-      '<div class="vpop-note">' +
-      esc(note) +
       "</div>";
-
-    // Land parcels — zoom into this village and render its cadastral plots.
-    // Hidden when the tiles can't identify villages (survey-number-only
-    // sources): the button could only ever answer "no parcels found".
-    var parcelBtn;
-    if (CFG.cadastre && cadLayer && CAD_MATCHABLE) {
-      parcelBtn = el("button", "vpop-nb-btn vpop-parcels-btn", esc(t("show_parcels")));
-      wrap.appendChild(parcelBtn);
-    }
-
-    // Nearby civic services — live OpenStreetMap lookup, fetched on demand.
-    var nbBtn, nbBox;
-    if (window.VF_NEARBY) {
-      nbBtn = el("button", "vpop-nb-btn", esc(t("nb_find")));
-      nbBox = el("div", "vpop-nb");
-      wrap.appendChild(nbBtn);
-      wrap.appendChild(nbBox);
-    }
-
-    // Agromet weather — current conditions + 7-day forecast, fetched on demand.
-    var wxBtn, wxBox;
-    if (window.VF_WEATHER) {
-      wxBtn = el("button", "vpop-nb-btn", esc(t("wx_btn")));
-      wxBox = el("div", "vpop-wx");
-      wrap.appendChild(wxBtn);
-      wrap.appendChild(wxBox);
-    }
-
-    // Soil & fertilizer profile — SoilGrids model estimate, fetched on demand.
-    var soilBtn, soilBox;
-    if (window.VF_SOIL) {
-      soilBtn = el("button", "vpop-nb-btn", esc(t("soil_btn")));
-      soilBox = el("div", "vpop-wx");
-      wrap.appendChild(soilBtn);
-      wrap.appendChild(soilBox);
-    }
-
-    // Mandi prices — the district's daily Agmarknet quotes, in a side panel.
-    var mpBtn;
-    if (window.VF_MANDI && CFG.mandi && CFG.mandi.url) {
-      mpBtn = el("button", "vpop-nb-btn", esc(t("mandi_btn")));
-      wrap.appendChild(mpBtn);
-    }
-
-    // Government schemes for farmers — weekly myScheme snapshot, side panel.
-    var schBtn;
-    if (window.VF_SCHEMES && CFG.schemes && CFG.schemes.url) {
-      schBtn = el("button", "vpop-nb-btn", esc(t("sch_btn")));
-      wrap.appendChild(schBtn);
-    }
-
-    marker.bindPopup(wrap, { className: "village-popup", maxWidth: 280 }).openPopup();
-    if (parcelBtn) {
-      parcelBtn.onclick = function () {
-        showVillageParcels(row, m, precise ? center : null);
-      };
-    }
-    if (nbBtn) {
-      nbBtn.onclick = function () {
-        loadNearby(nbBtn, nbBox, center.lat, center.lng);
-      };
-    }
-    if (wxBtn) {
-      wxBtn.onclick = function () {
-        loadWeather(wxBtn, wxBox, center.lat, center.lng);
-      };
-    }
-    if (soilBtn) {
-      soilBtn.onclick = function () {
-        loadSoil(soilBtn, soilBox, center.lat, center.lng);
-      };
-    }
-    if (mpBtn) {
-      mpBtn.onclick = function () {
-        openMandi(d ? d.n : "");
-      };
-    }
-    if (schBtn) {
-      schBtn.onclick = openSchemes;
-    }
+    marker.bindPopup(wrap, { className: "village-popup", maxWidth: 240 }).openPopup();
+    view.v = row;
+    setHash(row[2]);
+    renderVillagePanel(row, m, center, !!precise, note);
     if (!map.getBounds().contains(center)) map.panTo(center, { animate: true });
   }
 
+  // ---- village detail panel -----------------------------------------------
+  // Inline SVG icons (Lucide-style strokes) for the village action tiles.
+  var ICONS = {
+    weather:
+      '<path d="M12 3v2M5.6 5.6l1.4 1.4M3 12h2M17 7l1.4-1.4"/><path d="M8.5 12.5a3.5 3.5 0 1 1 6.3-2.1"/><path d="M17.5 20H9a4 4 0 1 1 .8-7.9A5 5 0 0 1 19 14a3 3 0 0 1-1.5 6Z"/>',
+    soil: '<path d="M7 20h10"/><path d="M12 20V10"/><path d="M12 10c0-3.3 2.7-6 6-6 0 3.3-2.7 6-6 6Z"/><path d="M12 13c0-2.8-2.2-5-5-5 0 2.8 2.2 5 5 5Z"/>',
+    mandi: '<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/><path d="M15 8h4v4"/>',
+    schemes:
+      '<path d="M3 21h18"/><path d="M5 21V10M19 21V10M9.5 21V10M14.5 21V10"/><path d="M12 3 3 8h18Z"/>',
+    nearby:
+      '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><path d="M12 7v5M9.5 9.5h5"/>',
+    parcels:
+      '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h18M12 3v18M12 12l9 9"/>',
+    directions: '<path d="m3 11 18-8-8 18-2-8Z"/>',
+    share:
+      '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>'
+  };
+  /**
+   * Build an inline SVG icon string.
+   * @param {string} name  Key into ICONS.
+   * @returns {string} SVG markup.
+   */
+  function icon(name) {
+    return (
+      '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      ICONS[name] +
+      "</svg>"
+    );
+  }
+
+  /**
+   * Render the selected village in the side panel: name, where it is, and a
+   * grid of big action tiles (weather, soil, mandi, schemes, nearby, parcels,
+   * directions, share). Tile results open in place below the grid.
+   * @param {VillageRow} row  The village record.
+   * @param {Mandal} m  Its mandal/taluk.
+   * @param {Object} center  Leaflet LatLng used for point lookups.
+   * @param {boolean} precise  Whether `center` is the village itself (vs. its mandal).
+   * @param {string} note  Location-accuracy note.
+   * @returns {void}
+   */
+  function renderVillagePanel(row, m, center, precise, note) {
+    var d = regions.districts[m.d];
+    var p = $("#panel");
+    p.innerHTML = "";
+    p.scrollTop = 0;
+    renderBreadcrumb();
+    p.appendChild(
+      backRow(rmand(m), function () {
+        view.v = null;
+        setHash(null);
+        if (marker) marker.closePopup();
+        renderBreadcrumb();
+        renderMandalPanel(m);
+      })
+    );
+    var head = el("div", "detail-head vd-head");
+    var title = el("h2", "title", esc(vname(row)));
+    title.title = row[0];
+    head.appendChild(title);
+    if (vname(row) !== row[0]) head.appendChild(el("div", "vd-en", esc(row[0])));
+    head.appendChild(
+      el(
+        "div",
+        "sub",
+        esc(rmand(m) + " " + t(DIV + "_word") + " · " + rdist(d) + " " + t("district_word"))
+      )
+    );
+    var tags = el("div", "vpop-tags");
+    if (row[4]) tags.appendChild(el("span", "vpop-code", esc(t("pin_label") + " " + row[4])));
+    tags.appendChild(el("span", "vpop-code", esc(t("lgd_label") + " " + row[2])));
+    head.appendChild(tags);
+    head.appendChild(el("div", "vpop-note", esc(note)));
+    p.appendChild(head);
+
+    p.appendChild(sectionLabel(t("vd_tools")));
+    var grid = el("div", "vd-grid");
+    var out = el("div", "vd-out");
+    out.setAttribute("aria-live", "polite");
+    var lat = center.lat,
+      lng = center.lng;
+    var tiles = [];
+    if (window.VF_WEATHER)
+      tiles.push({
+        k: "weather",
+        label: t("wx_btn"),
+        run: function (box) {
+          loadInto(
+            box,
+            "wx_loading",
+            "wx_err",
+            function () {
+              return window.VF_WEATHER.fetch(lat, lng);
+            },
+            renderWeather
+          );
+        }
+      });
+    if (window.VF_SOIL)
+      tiles.push({
+        k: "soil",
+        label: t("soil_btn"),
+        run: function (box) {
+          loadInto(
+            box,
+            "soil_loading",
+            "soil_err",
+            function () {
+              return window.VF_SOIL.fetch(lat, lng);
+            },
+            renderSoil
+          );
+        }
+      });
+    if (window.VF_MANDI && CFG.mandi && CFG.mandi.url)
+      tiles.push({
+        k: "mandi",
+        label: t("mandi_btn"),
+        act: function () {
+          openMandi(d ? d.n : "");
+        }
+      });
+    if (window.VF_SCHEMES && CFG.schemes && CFG.schemes.url)
+      tiles.push({ k: "schemes", label: t("sch_btn"), act: openSchemes });
+    if (window.VF_NEARBY)
+      tiles.push({
+        k: "nearby",
+        label: t("nb_find"),
+        run: function (box) {
+          loadInto(
+            box,
+            "nb_loading",
+            "nb_err",
+            function () {
+              return window.VF_NEARBY.fetch(lat, lng, { radius: NB_RADIUS_KM * 1000 });
+            },
+            renderNearby
+          );
+        }
+      });
+    if (CFG.cadastre && cadLayer && CAD_MATCHABLE)
+      tiles.push({
+        k: "parcels",
+        label: t("show_parcels"),
+        act: function () {
+          if (isCompact()) setCollapsed(true);
+          showVillageParcels(row, m, precise ? center : null);
+        }
+      });
+    if (precise)
+      tiles.push({
+        k: "directions",
+        label: t("directions"),
+        href: "https://www.google.com/maps/dir/?api=1&destination=" + lat + "," + lng
+      });
+    tiles.push({
+      k: "share",
+      label: t("share"),
+      act: function () {
+        shareVillage(row);
+      }
+    });
+
+    tiles.forEach(function (tl) {
+      var b = el(
+        tl.href ? "a" : "button",
+        "vd-tile",
+        icon(tl.k) + "<span>" + esc(tl.label) + "</span>"
+      );
+      if (tl.href) {
+        b.href = tl.href;
+        b.target = "_blank";
+        b.rel = "noopener";
+      } else {
+        b.type = "button";
+        b.onclick = function () {
+          if (tl.act) return tl.act();
+          var was = b.getAttribute("aria-pressed") === "true";
+          Array.prototype.forEach.call(grid.querySelectorAll(".vd-tile"), function (x) {
+            x.removeAttribute("aria-pressed");
+          });
+          out.innerHTML = "";
+          if (was) return; // tapping the open tile again closes it
+          b.setAttribute("aria-pressed", "true");
+          out.appendChild(
+            el("div", "vd-out-title", icon(tl.k) + "<span>" + esc(tl.label) + "</span>")
+          );
+          var box = el("div", "vd-out-body");
+          out.appendChild(box);
+          tl.run(box);
+          if (isCompact()) out.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        };
+      }
+      grid.appendChild(b);
+    });
+    p.appendChild(grid);
+    p.appendChild(out);
+  }
+
+  /**
+   * Share a deep link to a village (native share sheet, else copy the link).
+   * @param {VillageRow} row  The village record.
+   * @returns {void}
+   */
+  function shareVillage(row) {
+    var url = location.href.split("#")[0] + "#v=" + row[2];
+    var title = vname(row) + " — " + sname() + " " + t("village_finder");
+    if (navigator.share) {
+      navigator.share({ title: title, url: url }).catch(function () {});
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(
+        function () {
+          toast(t("link_copied"));
+        },
+        function () {
+          toast(url);
+        }
+      );
+    } else {
+      toast(url);
+    }
+  }
+
+  /**
+   * Reflect the open village in the URL hash (so the page can be shared and
+   * the browser's reload keeps your place), without adding history entries.
+   * @param {(number|string|null)} code  LGD village code, or null to clear.
+   * @returns {void}
+   */
+  function setHash(code) {
+    var h = code ? "#v=" + code : "";
+    if (location.hash === h) return;
+    try {
+      history.replaceState(null, "", location.pathname + location.search + h);
+    } catch (e) {}
+  }
+
+  /**
+   * Open the village named by a `#v=<LGD code>` hash, if any.
+   * @returns {boolean} Whether a village was opened.
+   */
+  function openFromHash() {
+    if (!stage2Loaded) return false;
+    var mt = /^#v=(\d+)$/.exec(pendingHash || location.hash || "");
+    pendingHash = "";
+    if (!mt) return false;
+    var row = villageByCode[mt[1]];
+    if (!row) return false;
+    if (view.v && view.v[2] === row[2]) return true;
+    var m = regions.mandals[row[1]];
+    if (!m) return false;
+    selectMandal(m, row[2]);
+    return true;
+  }
+
+  // ---- "Near me" (browser geolocation → your mandal + closest village) ------
+  /**
+   * Ray-casting point-in-ring test ([lng, lat] rings, GeoJSON order).
+   * @param {number} x  Longitude.
+   * @param {number} y  Latitude.
+   * @param {number[][]} ring  Polygon ring.
+   * @returns {boolean}
+   */
+  function inRing(x, y, ring) {
+    var inside = false;
+    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      var xi = ring[i][0],
+        yi = ring[i][1],
+        xj = ring[j][0],
+        yj = ring[j][1];
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  /**
+   * Whether a point lies in a GeoJSON Polygon / MultiPolygon (holes respected).
+   * @param {number} lng  Longitude.
+   * @param {number} lat  Latitude.
+   * @param {Object} g  GeoJSON geometry.
+   * @returns {boolean}
+   */
+  function inGeom(lng, lat, g) {
+    if (!g) return false;
+    var polys =
+      g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+    return polys.some(function (poly) {
+      if (!inRing(lng, lat, poly[0])) return false;
+      for (var h = 1; h < poly.length; h++) if (inRing(lng, lat, poly[h])) return false;
+      return true;
+    });
+  }
+  /**
+   * Squared equirectangular distance — fine for ranking nearby points.
+   * @returns {number}
+   */
+  function d2(lat1, lng1, lat2, lng2) {
+    var k = Math.cos((lat1 * Math.PI) / 180);
+    var dx = (lng2 - lng1) * k,
+      dy = lat2 - lat1;
+    return dx * dx + dy * dy;
+  }
+
+  /**
+   * Locate the user, drop a "you are here" dot, and open their mandal/taluk
+   * (point-in-polygon) with the closest village that has a known point
+   * pre-selected. Falls back to the closest known village when no boundary
+   * contains the point (e.g. boundary tiles mode).
+   * @returns {void}
+   */
+  function nearMe() {
+    var btn = $("#near-me");
+    if (btn.classList.contains("loading")) return;
+    btn.classList.add("loading");
+    toast(t("locating"));
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        var lat = pos.coords.latitude,
+          lng = pos.coords.longitude;
+        (stage2Promise || Promise.resolve()).then(function () {
+          btn.classList.remove("loading");
+          if (meMarker) map.removeLayer(meMarker);
+          meMarker = L.circleMarker([lat, lng], {
+            radius: 8,
+            color: "#fff",
+            weight: 3,
+            fillColor: "#2563eb",
+            fillOpacity: 1
+          }).addTo(map);
+          var mIdx = null;
+          ((geoM && geoM.features) || []).some(function (f) {
+            if (inGeom(lng, lat, f.geometry)) {
+              var mm = mByCode[f.properties.c];
+              if (mm) mIdx = mm.i;
+              return !!mm;
+            }
+            return false;
+          });
+          // Closest village with a known point — inside your mandal when we
+          // found one, else anywhere in the state (within ~25 km).
+          var best = null,
+            bestD = Infinity;
+          [villagePoints, coords].forEach(function (src) {
+            Object.keys(src).forEach(function (code) {
+              var row = villageByCode[code] || villageByCode[+code];
+              if (!row || (mIdx != null && row[1] !== mIdx)) return;
+              var pt = src[code];
+              var dd = d2(lat, lng, pt[0], pt[1]);
+              if (dd < bestD) {
+                bestD = dd;
+                best = row;
+              }
+            });
+          });
+          if (mIdx == null && best && bestD > 0.05) best = null; // ~25 km
+          if (!best && mIdx != null && (villagesByMandal[mIdx] || []).length === 1)
+            best = villagesByMandal[mIdx][0];
+          if (mIdx == null && !best) {
+            toast(t("loc_outside", { state: sname() }));
+            map.setView([lat, lng], 12);
+            return;
+          }
+          clearSearchUI();
+          if (isCompact()) setCollapsed(false);
+          var mm2 = regions.mandals[mIdx != null ? mIdx : best[1]];
+          selectMandal(mm2, best ? best[2] : undefined);
+        });
+      },
+      function (err) {
+        btn.classList.remove("loading");
+        toast(t(err && err.code === 1 ? "loc_denied" : "loc_unavailable"));
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+  }
+
+  // ---- on-demand village lookups (nearby / weather / soil) ---------------
+  /**
+   * Run an on-demand lookup into a result box: a loading line, then the
+   * rendered result, or a tap-to-retry button when the request fails.
+   * @param {HTMLElement} box  Container for the status/results.
+   * @param {string} loadingKey  i18n key for the loading line.
+   * @param {string} errKey  i18n key for the retry button.
+   * @param {function(): Promise<*>} fetchFn  Starts the request.
+   * @param {function(HTMLElement, *): void} render  Renders the resolved data.
+   * @returns {void}
+   */
+  function loadInto(box, loadingKey, errKey, fetchFn, render) {
+    box.innerHTML = "";
+    box.appendChild(el("div", "nb-status", esc(t(loadingKey))));
+    fetchFn()
+      .then(function (data) {
+        render(box, data);
+      })
+      .catch(function () {
+        box.innerHTML = "";
+        var retry = el("button", "nb-status nb-retry", esc(t(errKey)));
+        retry.onclick = function () {
+          loadInto(box, loadingKey, errKey, fetchFn, render);
+        };
+        box.appendChild(retry);
+      });
+  }
+
   // ---- nearby services (OpenStreetMap / Overpass, on demand) ------------
-  // The popup wrapper grows to fit and the results list scrolls internally, so
-  // we deliberately don't call popup.update() — repeated auto-pan on rapid
-  // content swaps can dismiss the Leaflet popup mid-interaction.
   var NB_RADIUS_KM = 10;
   /**
    * Format a distance in km (one decimal under 10 km, rounded above).
@@ -2385,46 +2779,12 @@
   }
 
   /**
-   * Fetch nearby civic services for a point and render them into the popup box,
-   * with a tap-to-retry affordance on failure.
-   * @param {HTMLButtonElement} btn  The trigger button.
-   * @param {HTMLElement} box  Container for the results/status.
-   * @param {number} lat  Latitude.
-   * @param {number} lng  Longitude.
-   * @returns {void}
-   */
-  function loadNearby(btn, box, lat, lng) {
-    btn.disabled = true;
-    btn.classList.add("loading");
-    box.innerHTML = "";
-    box.appendChild(el("div", "nb-status", esc(t("nb_loading"))));
-    window.VF_NEARBY.fetch(lat, lng, { radius: NB_RADIUS_KM * 1000 })
-      .then(function (groups) {
-        renderNearby(btn, box, groups);
-      })
-      .catch(function () {
-        btn.classList.add("hidden");
-        box.innerHTML = "";
-        var retry = el("button", "nb-status nb-retry", esc(t("nb_err")));
-        retry.onclick = function () {
-          btn.classList.remove("hidden");
-          btn.disabled = false;
-          btn.classList.remove("loading");
-          loadNearby(btn, box, lat, lng);
-        };
-        box.appendChild(retry);
-      });
-  }
-
-  /**
-   * Render grouped nearby services (health / government / civic) into the popup box.
-   * @param {HTMLButtonElement} btn  The trigger button (hidden once results show).
+   * Render grouped nearby services (health / government / civic) into a result box.
    * @param {HTMLElement} box  Container for the results.
    * @param {NearbyGroups} groups  Grouped amenities to display.
    * @returns {void}
    */
-  function renderNearby(btn, box, groups) {
-    btn.classList.add("hidden"); // the trigger is replaced by its results
+  function renderNearby(box, groups) {
     box.innerHTML = "";
     var ORDER = ["health", "government", "civic"];
     var total = ORDER.reduce(function (a, g) {
@@ -2469,46 +2829,12 @@
 
   // ---- agromet weather (Open-Meteo, on demand) ---------------------------
   /**
-   * Fetch the agromet forecast for a point and render it into the popup box,
-   * with a tap-to-retry affordance on failure (mirrors loadNearby).
-   * @param {HTMLButtonElement} btn  The trigger button.
-   * @param {HTMLElement} box  Container for the results/status.
-   * @param {number} lat  Latitude.
-   * @param {number} lng  Longitude.
-   * @returns {void}
-   */
-  function loadWeather(btn, box, lat, lng) {
-    btn.disabled = true;
-    btn.classList.add("loading");
-    box.innerHTML = "";
-    box.appendChild(el("div", "nb-status", esc(t("wx_loading"))));
-    window.VF_WEATHER.fetch(lat, lng)
-      .then(function (wx) {
-        renderWeather(btn, box, wx);
-      })
-      .catch(function () {
-        btn.classList.add("hidden");
-        box.innerHTML = "";
-        var retry = el("button", "nb-status nb-retry", esc(t("wx_err")));
-        retry.onclick = function () {
-          btn.classList.remove("hidden");
-          btn.disabled = false;
-          btn.classList.remove("loading");
-          loadWeather(btn, box, lat, lng);
-        };
-        box.appendChild(retry);
-      });
-  }
-
-  /**
-   * Render current conditions + the 7-day forecast into the popup box.
-   * @param {HTMLButtonElement} btn  The trigger button (hidden once results show).
+   * Render current conditions + the 7-day forecast into a result box.
    * @param {HTMLElement} box  Container for the results.
    * @param {{current: WeatherNow, days: WeatherDay[]}} wx  Forecast data.
    * @returns {void}
    */
-  function renderWeather(btn, box, wx) {
-    btn.classList.add("hidden"); // the trigger is replaced by its results
+  function renderWeather(box, wx) {
     box.innerHTML = "";
     var cur = wx.current || {};
     var desc = window.VF_WEATHER.describe(cur.code || 0);
@@ -2577,50 +2903,16 @@
 
   // ---- soil & fertilizer profile (SoilGrids point model, on demand) -------
   /**
-   * Fetch the soil profile for a point and render it into the popup box,
-   * with a tap-to-retry affordance on failure (mirrors loadWeather).
-   * @param {HTMLButtonElement} btn  The trigger button.
-   * @param {HTMLElement} box  Container for the results/status.
-   * @param {number} lat  Latitude.
-   * @param {number} lng  Longitude.
-   * @returns {void}
-   */
-  function loadSoil(btn, box, lat, lng) {
-    btn.disabled = true;
-    btn.classList.add("loading");
-    box.innerHTML = "";
-    box.appendChild(el("div", "nb-status", esc(t("soil_loading"))));
-    window.VF_SOIL.fetch(lat, lng)
-      .then(function (soil) {
-        renderSoil(btn, box, soil);
-      })
-      .catch(function () {
-        btn.classList.add("hidden");
-        box.innerHTML = "";
-        var retry = el("button", "nb-status nb-retry", esc(t("soil_err")));
-        retry.onclick = function () {
-          btn.classList.remove("hidden");
-          btn.disabled = false;
-          btn.classList.remove("loading");
-          loadSoil(btn, box, lat, lng);
-        };
-        box.appendChild(retry);
-      });
-  }
-
-  /**
-   * Render the soil & fertilizer profile into the popup box: soil type
+   * Render the soil & fertilizer profile into a result box: soil type
    * (WRB group + Indian common name + texture), pH / organic carbon, the
    * all-India balanced N-P-K guideline and the indicative nutrient note.
    * Every value is a SoilGrids model estimate — the footer keeps the
    * "confirm with a Soil Health Card test" framing.
-   * @param {HTMLButtonElement} btn  The trigger button (hidden once results show).
    * @param {HTMLElement} box  Container for the results.
    * @param {SoilProfile} soil  Model profile.
    * @returns {void}
    */
-  function renderSoil(btn, box, soil) {
-    btn.classList.add("hidden"); // the trigger is replaced by its results
+  function renderSoil(box, soil) {
     box.innerHTML = "";
     var card = el("div", "soil-card");
 
