@@ -318,7 +318,6 @@ def test_mandal_geojson_valid_and_joins(state):
     gj = _geo(state["slug"], "mandals.geojson")
     assert gj["type"] == "FeatureCollection" and gj["features"]
     region_codes = {m["c"] for m in state["regions"]["mandals"]}
-    district_codes = {d["c"] for d in state["regions"]["districts"]}
     poly_codes = set()
     for f in gj["features"]:
         p = f["properties"]

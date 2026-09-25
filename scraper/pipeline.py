@@ -62,6 +62,7 @@ from config import (  # shared per-state registry + name seeds + boundary tiles
     load_code_overrides,
     load_name_seeds,
 )
+
 try:
     # pyrefly: ignore [missing-import]
     from lgd_datagov import DataGovUnavailable, fetch_datagov
@@ -419,7 +420,9 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
     dump_villages_json(web_data / "villages.json", villages_doc)
     if effective_local != existing_local or not names_path.exists():
         dump_compact_dict_json(names_path, effective_local)
-    (web_data / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (web_data / "meta.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     # flat CSV export. Every village gets a name in the state's script: the
     # authoritative LGD spelling where published, else a best-effort
@@ -506,7 +509,9 @@ def build_state(state_code, cfg, districts, mandals, villages, source_date, veri
         dump_compact_dict_json(coords_master_path, coords)
         keep = {c: ll for c, ll in coords.items() if c in valid_codes}
         if len(coords) != len(keep):
-            print(f"[{cfg['slug']}] pruned {len(coords) - len(keep)} unmapped precise coords for web")
+            print(
+                f"[{cfg['slug']}] pruned {len(coords) - len(keep)} unmapped precise coords for web"
+            )
         dump_compact_dict_json(coords_path, keep)
 
     with open(
@@ -598,8 +603,8 @@ def _build_web(state_code, cfg, web: Path, meta):
         "division": cfg.get("division", "mandal"),
         "nativeLang": cfg.get("lang"),
         "cadastre": cfg.get("cadastre"),  # None for states without a parcel layer
-        # Daily Agmarknet mandi-price snapshot for the prices panel (published
-        # to a data branch by update-mandi-prices.yml, served with CORS).
+        # Agmarknet mandi-price snapshot for the prices panel (published to a
+        # data branch by update-data.yml's mandi-prices job, served with CORS).
         "mandi": {"url": MANDI_PRICES_URL.format(slug=cfg["slug"])},
         # Weekly myScheme snapshot of farmer schemes (data/farmer-schemes
         # branch) + the curated farm-inputs reference (see config.FARM_INPUTS).

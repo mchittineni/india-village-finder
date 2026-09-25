@@ -272,9 +272,9 @@ BOUNDARY_TILES: dict = {
     "tileMaxZoom": 12,
 }
 
-# Daily Agmarknet mandi-price snapshots (scraper/fetch_mandi_prices.py), published
-# by .github/workflows/update-mandi-prices.yml to the dedicated `data/mandi-prices`
-# branch — NOT main, so daily price churn never needs a reviewed PR.
+# Agmarknet mandi-price snapshots (scraper/fetch_mandi_prices.py), published by the
+# `mandi-prices` job of .github/workflows/update-data.yml to the dedicated
+# `data/mandi-prices` branch — NOT main, so price churn never needs a reviewed PR.
 # raw.githubusercontent.com serves the branch with `Access-Control-Allow-Origin: *`,
 # which lets the GitHub Pages app fetch it cross-origin.
 # Optional agri map overlays (WMS raster — no CORS/keys needed for img tiles),
@@ -330,8 +330,9 @@ MANDI_PRICES_URL = (
 
 # Weekly myScheme snapshot of government schemes for farmers (state + Central,
 # "Agriculture,Rural & Environment"), multilingual — see
-# scraper/fetch_farmer_schemes.py. Published by update-farmer-schemes.yml to
-# the `data/farmer-schemes` branch, fetched at runtime like the mandi feed.
+# scraper/fetch_farmer_schemes.py. Published by the `farmer-schemes` job of
+# update-data.yml to the `data/farmer-schemes` branch, fetched at runtime like
+# the mandi feed.
 FARMER_SCHEMES_URL = (
     "https://raw.githubusercontent.com/mchittineni/india-village-finder/"
     "refs/heads/data/farmer-schemes/{slug}.json"
@@ -358,7 +359,6 @@ FARM_INPUTS: dict = {
 
 # Convenience lookups derived from the registry (never hand-maintained).
 SLUG_BY_CODE: dict[int, str] = {code: s["slug"] for code, s in STATES.items()}
-CODE_BY_SLUG: dict[str, int] = {s["slug"]: code for code, s in STATES.items()}
 LANG_BY_SLUG: dict[str, str] = {s["slug"]: s["lang"] for s in STATES.values()}
 
 
